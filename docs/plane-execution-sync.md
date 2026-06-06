@@ -186,6 +186,10 @@ Sprint 16 repository policy items:
 
 - `APO-54`: Add repository policy configuration for trusted agent surfaces - done
 
+Sprint 17 OpenRouter model provider items:
+
+- `APO-55`: Wire OpenRouter default model for required Deep Agent assessment - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

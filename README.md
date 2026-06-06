@@ -20,6 +20,7 @@ Current implementation:
 - Baseline mode writes deterministic finding baselines and diffs so CI can fail only on newly introduced findings.
 - Policy mode reads `agent-permit-policy.json` or `--policy` and writes `policy-evaluation.json`.
 - Eval mode writes fixture regression and Phoenix dataset-row artifacts under `.agent-permit/evals/<run_id>/`.
+- Investigation mode uses a required bounded LangChain Deep Agent, defaulting to Claude Sonnet 4.6 through OpenRouter.
 - Optional Phoenix/OpenTelemetry tracing can be enabled for live Deep Agent investigations, including evidence-tool spans.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
@@ -48,10 +49,17 @@ Run with an exclusion:
 uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
 ```
 
-Write a cited investigation from scan artifacts:
+Write a cited Deep Agent investigation from scan artifacts:
 
 ```bash
-uv run agent-permit investigate .agent-permit/runs/<run_id>
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+```
+
+Write the offline deterministic fallback for tests or no-key debugging:
+
+```bash
+uv run agent-permit investigate .agent-permit/runs/<run_id> --deterministic-only
 ```
 
 Write SARIF from existing scan artifacts:
@@ -116,6 +124,7 @@ Current work:
 - [SARIF and Code Scanning](docs/sarif-code-scanning.md)
 - [Baseline and Diff Mode](docs/baseline-diff-mode.md)
 - [Repository Policy Configuration](docs/repository-policy-config.md)
+- [OpenRouter Model Decision](docs/openrouter-model-decision.md)
 - [Demo](docs/demo.md)
 - [Deep Agent Investigator](docs/deep-agent-investigator.md)
 - [Phoenix Observability and Evaluation](docs/phoenix-observability-evaluation.md)

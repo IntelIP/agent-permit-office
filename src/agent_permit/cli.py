@@ -40,6 +40,7 @@ from agent_permit.investigation import (
     build_investigation_markdown,
     critique_investigation_report,
 )
+from agent_permit.model_provider import OPENROUTER_DEFAULT_MODEL
 from agent_permit.models import ScanRunStatus
 from agent_permit.path_finder import CapabilityPathFinder
 from agent_permit.permit_engine import PermitEngine
@@ -63,6 +64,9 @@ from agent_permit.scanners.credential_refs import CredentialReferenceScanner
 from agent_permit.scanners.file_inventory import FileInventoryScanner
 from agent_permit.scanners.mcp_config import McpConfigScanner
 from agent_permit.scanners.prompt_instructions import PromptInstructionScanner
+
+
+DEFAULT_DEEP_AGENT_MODEL = f"openrouter:{OPENROUTER_DEFAULT_MODEL}"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -151,8 +155,16 @@ def build_parser() -> argparse.ArgumentParser:
     investigate_parser.add_argument(
         "--model",
         help=(
-            "optional Deep Agents model string, for example openai:gpt-5.4; "
-            "without this flag the command writes deterministic report markdown"
+            "Deep Agents model string; defaults to "
+            f"{DEFAULT_DEEP_AGENT_MODEL}"
+        ),
+    )
+    investigate_parser.add_argument(
+        "--deterministic-only",
+        action="store_true",
+        help=(
+            "write the offline deterministic citation report without invoking "
+            "the required live Deep Agent path"
         ),
     )
     investigate_parser.add_argument(
@@ -334,6 +346,7 @@ def main(
             args.artifact_dir,
             output_path=args.output,
             model=args.model,
+            deterministic_only=args.deterministic_only,
             enable_langsmith=args.langsmith,
             enable_phoenix=args.phoenix,
             stdout=stdout,
@@ -598,6 +611,7 @@ def run_investigate(
     *,
     output_path: Path | None = None,
     model: str | None = None,
+    deterministic_only: bool = False,
     enable_langsmith: bool = False,
     enable_phoenix: bool = False,
     stdout: TextIO,
@@ -609,11 +623,19 @@ def run_investigate(
         print(f"error: failed to load scan artifacts: {exc}", file=stderr)
         return 2
 
+    if deterministic_only and model:
+        print(
+            "error: --model cannot be used with --deterministic-only",
+            file=stderr,
+        )
+        return 2
+    selected_model = None if deterministic_only else (model or DEFAULT_DEEP_AGENT_MODEL)
+
     try:
-        if model:
+        if selected_model:
             report_markdown = invoke_deep_agent_investigator(
                 context,
-                model=model,
+                model=selected_model,
                 enable_langsmith=enable_langsmith,
                 enable_phoenix=enable_phoenix,
             )
@@ -641,11 +663,11 @@ def run_investigate(
     print(f"Permit status: {context.permit_status}", file=stdout)
     print(f"Findings: {len(context.findings)}", file=stdout)
     print(f"Citation check: {'passed' if critic_result.supported else 'failed'}", file=stdout)
-    if model:
-        print(f"Deep Agent model: {model}", file=stdout)
+    if selected_model:
+        print(f"Deep Agent model: {selected_model}", file=stdout)
     if enable_langsmith:
         print("LangSmith tracing: requested", file=stdout)
-    if enable_phoenix and model:
+    if enable_phoenix and selected_model:
         print("Phoenix tracing: requested", file=stdout)
     elif enable_phoenix:
         print("Phoenix tracing: skipped in deterministic mode", file=stdout)

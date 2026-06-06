@@ -1,0 +1,94 @@
+# OpenRouter Model Decision
+
+Date: 2026-06-06
+
+## Decision
+
+Use OpenRouter for live Deep Agent runs.
+
+Default model:
+
+```text
+openrouter:anthropic/claude-sonnet-4.6
+```
+
+Escalation model:
+
+```text
+openrouter:openai/gpt-5.5
+```
+
+## Why Sonnet 4.6 Default
+
+Agent Permit Office needs cited, tool-using permit dossiers over bounded scanner artifacts. It does not need to dump a full raw repo into the model.
+
+Claude Sonnet 4.6 is the better default because:
+
+- strong agent/tool behavior
+- strong coding and security-review fit
+- 1M context on OpenRouter
+- lower price than GPT-5.5
+- enough capability for evidence-bound narrative and remediation
+
+OpenRouter lists Claude Sonnet 4.6 at `$3/M` input and `$15/M` output with `1M` context.
+
+## Why GPT-5.5 Escalation
+
+GPT-5.5 is stronger frontier reasoning for harder cases, but costs more.
+
+Use GPT-5.5 when:
+
+- the citation critic repeatedly fails a Sonnet dossier
+- findings span many controls and policy exceptions
+- a high-stakes customer demo needs maximum reasoning headroom
+- comparing model quality during evals
+
+OpenRouter lists GPT-5.5 at `$5/M` input and `$30/M` output with `1M` context.
+
+## Runtime
+
+Set:
+
+```bash
+export OPENROUTER_API_KEY=<key>
+```
+
+Run default:
+
+```bash
+uv run --extra deep-agent agent-permit investigate \
+  .agent-permit/runs/<run_id>
+```
+
+Run default with explicit alias:
+
+```bash
+uv run --extra deep-agent agent-permit investigate \
+  .agent-permit/runs/<run_id> \
+  --model openrouter:sonnet-4.6
+```
+
+Run escalation:
+
+```bash
+uv run --extra deep-agent agent-permit investigate \
+  .agent-permit/runs/<run_id> \
+  --model openrouter:gpt-5.5
+```
+
+Both model strings route through OpenRouter's OpenAI-compatible chat endpoint.
+
+## Notes
+
+The verified OpenRouter model IDs are:
+
+- `anthropic/claude-sonnet-4.6`
+- `openai/gpt-5.5`
+
+Do not use `anthropic/claude-4.6-sonnet`; the OpenRouter model list currently exposes the Sonnet route as `anthropic/claude-sonnet-4.6`.
+
+## Sources
+
+- OpenRouter Claude Sonnet 4.6: https://openrouter.ai/anthropic/claude-sonnet-4.6
+- OpenRouter GPT-5.5: https://openrouter.ai/openai/gpt-5.5
+- OpenRouter chat completion API: https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request

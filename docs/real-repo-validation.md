@@ -29,7 +29,9 @@ uv run agent-permit scan /tmp/agent-permit-validation/autogen --ci --run-id vali
 Each run was followed by:
 
 ```bash
-uv run agent-permit investigate /tmp/agent-permit-validation/<repo>/.agent-permit/runs/<run_id>
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent agent-permit investigate \
+  /tmp/agent-permit-validation/<repo>/.agent-permit/runs/<run_id>
 ```
 
 Sprint 13 adds a repeatable manifest runner:
@@ -40,6 +42,8 @@ uv run agent-permit eval-real docs/evals/real-repos.json \
   --run-id sprint13-real-repos \
   --output /tmp/apo-sprint13-real-repos
 ```
+
+The manifest runner is a deterministic scanner and citation-regression harness. It uses the offline investigation fallback so it can run without live model spend. Use `agent-permit investigate` separately for the required live Deep Agent product path.
 
 ## Results
 

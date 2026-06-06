@@ -9,6 +9,7 @@ from typing import Any
 from agent_permit import observability
 from agent_permit.evidence_context import EvidenceContext
 from agent_permit.investigation import critique_investigation_report
+from agent_permit.model_provider import resolve_deep_agent_model
 
 
 DEEP_AGENT_SYSTEM_PROMPT = """You are Agent Permit Office's evidence-bound investigator.
@@ -233,7 +234,7 @@ def create_deep_agent_investigator(
         ) from exc
 
     return create_deep_agent(
-        model=model,
+        model=resolve_deep_agent_model(model),
         tools=build_evidence_tools(context),
         system_prompt=DEEP_AGENT_SYSTEM_PROMPT,
         subagents=build_subagent_specs(context),

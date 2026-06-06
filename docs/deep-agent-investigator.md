@@ -1,6 +1,6 @@
 # Deep Agent Investigator
 
-Sprint 5 adds an optional LangChain Deep Agents layer on top of deterministic scan artifacts.
+Sprint 5 adds the required LangChain Deep Agents investigation layer on top of deterministic scan artifacts.
 
 ## Boundary
 
@@ -20,7 +20,7 @@ It does not read repository files directly, execute shell commands, launch MCP s
 
 ## Typed Evidence Tools
 
-The optional Deep Agent surface now includes typed read-only helpers:
+The Deep Agent surface includes typed read-only helpers:
 
 - `get_finding(identifier)`
 - `find_paths(source_category, sink_category)`
@@ -31,7 +31,7 @@ The optional Deep Agent surface now includes typed read-only helpers:
 
 These tools read structured scan artifacts only. They do not open arbitrary repo files or execute anything.
 
-## Local Deterministic Investigation
+## Live Deep Agents Investigation
 
 Run a scan:
 
@@ -39,10 +39,16 @@ Run a scan:
 uv run agent-permit scan tests/fixtures/risky-ci-agent --run-id demo-investigate
 ```
 
-Write a cited investigation report without an LLM:
+Install the optional runtime extra and provide OpenRouter credentials:
 
 ```bash
-uv run agent-permit investigate \
+export OPENROUTER_API_KEY=<key>
+```
+
+Run the default MVP model, Claude Sonnet 4.6 through OpenRouter:
+
+```bash
+uv run --extra deep-agent agent-permit investigate \
   tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate
 ```
 
@@ -52,16 +58,22 @@ Output:
 tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate/agent-investigation.md
 ```
 
-This path is the default for tests and CI because it requires no API keys.
+The `investigate` command defaults to the live Deep Agent path. Without `OPENROUTER_API_KEY`, it fails before a report is written.
 
-## Optional Deep Agents Run
-
-Install the optional extra and provide model credentials:
+Override with the explicit default alias:
 
 ```bash
 uv run --extra deep-agent agent-permit investigate \
   tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate \
-  --model openai:gpt-5.4
+  --model openrouter:sonnet-4.6
+```
+
+Escalate to GPT-5.5 through OpenRouter when evals or citation quality justify the extra cost:
+
+```bash
+uv run --extra deep-agent agent-permit investigate \
+  tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate \
+  --model openrouter:gpt-5.5
 ```
 
 The integration uses `deepagents.create_deep_agent` with:
@@ -70,6 +82,18 @@ The integration uses `deepagents.create_deep_agent` with:
 - filesystem permissions that deny built-in read/write access to `/**`
 - custom evidence tools only
 - specialist subagent specs for MCP, prompt, policy, and citation review
+
+## Offline Deterministic Fallback
+
+For tests, CI, and no-key local debugging, write the deterministic citation report explicitly:
+
+```bash
+uv run agent-permit investigate \
+  tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate \
+  --deterministic-only
+```
+
+This fallback is not the MVP product path. It exists to keep scanner validation repeatable without live model spend.
 
 ## Optional Phoenix Tracing
 
@@ -86,7 +110,6 @@ Then trace a live Deep Agent run:
 ```bash
 uv run --extra deep-agent --extra phoenix agent-permit investigate \
   tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate \
-  --model openai:gpt-5.4 \
   --phoenix
 ```
 
@@ -118,7 +141,6 @@ Or request tracing for a live Deep Agent run:
 ```bash
 uv run --extra deep-agent agent-permit investigate \
   tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate \
-  --model openai:gpt-5.4 \
   --langsmith
 ```
 
@@ -136,7 +158,7 @@ Reports fail the command if the citation check fails.
 
 ## Why This Shape
 
-Deep Agents are useful here because they provide planning, context management, and subagent delegation over a bounded task. The product risk is giving the agent direct repo or tool access too early. This implementation keeps Deep Agents behind deterministic artifacts until the scanner and evidence contract are stable.
+Deep Agents are useful here because they provide planning, context management, and subagent delegation over a bounded task. The product risk is giving the agent direct repo or tool access too early. This implementation makes Deep Agents the investigation path while keeping them behind deterministic artifacts until the scanner and evidence contract are stable.
 
 ## Sources
 
@@ -147,3 +169,4 @@ Deep Agents are useful here because they provide planning, context management, a
 - [Phoenix OTEL setup](https://www.arize.com/docs/phoenix/tracing/how-to-tracing/setup-tracing/setup-using-phoenix-otel)
 - [OpenInference LangChain instrumentation](https://arize-ai.github.io/openinference/python/instrumentation/openinference-instrumentation-langchain/)
 - [LangSmith tracing with LangChain](https://docs.langchain.com/langsmith/trace-with-langchain)
+- [OpenRouter model decision](openrouter-model-decision.md)

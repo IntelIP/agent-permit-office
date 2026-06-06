@@ -566,7 +566,7 @@ Candidate model families:
 - Anthropic Claude Sonnet class through `langchain-anthropic`
 - OpenAI GPT-5.x class through `langchain-openai`
 - Google Gemini Pro/Flash class through `langchain-google-genai`
-- OpenRouter through `langchain-openrouter` for model routing experiments
+- OpenRouter through the OpenAI-compatible chat endpoint for model routing experiments
 
 LangChain/Deep Agents support `provider:model` strings and configured model instances. Source: https://docs.langchain.com/oss/python/deepagents/models
 
@@ -603,26 +603,26 @@ Source: https://platform.openai.com/docs/guides/embeddings
 
 ## Recommended Model Defaults
 
-For local development:
+For scanner-only local development:
 
-- no model by default
 - scanner CLI works without any API key
 
 For Deep Agent mode:
 
-- environment variable: `AGENT_PERMIT_MODEL`
-- default example: `anthropic:claude-sonnet-4-6` or current OpenAI GPT-5.x model
+- default provider: OpenRouter
+- required credential: `OPENROUTER_API_KEY`
+- default example: `openrouter:sonnet-4.6`
+- escalation example: `openrouter:gpt-5.5`
 - allow override through CLI
 
 Example:
 
 ```bash
-agent-permit investigate . --model anthropic:claude-sonnet-4-6
-agent-permit investigate . --model openai:gpt-5.2
-agent-permit investigate . --model openrouter:anthropic/claude-sonnet-4-6
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id> --model openrouter:gpt-5.5
 ```
 
-Do not hardcode one provider into architecture.
+For MVP, use OpenRouter as the routed provider. Keep direct-provider support out of the default path until evals show a reason to add it.
 
 ## Model Selection Logic
 

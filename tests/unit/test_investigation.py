@@ -64,13 +64,33 @@ def test_critic_rejects_invented_claims(tmp_path) -> None:
     assert critic.unsupported_rule_ids == ("ci-secret-reference",)
 
 
-def test_investigate_cli_writes_report_without_live_model(tmp_path) -> None:
+def test_investigate_cli_requires_openrouter_for_default_product_path(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    artifact_dir = _scan_fixture(tmp_path, "risky-ci-agent", "cli-investigate-live")
+    stdout = StringIO()
+    stderr = StringIO()
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+
+    exit_code = main(
+        ["investigate", str(artifact_dir)],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert exit_code == 2
+    assert stdout.getvalue() == ""
+    assert "OPENROUTER_API_KEY" in stderr.getvalue()
+
+
+def test_investigate_cli_writes_deterministic_report_when_explicit(tmp_path) -> None:
     artifact_dir = _scan_fixture(tmp_path, "risky-ci-agent", "cli-investigate")
     stdout = StringIO()
     stderr = StringIO()
 
     exit_code = main(
-        ["investigate", str(artifact_dir)],
+        ["investigate", str(artifact_dir), "--deterministic-only"],
         stdout=stdout,
         stderr=stderr,
     )
@@ -89,7 +109,7 @@ def test_investigate_cli_skips_phoenix_for_deterministic_report(tmp_path) -> Non
     stderr = StringIO()
 
     exit_code = main(
-        ["investigate", str(artifact_dir), "--phoenix"],
+        ["investigate", str(artifact_dir), "--deterministic-only", "--phoenix"],
         stdout=stdout,
         stderr=stderr,
     )

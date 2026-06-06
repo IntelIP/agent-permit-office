@@ -107,7 +107,7 @@ Trace a live Deep Agent investigation:
 ```bash
 uv run --extra deep-agent --extra phoenix agent-permit investigate \
   .agent-permit/runs/<run_id> \
-  --model openai:gpt-5.4 \
+  --model openrouter:sonnet-4.6 \
   --phoenix
 ```
 

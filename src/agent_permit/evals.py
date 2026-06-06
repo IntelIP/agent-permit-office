@@ -363,6 +363,7 @@ def _run_real_repo_case(
     with _NullWriter() as stdout, _NullWriter() as stderr:
         investigate_exit_code = run_investigate(
             artifact_dir,
+            deterministic_only=True,
             stdout=stdout,
             stderr=stderr,
         )

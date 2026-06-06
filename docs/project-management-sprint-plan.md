@@ -295,7 +295,7 @@ Backlog:
 | --- | --- | --- |
 | Controlled tools | Deep Agent reads evidence packs and graph summaries only. | Done: evidence tools expose bounded artifacts only; `codebase-map.json` and repo files are not readable. |
 | Coordinator prompt | Agent writes cited permit narrative. | Done: `agent-permit investigate` writes citation-checked Markdown. |
-| Specialist subagents | MCP, prompt, policy, and critic roles. | Done: optional Deep Agents specs define MCP, prompt, policy, and citation critic subagents. |
+| Specialist subagents | MCP, prompt, policy, and critic roles. | Done: required Deep Agents specs define MCP, prompt, policy, and citation critic subagents. |
 | LangSmith tracing | Optional trace visibility. | Done: `--langsmith` requests tracing for live Deep Agent runs; tracing stays off by default. |
 | Report critic | Checks unsupported claims and missing citations. | Done: tests catch invented finding citations and unsupported rule IDs. |
 
@@ -468,6 +468,22 @@ Backlog:
 | Policy artifact | Make policy effects reviewable. | Done: `policy-evaluation.json` records adjustments. |
 | Action input | Expose policy path in CI. | Done: composite action accepts `policy`. |
 
+## Sprint 17: OpenRouter Model Provider
+
+Goal:
+
+- make OpenRouter the live Deep Agent provider and choose the MVP model default
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Model decision | Pick default and escalation model. | Done: default Sonnet 4.6, escalation GPT-5.5. |
+| Model resolver | Normalize OpenRouter aliases. | Done: `openrouter:sonnet-4.6` and `openrouter:gpt-5.5` resolve to verified OpenRouter IDs. |
+| Runtime adapter | Use OpenRouter's OpenAI-compatible endpoint. | Done: live Deep Agent model strings create a ChatOpenAI-compatible OpenRouter model. |
+| Secret boundary | Require explicit API key. | Done: missing `OPENROUTER_API_KEY` fails before live model creation. |
+| Docs | Explain provider and model choice. | Done: `docs/openrouter-model-decision.md`. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
@@ -478,7 +494,7 @@ MVP is ready when:
 - no raw secret values are emitted
 - findings have file and line evidence
 - permit status is deterministic
-- Deep Agent report is optional
+- Deep Agent investigation is the default product path
 - README has install and demo commands
 
 ## Project Management Setup Later
@@ -506,11 +522,11 @@ Notion page later:
 
 ## Immediate Next Step
 
-Validate Sprint 15 locally:
+Validate Sprint 17 locally:
 
 ```text
 uv run pytest
-uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
+env -u OPENROUTER_API_KEY uv run agent-permit investigate .agent-permit/runs/<run_id>
 ```
 
-After validation, decide whether Sprint 17 should focus on SARIF schema validation, HTML review output, or repo policy templates.
+After validation, Sprint 18 should add live Deep Agent real-repo evals with model-quality scoring and Phoenix trace review.
