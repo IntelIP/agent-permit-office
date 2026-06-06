@@ -68,6 +68,9 @@ jobs:
     agent_bom = json.loads((artifact_dir / "agent-bom.json").read_text())
     codebase_map = json.loads((artifact_dir / "codebase-map.json").read_text())
     graph_paths = json.loads((artifact_dir / "graph-paths.json").read_text())
+    controls = json.loads((artifact_dir / "controls.json").read_text())
+    permit_text = (artifact_dir / "permit.yaml").read_text()
+    risk_report_text = (artifact_dir / "risk-report.md").read_text()
     raw_findings_text = (artifact_dir / "raw-findings.json").read_text()
     raw_findings = json.loads(raw_findings_text)
     scan_run = json.loads((artifact_dir / "scan-run.json").read_text())
@@ -96,6 +99,12 @@ jobs:
         ("instruction_file", "risky_instruction"),
         ("workflow_file", "privileged_ci_workflow"),
     }
+    assert len(controls["controls"]) == 8
+    assert "status: blocked" in permit_text
+    assert "GITHUB_TOKEN" in permit_text
+    assert "OPENAI_API_KEY" in permit_text
+    assert "sk-live-placeholder" not in permit_text
+    assert "Status: blocked" in risk_report_text
     assert len(raw_findings["findings"]) == 6
     assert {
         finding["rule_id"] for finding in raw_findings["findings"]
@@ -121,6 +130,8 @@ jobs:
     assert "Graph nodes: 9" in stdout.getvalue()
     assert "Graph edges: 5" in stdout.getvalue()
     assert "Graph paths: 3" in stdout.getvalue()
+    assert "Controls: 8" in stdout.getvalue()
+    assert "Permit status: blocked" in stdout.getvalue()
 
 
 def test_scan_command_rejects_missing_path(tmp_path) -> None:

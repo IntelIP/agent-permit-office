@@ -12,6 +12,7 @@ from agent_permit.artifacts import RunArtifactWriter
 from agent_permit.capability_graph import CapabilityGraphBuilder
 from agent_permit.models import ScanRunStatus
 from agent_permit.path_finder import CapabilityPathFinder
+from agent_permit.permit_engine import PermitEngine
 from agent_permit.scanners.ci_workflows import CiWorkflowScanner
 from agent_permit.scanners.credential_refs import CredentialReferenceScanner
 from agent_permit.scanners.file_inventory import FileInventoryScanner
@@ -118,10 +119,23 @@ def run_scan(
         graph_path_report = CapabilityPathFinder().find_paths(
             graph_result.codebase_map,
         )
+        permit_evaluation = PermitEngine().evaluate(
+            scan_run_id=scan_run.id,
+            artifact_dir=scan_run.artifact_dir,
+            agent_bom=mcp_result.agent_bom,
+            findings=graph_result.findings,
+            graph_paths=graph_path_report,
+        )
         artifact_writer.write_agent_bom(scan_run, mcp_result.agent_bom)
         artifact_writer.write_codebase_map(scan_run, graph_result.codebase_map)
         artifact_writer.write_graph_paths(scan_run, graph_path_report)
         artifact_writer.write_raw_findings(scan_run, graph_result.findings)
+        artifact_writer.write_controls(scan_run, permit_evaluation.controls)
+        artifact_writer.write_permit(scan_run, permit_evaluation.permit)
+        artifact_writer.write_risk_report(
+            scan_run,
+            permit_evaluation.risk_report_markdown,
+        )
         scan_run.status = ScanRunStatus.COMPLETED
         scan_run.completed_at = datetime.now(timezone.utc)
         artifact_writer.write_scan_run(scan_run)
@@ -151,5 +165,7 @@ def run_scan(
     print(f"Graph nodes: {len(graph_result.codebase_map.nodes)}", file=stdout)
     print(f"Graph edges: {len(graph_result.codebase_map.edges)}", file=stdout)
     print(f"Graph paths: {len(graph_path_report.paths)}", file=stdout)
-    print("Next: control model and permit rules", file=stdout)
+    print(f"Controls: {len(permit_evaluation.controls.controls)}", file=stdout)
+    print(f"Permit status: {permit_evaluation.permit.status}", file=stdout)
+    print("Next: report polish and CI mode", file=stdout)
     return 0

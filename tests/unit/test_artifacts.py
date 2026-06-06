@@ -5,6 +5,7 @@ from agent_permit.artifacts import RunArtifactWriter, create_run_id
 from agent_permit.models import (
     AgentBom,
     CodebaseMap,
+    ControlReport,
     Confidence,
     EvidenceLocation,
     FileInventory,
@@ -15,6 +16,8 @@ from agent_permit.models import (
     McpServerSummary,
     GraphNode,
     GraphNodeKind,
+    Permit,
+    PermitStatus,
     Severity,
 )
 
@@ -37,6 +40,7 @@ def test_create_run_writes_artifact_contract(tmp_path) -> None:
         "file-inventory.json",
         "codebase-map.json",
         "graph-paths.json",
+        "controls.json",
         "agent-bom.json",
         "raw-findings.json",
         "permit.yaml",
@@ -160,6 +164,30 @@ def test_write_graph_paths_replaces_placeholder(tmp_path) -> None:
     payload = json.loads((scan_run.artifact_dir / "graph-paths.json").read_text())
     assert payload["scan_run_id"] == scan_run.id
     assert payload["paths"] == []
+
+
+def test_write_controls_permit_and_risk_report_replace_placeholders(tmp_path) -> None:
+    target = tmp_path / "safe-agent"
+    target.mkdir()
+    writer = RunArtifactWriter()
+    scan_run = writer.create_run(target, run_id="run-permit")
+    permit = Permit(
+        scan_run_id=scan_run.id,
+        status=PermitStatus.APPROVED,
+        agent_name="repo-agent",
+        evidence_bundle_path=str(scan_run.artifact_dir),
+    )
+
+    writer.write_controls(scan_run, ControlReport(scan_run_id=scan_run.id))
+    writer.write_permit(scan_run, permit)
+    writer.write_risk_report(scan_run, "# Risk\n\nStatus: approved\n")
+
+    controls_payload = json.loads((scan_run.artifact_dir / "controls.json").read_text())
+    permit_text = (scan_run.artifact_dir / "permit.yaml").read_text()
+    report_text = (scan_run.artifact_dir / "risk-report.md").read_text()
+    assert controls_payload["controls"] == []
+    assert "status: approved" in permit_text
+    assert "Status: approved" in report_text
 
 
 def test_write_agent_bom_and_raw_findings_replace_placeholders(tmp_path) -> None:

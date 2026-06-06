@@ -160,6 +160,12 @@ class TaxonomyRole(str, Enum):
     CONTEXT = "context"
 
 
+class ControlStatus(str, Enum):
+    PRESENT = "present"
+    WEAK = "weak"
+    MISSING = "missing"
+
+
 class EvidenceLocation(StrictModel):
     path: str
     line_start: int | None = Field(default=None, ge=1)
@@ -322,6 +328,23 @@ class GraphPathReport(StrictModel):
     scan_run_id: str
     taxonomy: list[TaxonomyEntry] = Field(default_factory=list)
     paths: list[GraphPath] = Field(default_factory=list)
+
+
+class ControlSignal(StrictModel):
+    id: str
+    name: str
+    status: ControlStatus
+    target_id: str | None = None
+    evidence: list[EvidenceLocation] = Field(default_factory=list)
+    rationale: str
+    recommendation: str
+    related_finding_ids: list[str] = Field(default_factory=list)
+    related_path_ids: list[str] = Field(default_factory=list)
+
+
+class ControlReport(StrictModel):
+    scan_run_id: str
+    controls: list[ControlSignal] = Field(default_factory=list)
 
 
 class ScanRun(StrictModel):

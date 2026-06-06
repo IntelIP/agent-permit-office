@@ -13,6 +13,7 @@ Current implementation:
 - CI scan adds line-cited findings for risky GitHub Actions triggers, permissions, and secret usage.
 - Graph builder writes `codebase-map.json` with files, MCP servers, credential refs, prompt instructions, workflows, and relationship edges.
 - Path finder writes `graph-paths.json` with source/sink taxonomy and bounded risky paths.
+- Permit engine writes `controls.json`, `permit.yaml`, and `risk-report.md` with deterministic approval status.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
 Current work:

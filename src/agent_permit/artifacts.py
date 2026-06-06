@@ -9,9 +9,11 @@ from typing import TypeAlias
 from agent_permit.models import (
     AgentBom,
     CodebaseMap,
+    ControlReport,
     FileInventory,
     Finding,
     GraphPathReport,
+    Permit,
     ScanRun,
 )
 
@@ -141,6 +143,24 @@ class RunArtifactWriter:
             graph_path_report.model_dump(mode="json"),
         )
 
+    def write_controls(self, scan_run: ScanRun, control_report: ControlReport) -> None:
+        self._write_json(
+            scan_run.artifact_dir / "controls.json",
+            control_report.model_dump(mode="json"),
+        )
+
+    def write_permit(self, scan_run: ScanRun, permit: Permit) -> None:
+        (scan_run.artifact_dir / "permit.yaml").write_text(
+            _permit_yaml(permit),
+            encoding="utf-8",
+        )
+
+    def write_risk_report(self, scan_run: ScanRun, markdown: str) -> None:
+        (scan_run.artifact_dir / "risk-report.md").write_text(
+            markdown,
+            encoding="utf-8",
+        )
+
     def write_raw_findings(
         self,
         scan_run: ScanRun,
@@ -174,6 +194,10 @@ class RunArtifactWriter:
             artifact_dir / "graph-paths.json",
             GraphPathReport(scan_run_id=run_id).model_dump(mode="json"),
         )
+        self._write_json(
+            artifact_dir / "controls.json",
+            ControlReport(scan_run_id=run_id).model_dump(mode="json"),
+        )
         (artifact_dir / "permit.yaml").write_text(
             f"scan_run_id: {run_id}\nstatus: pending\n",
             encoding="utf-8",
@@ -199,3 +223,45 @@ def _is_sensitive_key(key: str) -> bool:
 def _looks_like_secret_value(value: str) -> bool:
     stripped = value.strip()
     return any(stripped.startswith(marker) for marker in _SENSITIVE_VALUE_MARKERS)
+
+
+def _permit_yaml(permit: Permit) -> str:
+    payload = permit.model_dump(mode="json")
+    lines = [
+        f"scan_run_id: {payload['scan_run_id']}",
+        f"status: {payload['status']}",
+        f"agent_name: {payload['agent_name']}",
+    ]
+    _append_yaml_list(lines, "discovered_tools", payload["discovered_tools"])
+    _append_yaml_list(
+        lines,
+        "discovered_credentials",
+        payload["discovered_credentials"],
+    )
+    _append_yaml_list(lines, "allowed_actions", payload["allowed_actions"])
+    _append_yaml_list(lines, "forbidden_actions", payload["forbidden_actions"])
+    _append_yaml_list(lines, "required_approvals", payload["required_approvals"])
+    _append_yaml_list(lines, "conditions", payload["conditions"])
+    lines.append("findings_summary:")
+    if payload["findings_summary"]:
+        for severity, count in sorted(payload["findings_summary"].items()):
+            lines.append(f"  {severity}: {count}")
+    else:
+        lines.append("  {}")
+    if payload["evidence_bundle_path"]:
+        lines.append(f"evidence_bundle_path: {payload['evidence_bundle_path']}")
+    return "\n".join(lines) + "\n"
+
+
+def _append_yaml_list(lines: list[str], key: str, values: list[str]) -> None:
+    lines.append(f"{key}:")
+    if not values:
+        lines.append("  []")
+        return
+    for value in values:
+        lines.append(f"  - {_quote_yaml_string(value)}")
+
+
+def _quote_yaml_string(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
