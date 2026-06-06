@@ -67,6 +67,7 @@ jobs:
     inventory = json.loads((artifact_dir / "file-inventory.json").read_text())
     agent_bom = json.loads((artifact_dir / "agent-bom.json").read_text())
     codebase_map = json.loads((artifact_dir / "codebase-map.json").read_text())
+    graph_paths = json.loads((artifact_dir / "graph-paths.json").read_text())
     raw_findings_text = (artifact_dir / "raw-findings.json").read_text()
     raw_findings = json.loads(raw_findings_text)
     scan_run = json.loads((artifact_dir / "scan-run.json").read_text())
@@ -85,6 +86,15 @@ jobs:
         "credential-ref:OPENAI_API_KEY",
         "mcp-server:.mcp.json:github-tools",
         "workflow:.github/workflows/agent.yml",
+    }
+    assert len(graph_paths["paths"]) == 3
+    assert {
+        (path["source_category"], path["sink_category"])
+        for path in graph_paths["paths"]
+    } == {
+        ("credential", "mcp_server"),
+        ("instruction_file", "risky_instruction"),
+        ("workflow_file", "privileged_ci_workflow"),
     }
     assert len(raw_findings["findings"]) == 6
     assert {
@@ -110,6 +120,7 @@ jobs:
     assert "Findings: 6" in stdout.getvalue()
     assert "Graph nodes: 9" in stdout.getvalue()
     assert "Graph edges: 5" in stdout.getvalue()
+    assert "Graph paths: 3" in stdout.getvalue()
 
 
 def test_scan_command_rejects_missing_path(tmp_path) -> None:

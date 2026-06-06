@@ -6,7 +6,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TypeAlias
 
-from agent_permit.models import AgentBom, CodebaseMap, FileInventory, Finding, ScanRun
+from agent_permit.models import (
+    AgentBom,
+    CodebaseMap,
+    FileInventory,
+    Finding,
+    GraphPathReport,
+    ScanRun,
+)
 
 JsonCompatible: TypeAlias = (
     str | int | float | bool | None | list["JsonCompatible"] | dict[str, "JsonCompatible"]
@@ -124,6 +131,16 @@ class RunArtifactWriter:
             codebase_map.model_dump(mode="json"),
         )
 
+    def write_graph_paths(
+        self,
+        scan_run: ScanRun,
+        graph_path_report: GraphPathReport,
+    ) -> None:
+        self._write_json(
+            scan_run.artifact_dir / "graph-paths.json",
+            graph_path_report.model_dump(mode="json"),
+        )
+
     def write_raw_findings(
         self,
         scan_run: ScanRun,
@@ -152,6 +169,10 @@ class RunArtifactWriter:
         self._write_json(
             artifact_dir / "raw-findings.json",
             {"scan_run_id": run_id, "findings": []},
+        )
+        self._write_json(
+            artifact_dir / "graph-paths.json",
+            GraphPathReport(scan_run_id=run_id).model_dump(mode="json"),
         )
         (artifact_dir / "permit.yaml").write_text(
             f"scan_run_id: {run_id}\nstatus: pending\n",

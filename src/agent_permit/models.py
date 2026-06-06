@@ -153,6 +153,13 @@ class Severity(str, Enum):
     INFO = "info"
 
 
+class TaxonomyRole(str, Enum):
+    SOURCE = "source"
+    SINK = "sink"
+    CONTROL = "control"
+    CONTEXT = "context"
+
+
 class EvidenceLocation(StrictModel):
     path: str
     line_start: int | None = Field(default=None, ge=1)
@@ -289,6 +296,32 @@ class CodebaseMap(StrictModel):
     nodes: list[GraphNode] = Field(default_factory=list)
     edges: list[GraphEdge] = Field(default_factory=list)
     facts: list[Fact] = Field(default_factory=list)
+
+
+class TaxonomyEntry(StrictModel):
+    node_id: str
+    role: TaxonomyRole
+    category: str
+    label: str
+    rationale: str
+
+
+class GraphPath(StrictModel):
+    id: str
+    source_id: str
+    sink_id: str
+    source_category: str
+    sink_category: str
+    node_ids: list[str]
+    edge_ids: list[str]
+    severity: Severity
+    rationale: str
+
+
+class GraphPathReport(StrictModel):
+    scan_run_id: str
+    taxonomy: list[TaxonomyEntry] = Field(default_factory=list)
+    paths: list[GraphPath] = Field(default_factory=list)
 
 
 class ScanRun(StrictModel):

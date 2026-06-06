@@ -232,7 +232,7 @@ Non-goals:
 
 ## Sprint 2: First Deterministic Scanners
 
-Status: in progress.
+Status: done.
 
 Goal:
 
@@ -250,6 +250,8 @@ Backlog:
 
 ## Sprint 3: Agent Capability Graph
 
+Status: in progress.
+
 Goal:
 
 - turn facts into graph paths that support permit logic
@@ -259,8 +261,8 @@ Backlog:
 | Item | Outcome | Acceptance criteria |
 | --- | --- | --- |
 | Graph builder | Nodes and edges generated from scanner facts. | Done: deterministic `codebase-map.json` for files, MCP, credentials, prompt instructions, and CI workflows. |
-| Source/sink taxonomy | Standard categories for sensitive sources and dangerous sinks. | Rules can query taxonomy. |
-| Path finder | Finds bounded source-to-sink paths. | Tests cover credential-to-MCP and repo-to-network paths. |
+| Source/sink taxonomy | Standard categories for sensitive sources and dangerous sinks. | Done: `graph-paths.json` classifies credentials, repo config, workflow files, MCP servers, endpoints, risky instructions, and privileged workflows. |
+| Path finder | Finds bounded source-to-sink paths. | Done: credential-to-MCP, repo-config-to-network, workflow-to-privileged-CI, and instruction-to-risky-instruction paths. |
 | Control model | Represents approval gates, pinning, sandboxing, read-only tokens. | Controls reduce severity in tests. |
 
 ## Sprint 4: Permit Engine And Reports

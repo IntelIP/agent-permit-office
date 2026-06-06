@@ -11,6 +11,7 @@ from agent_permit import __version__
 from agent_permit.artifacts import RunArtifactWriter
 from agent_permit.capability_graph import CapabilityGraphBuilder
 from agent_permit.models import ScanRunStatus
+from agent_permit.path_finder import CapabilityPathFinder
 from agent_permit.scanners.ci_workflows import CiWorkflowScanner
 from agent_permit.scanners.credential_refs import CredentialReferenceScanner
 from agent_permit.scanners.file_inventory import FileInventoryScanner
@@ -114,8 +115,12 @@ def run_scan(
             agent_bom=mcp_result.agent_bom,
             findings=findings,
         )
+        graph_path_report = CapabilityPathFinder().find_paths(
+            graph_result.codebase_map,
+        )
         artifact_writer.write_agent_bom(scan_run, mcp_result.agent_bom)
         artifact_writer.write_codebase_map(scan_run, graph_result.codebase_map)
+        artifact_writer.write_graph_paths(scan_run, graph_path_report)
         artifact_writer.write_raw_findings(scan_run, graph_result.findings)
         scan_run.status = ScanRunStatus.COMPLETED
         scan_run.completed_at = datetime.now(timezone.utc)
@@ -145,5 +150,6 @@ def run_scan(
     print(f"Findings: {len(graph_result.findings)}", file=stdout)
     print(f"Graph nodes: {len(graph_result.codebase_map.nodes)}", file=stdout)
     print(f"Graph edges: {len(graph_result.codebase_map.edges)}", file=stdout)
-    print("Next: source/sink taxonomy and path finder", file=stdout)
+    print(f"Graph paths: {len(graph_path_report.paths)}", file=stdout)
+    print("Next: control model and permit rules", file=stdout)
     return 0

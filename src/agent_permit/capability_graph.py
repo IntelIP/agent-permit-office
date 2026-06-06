@@ -172,6 +172,24 @@ def _add_mcp_server(
             GraphEdgeKind.LAUNCHES,
             [server_id],
         )
+    if url:
+        endpoint_id = _network_endpoint_node_id(url)
+        state.add_node(
+            GraphNode(
+                id=endpoint_id,
+                kind=GraphNodeKind.NETWORK_ENDPOINT,
+                label=url,
+                source_fact_ids=[server_id],
+                metadata={"url": url},
+            )
+        )
+        _add_edge(
+            state,
+            server_id,
+            endpoint_id,
+            GraphEdgeKind.SENDS_TO,
+            [server_id],
+        )
 
 
 def _add_credential_ref(
@@ -335,7 +353,7 @@ def _add_edge(
     kind: GraphEdgeKind,
     source_fact_ids: list[str],
 ) -> None:
-    edge_id = f"edge:{source_id}:{kind}:{target_id}"
+    edge_id = f"edge:{source_id}:{kind.value}:{target_id}"
     state.add_edge(
         GraphEdge(
             id=edge_id,
@@ -361,6 +379,10 @@ def _credential_node_id(name: str) -> str:
 
 def _workflow_node_id(path: str) -> str:
     return f"workflow:{path}"
+
+
+def _network_endpoint_node_id(url: str) -> str:
+    return f"network-endpoint:{url}"
 
 
 def _path_from_prefixed_id(value: str, prefix: str) -> str | None:
