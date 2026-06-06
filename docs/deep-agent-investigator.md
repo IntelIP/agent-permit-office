@@ -56,9 +56,11 @@ Output:
 
 ```text
 tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate/agent-investigation.md
+tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate/openrouter-usage.json
 ```
 
 The `investigate` command defaults to the live Deep Agent path. Without `OPENROUTER_API_KEY`, it fails before a report is written.
+`openrouter-usage.json` is written when LangChain exposes usage metadata from the provider response.
 
 Override with the explicit default alias:
 
@@ -82,6 +84,7 @@ The integration uses `deepagents.create_deep_agent` with:
 - filesystem permissions that deny built-in read/write access to `/**`
 - custom evidence tools only
 - specialist subagent specs for MCP, prompt, policy, and citation review
+- OpenRouter prompt caching, response caching, and sticky session routing enabled by default
 
 ## Offline Deterministic Fallback
 

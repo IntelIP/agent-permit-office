@@ -78,6 +78,36 @@ uv run --extra deep-agent agent-permit investigate \
 
 Both model strings route through OpenRouter's OpenAI-compatible chat endpoint.
 
+## Cost Controls
+
+OpenRouter cost controls are enabled by default for live Deep Agent runs:
+
+- top-level `cache_control: {"type": "ephemeral"}` for Claude prompt caching
+- `session_id` based on the scan run ID for sticky provider routing
+- `X-OpenRouter-Cache: true` response cache for exact reruns
+- `X-OpenRouter-Cache-TTL: 300` short default response-cache TTL
+- `X-OpenRouter-Experimental-Metadata: enabled` for routing metadata
+- `include_response_headers=True` so LangChain can surface generation metadata when available
+
+Environment toggles:
+
+```bash
+OPENROUTER_PROMPT_CACHE=true
+OPENROUTER_PROMPT_CACHE_TTL=
+OPENROUTER_RESPONSE_CACHE=true
+OPENROUTER_RESPONSE_CACHE_TTL_SECONDS=300
+```
+
+Leave `OPENROUTER_PROMPT_CACHE_TTL` empty for the provider default 5-minute prompt cache. Set it to `1h` only for longer demo/review sessions where the higher cache-write price is worth it.
+
+When LangChain exposes token usage metadata, the CLI writes:
+
+```text
+.agent-permit/runs/<run_id>/openrouter-usage.json
+```
+
+The file tracks model call count, input/output/total tokens, cached tokens, cache-write tokens, cache hit ratio, and generation IDs.
+
 ## Notes
 
 The verified OpenRouter model IDs are:
@@ -92,3 +122,5 @@ Do not use `anthropic/claude-4.6-sonnet`; the OpenRouter model list currently ex
 - OpenRouter Claude Sonnet 4.6: https://openrouter.ai/anthropic/claude-sonnet-4.6
 - OpenRouter GPT-5.5: https://openrouter.ai/openai/gpt-5.5
 - OpenRouter chat completion API: https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request
+- OpenRouter prompt caching: https://openrouter.ai/docs/guides/best-practices/prompt-caching
+- OpenRouter response caching: https://openrouter.ai/docs/guides/features/response-caching

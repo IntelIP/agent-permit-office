@@ -22,7 +22,7 @@ from agent_permit.baseline import (
     write_finding_diff_artifacts,
 )
 from agent_permit.capability_graph import CapabilityGraphBuilder
-from agent_permit.deep_agent import invoke_deep_agent_investigator
+from agent_permit.deep_agent import invoke_deep_agent_investigator_with_metadata
 from agent_permit.evidence_context import EvidenceContext
 from agent_permit.evals import (
     DEFAULT_PHOENIX_BASE_URL,
@@ -633,14 +633,17 @@ def run_investigate(
 
     try:
         if selected_model:
-            report_markdown = invoke_deep_agent_investigator(
+            investigation_result = invoke_deep_agent_investigator_with_metadata(
                 context,
                 model=selected_model,
                 enable_langsmith=enable_langsmith,
                 enable_phoenix=enable_phoenix,
             )
+            report_markdown = investigation_result.report_markdown
+            usage_summary = investigation_result.usage_summary
         else:
             report_markdown = build_investigation_markdown(context)
+            usage_summary = None
     except RuntimeError as exc:
         print(f"error: {exc}", file=stderr)
         return 2
@@ -652,8 +655,15 @@ def run_investigate(
     output_path = output_path or (context.artifact_dir / "agent-investigation.md")
     try:
         output_path.write_text(report_markdown, encoding="utf-8")
+        usage_path = None
+        if usage_summary is not None:
+            usage_path = context.artifact_dir / "openrouter-usage.json"
+            usage_path.write_text(
+                json.dumps(usage_summary, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
     except OSError as exc:
-        print(f"error: failed to write investigation report: {exc}", file=stderr)
+        print(f"error: failed to write investigation artifacts: {exc}", file=stderr)
         return 1
 
     print("Agent Permit Office", file=stdout)
@@ -665,6 +675,13 @@ def run_investigate(
     print(f"Citation check: {'passed' if critic_result.supported else 'failed'}", file=stdout)
     if selected_model:
         print(f"Deep Agent model: {selected_model}", file=stdout)
+    if usage_summary is not None and usage_path is not None:
+        print(f"OpenRouter usage: {usage_path}", file=stdout)
+        print(
+            "OpenRouter cached tokens: "
+            f"{usage_summary.get('cached_tokens', 0)}",
+            file=stdout,
+        )
     if enable_langsmith:
         print("LangSmith tracing: requested", file=stdout)
     if enable_phoenix and selected_model:

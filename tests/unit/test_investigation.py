@@ -11,6 +11,7 @@ from agent_permit.deep_agent import (
     DEEP_AGENT_SYSTEM_PROMPT,
     build_evidence_tools,
     build_subagent_specs,
+    summarize_openrouter_usage,
 )
 from agent_permit.evidence_context import EvidenceContext
 from agent_permit.investigation import (
@@ -215,6 +216,33 @@ def test_typed_evidence_tools_return_bounded_json(tmp_path) -> None:
         "title": "Stdio MCP server receives credential references",
         "default_severity": "high",
         "category": "credential_scope",
+    }
+
+
+def test_openrouter_usage_summary_tracks_cache_metrics() -> None:
+    class FakeMessage:
+        usage_metadata = {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_token_details": {
+                "cached_tokens": 750,
+                "cache_write_tokens": 100,
+            },
+        }
+        response_metadata = {"id": "gen-test"}
+
+    summary = summarize_openrouter_usage({"messages": [FakeMessage()]})
+
+    assert summary == {
+        "model_calls": 1,
+        "input_tokens": 1000,
+        "output_tokens": 200,
+        "total_tokens": 1200,
+        "cached_tokens": 750,
+        "cache_write_tokens": 100,
+        "generation_ids": ["gen-test"],
+        "cache_hit_ratio": 0.75,
     }
 
 

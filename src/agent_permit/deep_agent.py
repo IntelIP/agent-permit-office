@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from functools import wraps
 import json
 from typing import Any
@@ -10,6 +11,12 @@ from agent_permit import observability
 from agent_permit.evidence_context import EvidenceContext
 from agent_permit.investigation import critique_investigation_report
 from agent_permit.model_provider import resolve_deep_agent_model
+
+
+@dataclass(frozen=True)
+class DeepAgentInvestigationResult:
+    report_markdown: str
+    usage_summary: dict[str, Any] | None
 
 
 DEEP_AGENT_SYSTEM_PROMPT = """You are Agent Permit Office's evidence-bound investigator.
@@ -234,7 +241,7 @@ def create_deep_agent_investigator(
         ) from exc
 
     return create_deep_agent(
-        model=resolve_deep_agent_model(model),
+        model=resolve_deep_agent_model(model, session_id=context.scan_run_id),
         tools=build_evidence_tools(context),
         system_prompt=DEEP_AGENT_SYSTEM_PROMPT,
         subagents=build_subagent_specs(context),
@@ -256,6 +263,21 @@ def invoke_deep_agent_investigator(
     enable_langsmith: bool = False,
     enable_phoenix: bool = False,
 ) -> str:
+    return invoke_deep_agent_investigator_with_metadata(
+        context,
+        model=model,
+        enable_langsmith=enable_langsmith,
+        enable_phoenix=enable_phoenix,
+    ).report_markdown
+
+
+def invoke_deep_agent_investigator_with_metadata(
+    context: EvidenceContext,
+    *,
+    model: str,
+    enable_langsmith: bool = False,
+    enable_phoenix: bool = False,
+) -> DeepAgentInvestigationResult:
     agent = create_deep_agent_investigator(
         context,
         model=model,
@@ -280,7 +302,83 @@ def invoke_deep_agent_investigator(
             "tags": ["agent-permit-office", "deep-agent-investigator"],
         },
     )
-    return _extract_last_message_text(result)
+    return DeepAgentInvestigationResult(
+        report_markdown=_extract_last_message_text(result),
+        usage_summary=summarize_openrouter_usage(result),
+    )
+
+
+def summarize_openrouter_usage(result: Any) -> dict[str, Any] | None:
+    messages = result.get("messages", []) if isinstance(result, dict) else []
+    summary: dict[str, Any] = {
+        "model_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "generation_ids": [],
+    }
+    for message in messages:
+        usage_metadata = _mapping_from_message(message, "usage_metadata")
+        response_metadata = _mapping_from_message(message, "response_metadata")
+        token_usage = _mapping_from_value(
+            response_metadata.get("token_usage")
+            or response_metadata.get("usage")
+        )
+        usage = usage_metadata or token_usage
+        if not usage:
+            continue
+        summary["model_calls"] += 1
+        input_tokens = _usage_int(
+            usage,
+            "input_tokens",
+            "prompt_tokens",
+        )
+        output_tokens = _usage_int(
+            usage,
+            "output_tokens",
+            "completion_tokens",
+        )
+        total_tokens = _usage_int(usage, "total_tokens") or (
+            input_tokens + output_tokens
+        )
+        summary["input_tokens"] += input_tokens
+        summary["output_tokens"] += output_tokens
+        summary["total_tokens"] += total_tokens
+        details = _mapping_from_value(
+            usage.get("input_token_details")
+            or usage.get("prompt_tokens_details")
+            or token_usage.get("prompt_tokens_details")
+        )
+        summary["cached_tokens"] += _usage_int(
+            details,
+            "cached_tokens",
+            "cache_read",
+            "cache_read_tokens",
+        )
+        summary["cache_write_tokens"] += _usage_int(
+            details,
+            "cache_write_tokens",
+            "cache_write",
+        )
+        generation_id = (
+            response_metadata.get("id")
+            or response_metadata.get("generation_id")
+            or getattr(message, "id", None)
+        )
+        if generation_id:
+            summary["generation_ids"].append(str(generation_id))
+
+    if summary["model_calls"] == 0:
+        return None
+    summary["cache_hit_ratio"] = (
+        round(summary["cached_tokens"] / summary["input_tokens"], 4)
+        if summary["input_tokens"]
+        else 0.0
+    )
+    summary["generation_ids"] = sorted(set(summary["generation_ids"]))
+    return summary
 
 
 def _extract_last_message_text(result: Any) -> str:
@@ -296,3 +394,22 @@ def _extract_last_message_text(result: Any) -> str:
 
 def _json_text(payload: Any) -> str:
     return json.dumps(payload, indent=2, sort_keys=True)
+
+
+def _mapping_from_message(message: Any, attribute: str) -> Mapping[str, Any]:
+    value = getattr(message, attribute, None)
+    if value is None and isinstance(message, dict):
+        value = message.get(attribute)
+    return _mapping_from_value(value)
+
+
+def _mapping_from_value(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _usage_int(mapping: Mapping[str, Any], *keys: str) -> int:
+    for key in keys:
+        value = mapping.get(key)
+        if isinstance(value, int | float):
+            return int(value)
+    return 0
