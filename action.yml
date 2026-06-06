@@ -1,0 +1,101 @@
+name: Agent Permit Office
+description: Scan a repository before AI agents receive tools, credentials, memory, or production access.
+
+inputs:
+  path:
+    description: Repository path to scan, relative to GITHUB_WORKSPACE unless absolute.
+    required: false
+    default: "."
+  run-id:
+    description: Optional deterministic scan run ID.
+    required: false
+    default: ""
+  exclude:
+    description: Newline-separated gitignore-style patterns to exclude from the scan.
+    required: false
+    default: ""
+  upload-artifacts:
+    description: Upload the generated .agent-permit run directory as a workflow artifact.
+    required: false
+    default: "true"
+  artifact-name:
+    description: Workflow artifact name for scan output.
+    required: false
+    default: agent-permit-office
+
+outputs:
+  exit_code:
+    description: Exit code returned by agent-permit scan.
+    value: ${{ steps.scan.outputs.exit_code }}
+  artifact_dir:
+    description: Absolute path to the generated run artifact directory.
+    value: ${{ steps.scan.outputs.artifact_dir }}
+  summary_path:
+    description: Absolute path to summary.md.
+    value: ${{ steps.scan.outputs.summary_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v6
+
+    - name: Run Agent Permit Office
+      id: scan
+      shell: bash
+      env:
+        AGENT_PERMIT_PATH: ${{ inputs.path }}
+        AGENT_PERMIT_RUN_ID: ${{ inputs.run-id }}
+        AGENT_PERMIT_EXCLUDE: ${{ inputs.exclude }}
+      run: |
+        set -euo pipefail
+
+        target_path="$AGENT_PERMIT_PATH"
+        if [[ "$target_path" != /* ]]; then
+          target_path="$GITHUB_WORKSPACE/$target_path"
+        fi
+
+        args=(scan "$target_path" --ci)
+        if [[ -n "$AGENT_PERMIT_RUN_ID" ]]; then
+          args+=(--run-id "$AGENT_PERMIT_RUN_ID")
+        fi
+
+        while IFS= read -r pattern; do
+          trimmed="$(echo "$pattern" | xargs)"
+          if [[ -n "$trimmed" && "$trimmed" != \#* ]]; then
+            args+=(--exclude "$trimmed")
+          fi
+        done <<< "$AGENT_PERMIT_EXCLUDE"
+
+        output_file="$RUNNER_TEMP/agent-permit-output.txt"
+        set +e
+        uv run --frozen --directory "${{ github.action_path }}" agent-permit "${args[@]}" 2>&1 | tee "$output_file"
+        scan_status=${PIPESTATUS[0]}
+        set -e
+
+        artifact_dir="$(awk -F'Artifacts: ' '/^Artifacts: /{print $2}' "$output_file" | tail -n1)"
+        summary_path="$(awk -F'Summary: ' '/^Summary: /{print $2}' "$output_file" | tail -n1)"
+
+        {
+          echo "exit_code=$scan_status"
+          echo "artifact_dir=$artifact_dir"
+          echo "summary_path=$summary_path"
+        } >> "$GITHUB_OUTPUT"
+
+        if [[ -n "$summary_path" && -f "$summary_path" ]]; then
+          cat "$summary_path" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Upload scan artifacts
+      if: ${{ inputs.upload-artifacts == 'true' && steps.scan.outputs.artifact_dir != '' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.scan.outputs.artifact_dir }}
+        if-no-files-found: error
+
+    - name: Enforce permit status
+      shell: bash
+      run: |
+        exit_code="${{ steps.scan.outputs.exit_code }}"
+        exit "${exit_code:-1}"

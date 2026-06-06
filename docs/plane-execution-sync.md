@@ -136,11 +136,11 @@ Sprint 5 backlog items:
 
 Sprint 6 backlog items:
 
-- `APO-25`: Implement CI mode with blocking exit codes
-- `APO-26`: Generate PR-friendly Markdown summary
+- `APO-25`: Implement CI mode with blocking exit codes - done
+- `APO-26`: Generate PR-friendly Markdown summary - done
 - `APO-27`: Decide SARIF support for MVP - done, defer first-class SARIF until GitHub Action packaging and stable rule IDs exist.
-- `APO-28`: Create public-ready demo repo or demo fixture
-- `APO-29`: Write install and first-scan setup docs
+- `APO-28`: Create public-ready demo repo or demo fixture - done, demo uses safe and risky fixtures.
+- `APO-29`: Write install and first-scan setup docs - done, README plus GitHub Action and demo docs.
 
 Deferred follow-up:
 

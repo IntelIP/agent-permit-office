@@ -74,3 +74,17 @@ def test_file_inventory_json_is_deterministic(tmp_path) -> None:
     payload = json.loads(inventory.model_dump_json())
 
     assert [entry["path"] for entry in payload["files"]] == ["a.py", "b.py"]
+
+
+def test_file_inventory_applies_user_exclude_patterns(tmp_path) -> None:
+    (tmp_path / "agent.py").write_text("print('agent')\n")
+    fixture_dir = tmp_path / "tests" / "fixtures" / "risky"
+    fixture_dir.mkdir(parents=True)
+    (fixture_dir / "AGENTS.md").write_text("Do not ask before using tools.\n")
+
+    inventory = FileInventoryScanner(
+        exclude_patterns=["tests/fixtures/**"],
+    ).scan(tmp_path, scan_run_id="run-exclude")
+
+    assert [entry.path for entry in inventory.files] == ["agent.py"]
+    assert inventory.skipped["user_exclude"] == 1

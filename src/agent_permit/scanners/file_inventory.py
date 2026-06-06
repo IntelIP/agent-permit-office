@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Sequence
 import hashlib
 import os
 from pathlib import Path
@@ -85,9 +86,20 @@ class FileInventoryScanner:
         self,
         *,
         ignored_dir_names: frozenset[str] = DEFAULT_IGNORED_DIR_NAMES,
+        exclude_patterns: Sequence[str] | None = None,
         max_file_bytes: int = 1_048_576,
     ) -> None:
         self.ignored_dir_names = ignored_dir_names
+        self.exclude_patterns = tuple(
+            pattern.strip()
+            for pattern in (exclude_patterns or [])
+            if pattern.strip() and not pattern.strip().startswith("#")
+        )
+        self.exclude_spec = (
+            PathSpec.from_lines("gitignore", self.exclude_patterns)
+            if self.exclude_patterns
+            else None
+        )
         self.max_file_bytes = max_file_bytes
 
     def scan(self, root_path: Path, *, scan_run_id: str) -> FileInventory:
@@ -109,6 +121,9 @@ class FileInventoryScanner:
             for filename in sorted(filenames):
                 file_path = current_dir / filename
                 rel_path = _relative_posix(root_path, file_path)
+                if self._is_excluded_by_user(rel_path):
+                    skipped["user_exclude"] += 1
+                    continue
                 if self._is_ignored_by_gitignore(rel_path, gitignore_spec):
                     skipped["gitignore"] += 1
                     continue
@@ -143,6 +158,9 @@ class FileInventoryScanner:
                 continue
 
             rel_path = _relative_posix(root_path, current_dir / dirname)
+            if self._is_excluded_by_user(f"{rel_path}/"):
+                skipped["user_exclude"] += 1
+                continue
             if self._is_ignored_by_gitignore(f"{rel_path}/", gitignore_spec):
                 skipped["gitignore"] += 1
                 continue
@@ -203,6 +221,11 @@ class FileInventoryScanner:
         if gitignore_spec is None:
             return False
         return gitignore_spec.match_file(rel_path)
+
+    def _is_excluded_by_user(self, rel_path: str) -> bool:
+        if self.exclude_spec is None:
+            return False
+        return self.exclude_spec.match_file(rel_path)
 
 
 def _classify_file(rel_path: str, filename: str) -> FileKind:

@@ -5,6 +5,7 @@ Agent Permit Office is an investigation-stage project for approving AI agents be
 Current implementation:
 
 - Python `uv` package with `agent-permit` CLI.
+- Static scan only; it does not execute agent code, MCP servers, or external tools.
 - `agent-permit scan <path>` creates `.agent-permit/runs/<run_id>/`.
 - The scan writes metadata-only `file-inventory.json` with file classifications, hashes, and skip counts.
 - MCP config scan writes `agent-bom.json` and `raw-findings.json` for `.mcp.json`, `mcp.json`, and `claude_desktop_config.json`.
@@ -20,6 +21,7 @@ Current implementation:
 Run locally:
 
 ```bash
+uv sync
 uv run agent-permit scan .
 ```
 
@@ -27,6 +29,12 @@ Run in CI:
 
 ```bash
 uv run agent-permit scan . --ci
+```
+
+Run with an exclusion:
+
+```bash
+uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
 ```
 
 Current work:
@@ -39,6 +47,8 @@ Current work:
 - [Deterministic Scanners and Model Plan](docs/scanner-and-model-plan.md)
 - [Static Analysis and Agent Security Research](docs/research/static-analysis-agent-security-research.md)
 - [SARIF MVP Decision](docs/research/sarif-mvp-decision.md)
+- [GitHub Action](docs/github-action.md)
+- [Demo](docs/demo.md)
 - [End-to-End System Diagram](docs/system-diagram-end-to-end.md)
 - [Project Management and Sprint Plan](docs/project-management-sprint-plan.md)
 - [Plane Execution Sync](docs/plane-execution-sync.md)

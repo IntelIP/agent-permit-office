@@ -50,6 +50,15 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="exit non-zero when permit status requires review or is blocked",
     )
+    scan_parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help=(
+            "gitignore-style pattern to skip during inventory; repeat for "
+            "multiple patterns"
+        ),
+    )
     return parser
 
 
@@ -65,7 +74,14 @@ def main(
     args = parser.parse_args(argv)
 
     if args.command == "scan":
-        return run_scan(args.path, args.run_id, ci=args.ci, stdout=stdout, stderr=stderr)
+        return run_scan(
+            args.path,
+            args.run_id,
+            ci=args.ci,
+            exclude_patterns=args.exclude,
+            stdout=stdout,
+            stderr=stderr,
+        )
 
     parser.print_help(file=stdout)
     return 0
@@ -76,6 +92,7 @@ def run_scan(
     run_id: str | None = None,
     *,
     ci: bool = False,
+    exclude_patterns: Sequence[str] | None = None,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
@@ -91,9 +108,14 @@ def run_scan(
         scan_run = artifact_writer.create_run(
             target_path,
             run_id=run_id,
-            scan_options={"mode": "deterministic-scanners"},
+            scan_options={
+                "mode": "deterministic-scanners",
+                "exclude_patterns": list(exclude_patterns or []),
+            },
         )
-        inventory = FileInventoryScanner().scan(target_path, scan_run_id=scan_run.id)
+        inventory = FileInventoryScanner(
+            exclude_patterns=exclude_patterns,
+        ).scan(target_path, scan_run_id=scan_run.id)
         artifact_writer.write_file_inventory(scan_run, inventory)
         mcp_result = McpConfigScanner().scan(
             target_path,
@@ -184,7 +206,7 @@ def run_scan(
     print(f"Summary: {scan_run.artifact_dir / 'summary.md'}", file=stdout)
     if ci:
         print("CI mode: on", file=stdout)
-    print("Next: GitHub Action packaging and SARIF decision", file=stdout)
+    print("Next: review summary.md and risk-report.md", file=stdout)
     if ci and permit_evaluation.permit.status in {"blocked", "needs_review"}:
         return 1
     return 0

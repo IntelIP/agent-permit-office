@@ -312,8 +312,8 @@ Backlog:
 | CI mode | `agent-permit scan . --ci`. | Done: exits non-zero for `needs_review` and `blocked`. |
 | Markdown summary | PR-friendly output. | Done: `summary.md` includes status, counts, top findings, and artifact list. |
 | SARIF research spike | Decide whether SARIF belongs in MVP. | Done: defer first-class SARIF from MVP until GitHub Action packaging and stable rule IDs exist. |
-| Demo repo | Public-ready example showing value. | Safe and risky paths visible. |
-| Setup docs | Clear install/run instructions. | New user can run local scan. |
+| Demo repo | Public-ready example showing value. | Done: `docs/demo.md` uses safe and risky fixtures to show approved and blocked paths. |
+| Setup docs | Clear install/run instructions. | Done: README plus `docs/github-action.md` document local, CI, exclusions, artifacts, and Action use. |
 
 ## Release Criteria For MVP
 

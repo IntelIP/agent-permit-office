@@ -1,0 +1,28 @@
+name: Agent Permit Office
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run Agent Permit Office
+        uses: ./
+        with:
+          path: .
+          exclude: |
+            tests/fixtures/**
+          artifact-name: agent-permit-office-${{ github.run_id }}
