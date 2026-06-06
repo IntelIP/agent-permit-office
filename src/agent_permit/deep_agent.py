@@ -182,7 +182,17 @@ def create_deep_agent_investigator(
     *,
     model: str,
     enable_langsmith: bool = False,
+    enable_phoenix: bool = False,
 ) -> Any:
+    if enable_phoenix:
+        from agent_permit.observability import configure_phoenix_tracing
+
+        configure_phoenix_tracing()
+
+    if enable_langsmith:
+        os.environ.setdefault("LANGSMITH_TRACING", "true")
+        os.environ.setdefault("LANGSMITH_PROJECT", "agent-permit-office")
+
     try:
         from deepagents import FilesystemPermission, create_deep_agent
         from deepagents.backends import StateBackend
@@ -191,10 +201,6 @@ def create_deep_agent_investigator(
             "Deep Agent investigator requires the optional extra: "
             "uv run --extra deep-agent agent-permit investigate ..."
         ) from exc
-
-    if enable_langsmith:
-        os.environ.setdefault("LANGSMITH_TRACING", "true")
-        os.environ.setdefault("LANGSMITH_PROJECT", "agent-permit-office")
 
     return create_deep_agent(
         model=model,
@@ -217,11 +223,13 @@ def invoke_deep_agent_investigator(
     *,
     model: str,
     enable_langsmith: bool = False,
+    enable_phoenix: bool = False,
 ) -> str:
     agent = create_deep_agent_investigator(
         context,
         model=model,
         enable_langsmith=enable_langsmith,
+        enable_phoenix=enable_phoenix,
     )
     result = agent.invoke(
         {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import sys
 from typing import TextIO
@@ -12,6 +13,11 @@ from agent_permit.artifacts import RunArtifactWriter
 from agent_permit.capability_graph import CapabilityGraphBuilder
 from agent_permit.deep_agent import invoke_deep_agent_investigator
 from agent_permit.evidence_context import EvidenceContext
+from agent_permit.evals import (
+    EVAL_REPORT_FILE,
+    EVAL_RESULTS_FILE,
+    run_fixture_eval_suite,
+)
 from agent_permit.investigation import (
     build_investigation_markdown,
     critique_investigation_report,
@@ -92,6 +98,31 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="enable LangSmith tracing for a live Deep Agent run",
     )
+    investigate_parser.add_argument(
+        "--phoenix",
+        action="store_true",
+        help="enable Phoenix/OpenTelemetry tracing for a live Deep Agent run",
+    )
+    eval_parser = subparsers.add_parser(
+        "eval",
+        help="run deterministic fixture evals and write local eval artifacts",
+    )
+    eval_parser.add_argument(
+        "fixture_root",
+        nargs="?",
+        type=Path,
+        default=Path("tests/fixtures"),
+        help="fixture root containing */fixture.json manifests",
+    )
+    eval_parser.add_argument(
+        "--run-id",
+        help="explicit eval run ID for deterministic tests or replay",
+    )
+    eval_parser.add_argument(
+        "--output",
+        type=Path,
+        help="output directory; defaults to .agent-permit/evals/<run_id>",
+    )
     rules_parser = subparsers.add_parser(
         "rules",
         help="list deterministic scanner rules",
@@ -129,6 +160,15 @@ def main(
             output_path=args.output,
             model=args.model,
             enable_langsmith=args.langsmith,
+            enable_phoenix=args.phoenix,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    if args.command == "eval":
+        return run_eval(
+            args.fixture_root,
+            eval_run_id=args.run_id,
+            output_dir=args.output,
             stdout=stdout,
             stderr=stderr,
         )
@@ -270,6 +310,7 @@ def run_investigate(
     output_path: Path | None = None,
     model: str | None = None,
     enable_langsmith: bool = False,
+    enable_phoenix: bool = False,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
@@ -285,6 +326,7 @@ def run_investigate(
                 context,
                 model=model,
                 enable_langsmith=enable_langsmith,
+                enable_phoenix=enable_phoenix,
             )
         else:
             report_markdown = build_investigation_markdown(context)
@@ -314,6 +356,10 @@ def run_investigate(
         print(f"Deep Agent model: {model}", file=stdout)
     if enable_langsmith:
         print("LangSmith tracing: requested", file=stdout)
+    if enable_phoenix and model:
+        print("Phoenix tracing: requested", file=stdout)
+    elif enable_phoenix:
+        print("Phoenix tracing: skipped in deterministic mode", file=stdout)
     if not critic_result.supported:
         for citation in critic_result.unsupported_citations:
             print(f"Unsupported citation: {citation}", file=stderr)
@@ -323,6 +369,44 @@ def run_investigate(
             print(f"Missing rule citation: {rule_id}", file=stderr)
         return 1
     return 0
+
+
+def run_eval(
+    fixture_root: Path,
+    *,
+    eval_run_id: str | None = None,
+    output_dir: Path | None = None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if not fixture_root.exists():
+        print(f"error: fixture root does not exist: {fixture_root}", file=stderr)
+        return 2
+    if not fixture_root.is_dir():
+        print(f"error: fixture root must be a directory: {fixture_root}", file=stderr)
+        return 2
+
+    try:
+        eval_run = run_fixture_eval_suite(
+            fixture_root,
+            eval_run_id=eval_run_id,
+            output_dir=output_dir,
+        )
+    except (OSError, ValueError, RuntimeError, KeyError, json.JSONDecodeError) as exc:
+        print(f"error: eval failed: {exc}", file=stderr)
+        return 1
+
+    passed = sum(1 for result in eval_run.results if result.passed)
+    total = len(eval_run.results)
+    print("Agent Permit Office", file=stdout)
+    print("Status: eval_complete", file=stdout)
+    print(f"Eval run: {eval_run.eval_run_id}", file=stdout)
+    print(f"Fixture root: {eval_run.fixture_root}", file=stdout)
+    print(f"Output: {eval_run.output_dir}", file=stdout)
+    print(f"Cases: {passed}/{total} passed", file=stdout)
+    print(f"Results: {eval_run.output_dir / EVAL_RESULTS_FILE}", file=stdout)
+    print(f"Report: {eval_run.output_dir / EVAL_REPORT_FILE}", file=stdout)
+    return 0 if eval_run.passed else 1
 
 
 def run_rules(scanner: str | None, *, stdout: TextIO) -> int:

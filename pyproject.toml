@@ -22,6 +22,11 @@ deep-agent = [
   "deepagents>=0.6.3",
   "langchain-openai>=1.1.0",
 ]
+phoenix = [
+  "arize-phoenix>=12.0",
+  "arize-phoenix-otel>=0.16.0",
+  "openinference-instrumentation-langchain>=0.1.54",
+]
 
 [project.scripts]
 agent-permit = "agent_permit.cli:main"

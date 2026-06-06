@@ -1,7 +1,9 @@
 {
   "id": "risky-mcp-agent",
   "expected_permit_status": "needs_review",
-  "expected_findings": ["APO-MCP-001"],
+  "expected_findings": [
+    "mcp-stdio-credential-ref",
+    "mcp-unpinned-package-command"
+  ],
   "notes": "Unpinned stdio MCP receives a credential reference."
 }
-

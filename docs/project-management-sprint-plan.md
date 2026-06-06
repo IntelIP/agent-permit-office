@@ -359,12 +359,28 @@ Backlog:
 | Report UX | Top findings show relevant CI context. | Done: summary and risk report include event/job/scope/secret notes. |
 | Public repo revalidation | Confirm context on public repos. | Done: `validation5-*` runs documented in `docs/ci-context-hardening.md`. |
 
+## Sprint 10: Phoenix Observability And Evals
+
+Goal:
+
+- make agent behavior measurable without requiring hosted tracing
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Phoenix tracing | Live Deep Agent runs can emit OpenTelemetry traces to local Phoenix. | Done: `investigate --phoenix` initializes Phoenix before Deep Agent creation. |
+| Local eval harness | Deterministic fixture regression suite writes reviewable artifacts. | Done: `agent-permit eval tests/fixtures` writes `eval-results.json` and `eval-report.md`. |
+| Fixture truth refresh | Fixture manifests use stable deterministic rule IDs. | Done: manifests compare exact scanner rule IDs. |
+| Observability docs | Operator can run local Phoenix and evals. | Done: `docs/phoenix-observability-evaluation.md`. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
 
 - local CLI scans a real repo
 - at least three risky fixture repos are detected correctly
+- fixture eval suite passes locally
 - no raw secret values are emitted
 - findings have file and line evidence
 - permit status is deterministic

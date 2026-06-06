@@ -158,6 +158,10 @@ Sprint 9 CI context items:
 
 - `APO-47`: Add workflow event/job/scope context to CI findings - done
 
+Sprint 10 observability items:
+
+- `APO-48`: Add Phoenix observability and local eval harness - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

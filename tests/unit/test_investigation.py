@@ -81,6 +81,22 @@ def test_investigate_cli_writes_report_without_live_model(tmp_path) -> None:
     assert "ci-pr-target-write-token" in report_path.read_text()
 
 
+def test_investigate_cli_skips_phoenix_for_deterministic_report(tmp_path) -> None:
+    artifact_dir = _scan_fixture(tmp_path, "risky-ci-agent", "cli-phoenix-skip")
+    stdout = StringIO()
+    stderr = StringIO()
+
+    exit_code = main(
+        ["investigate", str(artifact_dir), "--phoenix"],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert exit_code == 0
+    assert stderr.getvalue() == ""
+    assert "Phoenix tracing: skipped in deterministic mode" in stdout.getvalue()
+
+
 def test_deep_agent_tools_and_subagents_are_artifact_bounded(tmp_path) -> None:
     artifact_dir = _scan_fixture(tmp_path, "risky-mcp-agent", "deep-agent-spec")
     context = EvidenceContext.load(artifact_dir)

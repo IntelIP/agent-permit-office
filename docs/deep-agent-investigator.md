@@ -71,6 +71,27 @@ The integration uses `deepagents.create_deep_agent` with:
 - custom evidence tools only
 - specialist subagent specs for MCP, prompt, policy, and citation review
 
+## Optional Phoenix Tracing
+
+Phoenix is the preferred local observability path for now.
+
+Start the local Phoenix server:
+
+```bash
+uv run --extra phoenix python -m phoenix.server.main serve
+```
+
+Then trace a live Deep Agent run:
+
+```bash
+uv run --extra deep-agent --extra phoenix agent-permit investigate \
+  tests/fixtures/risky-ci-agent/.agent-permit/runs/demo-investigate \
+  --model openai:gpt-5.4 \
+  --phoenix
+```
+
+Tracing is off by default. The `--phoenix` flag initializes Phoenix/OpenTelemetry before the Deep Agent runtime is created.
+
 ## Optional LangSmith Tracing
 
 Set environment variables:
@@ -112,4 +133,6 @@ Deep Agents are useful here because they provide planning, context management, a
 - [Deep Agents `create_deep_agent` reference](https://reference.langchain.com/python/deepagents/graph/create_deep_agent)
 - [Deep Agents backends](https://docs.langchain.com/oss/python/deepagents/backends)
 - [Deep Agents permissions](https://docs.langchain.com/oss/python/deepagents/permissions)
+- [Phoenix OTEL setup](https://www.arize.com/docs/phoenix/tracing/how-to-tracing/setup-tracing/setup-using-phoenix-otel)
+- [OpenInference LangChain instrumentation](https://arize-ai.github.io/openinference/python/instrumentation/openinference-instrumentation-langchain/)
 - [LangSmith tracing with LangChain](https://docs.langchain.com/langsmith/trace-with-langchain)

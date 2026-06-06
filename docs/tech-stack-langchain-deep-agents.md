@@ -6,6 +6,8 @@ Research date: 2026-06-06
 
 This note defines the technical stack for Agent Permit Office and decides which LangChain/Deep Agents/LangSmith features should be enabled first.
 
+Sprint 10 update: Phoenix is now the preferred first observability layer. LangSmith remains documented because it is LangChain-native, but early product practice should use Phoenix/OpenTelemetry for local traces and keep deterministic evals as source of truth.
+
 ## Short Answer
 
 Agent Permit Office should start as a Python CLI with deterministic scanners. Deep Agents should be added as an investigation coordinator after scanners produce reliable evidence.
@@ -558,4 +560,3 @@ Turn off features that let the agent act before the product can explain its own 
 - async subagents
 - persistent memory
 - auto-remediation
-

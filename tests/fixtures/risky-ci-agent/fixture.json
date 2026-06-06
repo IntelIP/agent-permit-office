@@ -1,7 +1,11 @@
 {
   "id": "risky-ci-agent",
   "expected_permit_status": "blocked",
-  "expected_findings": ["APO-CI-001", "APO-CI-002"],
+  "expected_findings": [
+    "ci-pr-target-write-token",
+    "ci-pull-request-target",
+    "ci-secret-reference",
+    "ci-write-all-permissions"
+  ],
   "notes": "CI runs agent in pull_request_target with write permissions."
 }
-
