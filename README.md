@@ -7,6 +7,7 @@ Current implementation:
 - Python `uv` package with `agent-permit` CLI.
 - `agent-permit scan <path>` creates `.agent-permit/runs/<run_id>/`.
 - The scan writes metadata-only `file-inventory.json` with file classifications, hashes, and skip counts.
+- MCP config scan writes `agent-bom.json` and `raw-findings.json` for `.mcp.json`, `mcp.json`, and `claude_desktop_config.json`.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
 Current work:

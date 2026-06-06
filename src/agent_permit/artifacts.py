@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TypeAlias
 
-from agent_permit.models import AgentBom, CodebaseMap, FileInventory, ScanRun
+from agent_permit.models import AgentBom, CodebaseMap, FileInventory, Finding, ScanRun
 
 JsonCompatible: TypeAlias = (
     str | int | float | bool | None | list["JsonCompatible"] | dict[str, "JsonCompatible"]
@@ -110,6 +110,27 @@ class RunArtifactWriter:
         self._write_json(
             scan_run.artifact_dir / "file-inventory.json",
             inventory.model_dump(mode="json"),
+        )
+
+    def write_agent_bom(self, scan_run: ScanRun, agent_bom: AgentBom) -> None:
+        self._write_json(
+            scan_run.artifact_dir / "agent-bom.json",
+            agent_bom.model_dump(mode="json"),
+        )
+
+    def write_raw_findings(
+        self,
+        scan_run: ScanRun,
+        findings: list[Finding],
+    ) -> None:
+        self._write_json(
+            scan_run.artifact_dir / "raw-findings.json",
+            {
+                "scan_run_id": scan_run.id,
+                "findings": [
+                    finding.model_dump(mode="json") for finding in findings
+                ],
+            },
         )
 
     def _write_placeholder_artifacts(self, artifact_dir: Path, run_id: str) -> None:

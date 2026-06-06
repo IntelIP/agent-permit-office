@@ -2,7 +2,17 @@ import json
 from datetime import UTC, datetime
 
 from agent_permit.artifacts import RunArtifactWriter, create_run_id
-from agent_permit.models import FileInventory, FileInventoryEntry
+from agent_permit.models import (
+    AgentBom,
+    Confidence,
+    EvidenceLocation,
+    FileInventory,
+    FileInventoryEntry,
+    Finding,
+    FindingCategory,
+    McpServerSummary,
+    Severity,
+)
 
 
 def test_create_run_writes_artifact_contract(tmp_path) -> None:
@@ -108,3 +118,50 @@ def test_write_file_inventory_replaces_placeholder(tmp_path) -> None:
     assert payload["files"][0]["path"] == "AGENTS.md"
     assert payload["files"][0]["kind"] == "agent_instruction"
     assert payload["skipped"] == {"junk_dir": 1}
+
+
+def test_write_agent_bom_and_raw_findings_replace_placeholders(tmp_path) -> None:
+    target = tmp_path / "risky-agent"
+    target.mkdir()
+    writer = RunArtifactWriter()
+    scan_run = writer.create_run(target, run_id="run-mcp")
+    agent_bom = AgentBom(
+        scan_run_id=scan_run.id,
+        mcp_servers=[
+            McpServerSummary(
+                id="mcp-server:.mcp.json:github-tools",
+                name="github-tools",
+                transport="stdio",
+                command="npx",
+            )
+        ],
+    )
+    findings = [
+        Finding(
+            id="finding:mcp-stdio-credential-ref:.mcp.json:github-tools",
+            rule_id="mcp-stdio-credential-ref",
+            title="Stdio MCP server receives credential references",
+            severity=Severity.HIGH,
+            category=FindingCategory.CREDENTIAL_SCOPE,
+            evidence=[
+                EvidenceLocation(
+                    path=".mcp.json",
+                    line_start=3,
+                    redacted_snippet='{"env": ["GITHUB_TOKEN"]}',
+                )
+            ],
+            risk="Credential reference is passed to a local MCP server.",
+            recommendation="Review package and credential scope.",
+            confidence=Confidence.HIGH,
+        )
+    ]
+
+    writer.write_agent_bom(scan_run, agent_bom)
+    writer.write_raw_findings(scan_run, findings)
+
+    bom_payload = json.loads((scan_run.artifact_dir / "agent-bom.json").read_text())
+    findings_payload = json.loads(
+        (scan_run.artifact_dir / "raw-findings.json").read_text()
+    )
+    assert bom_payload["mcp_servers"][0]["name"] == "github-tools"
+    assert findings_payload["findings"][0]["rule_id"] == "mcp-stdio-credential-ref"

@@ -243,7 +243,7 @@ Backlog:
 | Item | Outcome | Acceptance criteria |
 | --- | --- | --- |
 | File inventory scanner | Classifies repo files and skips junk. | Done: metadata-only inventory, `.gitignore`, junk-dir, sensitive-env skip tests. |
-| MCP config scanner | Finds stdio/remote MCP servers and env refs. | Detects unpinned stdio server with credential ref. |
+| MCP config scanner | Finds stdio/remote MCP servers and env refs. | Done: static JSON parser, no execution, env var names only, unpinned stdio package finding. |
 | Prompt scanner | Finds unsafe instructions and approval bypass phrases. | Line-cited findings emitted. |
 | Credential reference scanner | Records secret variable names only. | Tests prove values are redacted. |
 | CI scanner | Detects dangerous GitHub Actions patterns. | Flags write-token PR workflow fixture. |

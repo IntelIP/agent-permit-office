@@ -11,6 +11,7 @@ from agent_permit import __version__
 from agent_permit.artifacts import RunArtifactWriter
 from agent_permit.models import ScanRunStatus
 from agent_permit.scanners.file_inventory import FileInventoryScanner
+from agent_permit.scanners.mcp_config import McpConfigScanner
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -77,10 +78,17 @@ def run_scan(
         scan_run = artifact_writer.create_run(
             target_path,
             run_id=run_id,
-            scan_options={"mode": "deterministic-inventory"},
+            scan_options={"mode": "deterministic-scanners"},
         )
         inventory = FileInventoryScanner().scan(target_path, scan_run_id=scan_run.id)
         artifact_writer.write_file_inventory(scan_run, inventory)
+        mcp_result = McpConfigScanner().scan(
+            target_path,
+            scan_run_id=scan_run.id,
+            inventory=inventory,
+        )
+        artifact_writer.write_agent_bom(scan_run, mcp_result.agent_bom)
+        artifact_writer.write_raw_findings(scan_run, mcp_result.findings)
         scan_run.status = ScanRunStatus.COMPLETED
         scan_run.completed_at = datetime.now(timezone.utc)
         artifact_writer.write_scan_run(scan_run)
@@ -89,7 +97,7 @@ def run_scan(
         return 1
 
     print("Agent Permit Office", file=stdout)
-    print("Status: inventory_complete", file=stdout)
+    print("Status: scan_complete", file=stdout)
     print(f"Target: {scan_run.target_path}", file=stdout)
     print(f"Run ID: {scan_run.id}", file=stdout)
     print(f"Artifacts: {scan_run.artifact_dir}", file=stdout)
@@ -99,5 +107,11 @@ def run_scan(
         file=stdout,
     )
     print(f"Skipped files/dirs: {sum(inventory.skipped.values())}", file=stdout)
-    print("Next: MCP, prompt, credential, and CI scanners", file=stdout)
+    print(f"MCP servers: {len(mcp_result.agent_bom.mcp_servers)}", file=stdout)
+    print(
+        f"Credential refs: {len(mcp_result.agent_bom.credential_refs)}",
+        file=stdout,
+    )
+    print(f"Findings: {len(mcp_result.findings)}", file=stdout)
+    print("Next: prompt, credential, and CI scanners", file=stdout)
     return 0
