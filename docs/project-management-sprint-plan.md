@@ -246,7 +246,7 @@ Backlog:
 | MCP config scanner | Finds stdio/remote MCP servers and env refs. | Done: static JSON parser, no execution, env var names only, unpinned stdio package finding. |
 | Prompt scanner | Finds unsafe instructions and approval bypass phrases. | Done: instruction-only scan, line-cited evidence, secret-redacted snippets, poisoned fixture coverage. |
 | Credential reference scanner | Records secret variable names only. | Done: `.env.example`, Python, JS, and TS env-access refs, real `.env` skip, redaction coverage. |
-| CI scanner | Detects dangerous GitHub Actions patterns. | Flags write-token PR workflow fixture. |
+| CI scanner | Detects dangerous GitHub Actions patterns. | Done: `pull_request_target`, write permissions, secret refs, PR-head checkout, risky fixture coverage. |
 
 ## Sprint 3: Agent Capability Graph
 

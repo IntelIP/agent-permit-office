@@ -10,6 +10,7 @@ Current implementation:
 - MCP config scan writes `agent-bom.json` and `raw-findings.json` for `.mcp.json`, `mcp.json`, and `claude_desktop_config.json`.
 - Prompt scan adds line-cited findings for risky `AGENTS.md`, `CLAUDE.md`, and skill `SKILL.md` instructions.
 - Credential scan records env/example and code credential variable names in `agent-bom.json`.
+- CI scan adds line-cited findings for risky GitHub Actions triggers, permissions, and secret usage.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
 Current work:

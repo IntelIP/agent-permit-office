@@ -10,6 +10,7 @@ from typing import TextIO
 from agent_permit import __version__
 from agent_permit.artifacts import RunArtifactWriter
 from agent_permit.models import ScanRunStatus
+from agent_permit.scanners.ci_workflows import CiWorkflowScanner
 from agent_permit.scanners.credential_refs import CredentialReferenceScanner
 from agent_permit.scanners.file_inventory import FileInventoryScanner
 from agent_permit.scanners.mcp_config import McpConfigScanner
@@ -100,7 +101,12 @@ def run_scan(
             scan_run_id=scan_run.id,
             inventory=inventory,
         )
-        findings = [*mcp_result.findings, *prompt_findings]
+        ci_findings = CiWorkflowScanner().scan(
+            target_path,
+            scan_run_id=scan_run.id,
+            inventory=inventory,
+        )
+        findings = [*mcp_result.findings, *prompt_findings, *ci_findings]
         artifact_writer.write_agent_bom(scan_run, mcp_result.agent_bom)
         artifact_writer.write_raw_findings(scan_run, findings)
         scan_run.status = ScanRunStatus.COMPLETED
@@ -127,6 +133,7 @@ def run_scan(
         file=stdout,
     )
     print(f"Prompt findings: {len(prompt_findings)}", file=stdout)
+    print(f"CI findings: {len(ci_findings)}", file=stdout)
     print(f"Findings: {len(findings)}", file=stdout)
-    print("Next: credential and CI scanners", file=stdout)
+    print("Next: Agent Capability Graph", file=stdout)
     return 0
