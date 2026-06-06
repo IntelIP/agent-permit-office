@@ -16,6 +16,7 @@ from agent_permit.evidence_context import EvidenceContext
 from agent_permit.evals import (
     EVAL_REPORT_FILE,
     EVAL_RESULTS_FILE,
+    PHOENIX_DATASET_ROWS_FILE,
     run_fixture_eval_suite,
 )
 from agent_permit.investigation import (
@@ -406,6 +407,10 @@ def run_eval(
     print(f"Cases: {passed}/{total} passed", file=stdout)
     print(f"Results: {eval_run.output_dir / EVAL_RESULTS_FILE}", file=stdout)
     print(f"Report: {eval_run.output_dir / EVAL_REPORT_FILE}", file=stdout)
+    print(
+        f"Phoenix dataset rows: {eval_run.output_dir / PHOENIX_DATASET_ROWS_FILE}",
+        file=stdout,
+    )
     return 0 if eval_run.passed else 1
 
 

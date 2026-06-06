@@ -16,8 +16,8 @@ Current implementation:
 - Path finder writes `graph-paths.json` with source/sink taxonomy and bounded risky paths.
 - Permit engine writes `controls.json`, `permit.yaml`, and `risk-report.md` with deterministic approval status.
 - CI mode writes `summary.md` and exits non-zero for `needs_review` or `blocked` permits.
-- Eval mode writes fixture regression artifacts under `.agent-permit/evals/<run_id>/`.
-- Optional Phoenix/OpenTelemetry tracing can be enabled for live Deep Agent investigations.
+- Eval mode writes fixture regression and Phoenix dataset-row artifacts under `.agent-permit/evals/<run_id>/`.
+- Optional Phoenix/OpenTelemetry tracing can be enabled for live Deep Agent investigations, including evidence-tool spans.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
 Run locally:

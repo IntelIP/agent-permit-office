@@ -162,6 +162,10 @@ Sprint 10 observability items:
 
 - `APO-48`: Add Phoenix observability and local eval harness - done
 
+Sprint 11 trace quality items:
+
+- `APO-49`: Add Phoenix trace-quality metadata and eval exports - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

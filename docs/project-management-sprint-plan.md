@@ -374,6 +374,21 @@ Backlog:
 | Fixture truth refresh | Fixture manifests use stable deterministic rule IDs. | Done: manifests compare exact scanner rule IDs. |
 | Observability docs | Operator can run local Phoenix and evals. | Done: `docs/phoenix-observability-evaluation.md`. |
 
+## Sprint 11: Phoenix Trace Quality
+
+Goal:
+
+- make traces and eval artifacts useful for debugging agent quality
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Evidence tool spans | Phoenix traces show every bounded evidence tool call. | Done: tool wrappers emit OpenTelemetry span metadata without storing raw inputs. |
+| Dataset row export | Eval results can seed Phoenix-style datasets later. | Done: eval writes `phoenix-dataset-rows.jsonl` with stable IDs, inputs, outputs, and metadata. |
+| Quality metrics | Local eval captures investigation quality signals. | Done: status, rule ID, citation, secret-leak checks produce `quality_score`. |
+| Docs | Operator understands trace fields and export file. | Done: Phoenix and Deep Agent docs updated. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:

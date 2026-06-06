@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 import os
+from typing import Any
 
 
 DEFAULT_PHOENIX_ENDPOINT = "http://localhost:6006"
 DEFAULT_OBSERVABILITY_PROJECT = "agent-permit-office"
+EVIDENCE_TOOL_SPAN_NAME = "agent_permit.evidence_tool"
 
 
 @dataclass(frozen=True)
@@ -45,3 +49,75 @@ def configure_phoenix_tracing(
         endpoint=resolved_endpoint,
         auto_instrument=auto_instrument,
     )
+
+
+@contextmanager
+def trace_evidence_tool_call(
+    *,
+    tool_name: str,
+    scan_run_id: str,
+    permit_status: str,
+    input_metadata: Mapping[str, Any] | None = None,
+) -> Iterator[Any]:
+    tracer = _get_tracer()
+    if tracer is None:
+        yield _NoopSpan()
+        return
+
+    with tracer.start_as_current_span(EVIDENCE_TOOL_SPAN_NAME) as span:
+        _set_attribute(span, "agent_permit.tool.name", tool_name)
+        _set_attribute(span, "agent_permit.scan_run_id", scan_run_id)
+        _set_attribute(span, "agent_permit.permit_status", permit_status)
+        for key, value in (input_metadata or {}).items():
+            _set_attribute(span, f"agent_permit.tool.input.{key}", value)
+        yield span
+
+
+def record_evidence_tool_result(span: Any, result: object) -> None:
+    text = str(result)
+    _set_attribute(span, "agent_permit.tool.outcome", "success")
+    _set_attribute(span, "agent_permit.tool.output_chars", len(text))
+    _set_attribute(span, "agent_permit.tool.output_lines", text.count("\n") + 1)
+
+
+def record_evidence_tool_error(span: Any, exc: BaseException) -> None:
+    _set_attribute(span, "agent_permit.tool.outcome", "error")
+    _set_attribute(span, "agent_permit.tool.error_type", type(exc).__name__)
+    if hasattr(span, "set_status"):
+        try:
+            from opentelemetry.trace import Status, StatusCode
+        except ImportError:
+            return
+        span.set_status(Status(StatusCode.ERROR))
+
+
+def build_evidence_tool_input_metadata(
+    args: tuple[object, ...],
+    kwargs: Mapping[str, object],
+) -> dict[str, object]:
+    return {
+        "arg_count": len(args),
+        "kwarg_keys": ",".join(sorted(kwargs)) or "none",
+    }
+
+
+def _get_tracer() -> Any | None:
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        return None
+    return trace.get_tracer("agent_permit")
+
+
+def _set_attribute(span: Any, key: str, value: object) -> None:
+    if value is None or not hasattr(span, "set_attribute"):
+        return
+    if isinstance(value, str | int | float | bool):
+        span.set_attribute(key, value)
+    else:
+        span.set_attribute(key, str(value))
+
+
+class _NoopSpan:
+    def set_attribute(self, _key: str, _value: object) -> None:
+        return None

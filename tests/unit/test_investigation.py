@@ -1,9 +1,11 @@
+from contextlib import contextmanager
 from io import StringIO
 import shutil
 from pathlib import Path
 
 import pytest
 
+from agent_permit import observability
 from agent_permit.cli import main
 from agent_permit.deep_agent import (
     DEEP_AGENT_SYSTEM_PROMPT,
@@ -126,6 +128,51 @@ def test_deep_agent_tools_and_subagents_are_artifact_bounded(tmp_path) -> None:
         "citation-critic",
     }
     assert "codebase-map.json" not in tools[0]()
+
+
+def test_evidence_tools_emit_observability_metadata(tmp_path, monkeypatch) -> None:
+    artifact_dir = _scan_fixture(tmp_path, "risky-mcp-agent", "tool-tracing")
+    context = EvidenceContext.load(artifact_dir)
+    events: list[tuple[str, dict[str, object]] | tuple[str, int]] = []
+
+    @contextmanager
+    def fake_trace_evidence_tool_call(**kwargs):
+        events.append(("start", kwargs))
+        yield object()
+
+    def fake_record_result(_span: object, result: object) -> None:
+        events.append(("result", len(str(result))))
+
+    monkeypatch.setattr(
+        observability,
+        "trace_evidence_tool_call",
+        fake_trace_evidence_tool_call,
+    )
+    monkeypatch.setattr(
+        observability,
+        "record_evidence_tool_result",
+        fake_record_result,
+    )
+    tools = build_evidence_tools(context)
+    summarize = next(
+        tool
+        for tool in tools
+        if tool.__name__ == "summarize_evidence_context"
+    )
+
+    result = summarize()
+
+    assert "permit_status: needs_review" in result
+    assert events[0][0] == "start"
+    assert events[0][1]["tool_name"] == "summarize_evidence_context"
+    assert events[0][1]["scan_run_id"] == "tool-tracing"
+    assert events[0][1]["permit_status"] == "needs_review"
+    assert events[0][1]["input_metadata"] == {
+        "arg_count": 0,
+        "kwarg_keys": "none",
+    }
+    assert events[1][0] == "result"
+    assert events[1][1] > 0
 
 
 def test_typed_evidence_tools_return_bounded_json(tmp_path) -> None:

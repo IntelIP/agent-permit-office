@@ -19,6 +19,7 @@ from agent_permit.investigation import (
 EVALS_DIR = "evals"
 EVAL_RESULTS_FILE = "eval-results.json"
 EVAL_REPORT_FILE = "eval-report.md"
+PHOENIX_DATASET_ROWS_FILE = "phoenix-dataset-rows.jsonl"
 
 SECRET_LEAK_MARKERS = (
     "-----BEGIN PRIVATE KEY-----",
@@ -49,8 +50,11 @@ class FixtureEvalResult:
     actual_rule_ids: tuple[str, ...]
     missing_rule_ids: tuple[str, ...]
     unexpected_rule_ids: tuple[str, ...]
+    status_check_passed: bool
+    rule_id_check_passed: bool
     citation_check_passed: bool
     secret_leak_check_passed: bool
+    quality_score: float
     artifact_dir: Path
     duration_seconds: float
 
@@ -159,14 +163,16 @@ def _run_fixture_case(
     report_markdown = build_investigation_markdown(context)
     citation_result = critique_investigation_report(context, report_markdown)
     secret_leak_check_passed = not _artifact_tree_contains_secret_marker(artifact_dir)
-
-    passed = (
-        case.expected_permit_status == context.permit_status
-        and not missing_rule_ids
-        and not unexpected_rule_ids
-        and citation_result.supported
-        and secret_leak_check_passed
+    status_check_passed = case.expected_permit_status == context.permit_status
+    rule_id_check_passed = not missing_rule_ids and not unexpected_rule_ids
+    check_results = (
+        status_check_passed,
+        rule_id_check_passed,
+        citation_result.supported,
+        secret_leak_check_passed,
     )
+
+    passed = all(check_results)
     return FixtureEvalResult(
         fixture_id=case.fixture_id,
         passed=passed,
@@ -176,8 +182,11 @@ def _run_fixture_case(
         actual_rule_ids=actual_rule_ids,
         missing_rule_ids=missing_rule_ids,
         unexpected_rule_ids=unexpected_rule_ids,
+        status_check_passed=status_check_passed,
+        rule_id_check_passed=rule_id_check_passed,
         citation_check_passed=citation_result.supported,
         secret_leak_check_passed=secret_leak_check_passed,
+        quality_score=round(sum(check_results) / len(check_results), 4),
         artifact_dir=artifact_dir,
         duration_seconds=round(time.perf_counter() - start, 4),
     )
@@ -192,6 +201,45 @@ def _write_eval_artifacts(eval_run: FixtureEvalRun) -> None:
         build_eval_report_markdown(eval_run),
         encoding="utf-8",
     )
+    (eval_run.output_dir / PHOENIX_DATASET_ROWS_FILE).write_text(
+        "\n".join(
+            json.dumps(row, sort_keys=True)
+            for row in build_phoenix_dataset_rows(eval_run)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def build_phoenix_dataset_rows(eval_run: FixtureEvalRun) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for result in eval_run.results:
+        rows.append(
+            {
+                "id": f"agent-permit-fixture-{result.fixture_id}",
+                "inputs": {
+                    "fixture_id": result.fixture_id,
+                    "artifact_dir": str(result.artifact_dir),
+                },
+                "outputs": {
+                    "expected_permit_status": result.expected_permit_status,
+                    "expected_rule_ids": list(result.expected_rule_ids),
+                },
+                "metadata": {
+                    "eval_run_id": eval_run.eval_run_id,
+                    "actual_permit_status": result.actual_permit_status,
+                    "actual_rule_ids": list(result.actual_rule_ids),
+                    "status_check_passed": result.status_check_passed,
+                    "rule_id_check_passed": result.rule_id_check_passed,
+                    "citation_check_passed": result.citation_check_passed,
+                    "secret_leak_check_passed": result.secret_leak_check_passed,
+                    "quality_score": result.quality_score,
+                    "passed": result.passed,
+                    "duration_seconds": result.duration_seconds,
+                },
+            }
+        )
+    return rows
 
 
 def build_eval_report_markdown(eval_run: FixtureEvalRun) -> str:
@@ -207,8 +255,8 @@ def build_eval_report_markdown(eval_run: FixtureEvalRun) -> str:
         "",
         "## Cases",
         "",
-        "| Fixture | Status | Rules | Citations | Secret Leak |",
-        "| --- | --- | --- | --- | --- |",
+        "| Fixture | Status | Rules | Citations | Secret Leak | Quality |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for result in eval_run.results:
         status = "pass" if result.passed else "fail"
@@ -224,6 +272,7 @@ def build_eval_report_markdown(eval_run: FixtureEvalRun) -> str:
                     rule_status,
                     "pass" if result.citation_check_passed else "fail",
                     "pass" if result.secret_leak_check_passed else "fail",
+                    f"{result.quality_score:.2f}",
                 ]
             )
             + " |"
@@ -272,8 +321,11 @@ def _eval_run_payload(eval_run: FixtureEvalRun) -> dict[str, Any]:
                 "actual_rule_ids": list(result.actual_rule_ids),
                 "missing_rule_ids": list(result.missing_rule_ids),
                 "unexpected_rule_ids": list(result.unexpected_rule_ids),
+                "status_check_passed": result.status_check_passed,
+                "rule_id_check_passed": result.rule_id_check_passed,
                 "citation_check_passed": result.citation_check_passed,
                 "secret_leak_check_passed": result.secret_leak_check_passed,
+                "quality_score": result.quality_score,
                 "artifact_dir": str(result.artifact_dir),
                 "duration_seconds": result.duration_seconds,
             }

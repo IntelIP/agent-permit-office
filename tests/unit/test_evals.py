@@ -6,6 +6,8 @@ from agent_permit.cli import main
 from agent_permit.evals import (
     EVAL_REPORT_FILE,
     EVAL_RESULTS_FILE,
+    PHOENIX_DATASET_ROWS_FILE,
+    build_phoenix_dataset_rows,
     run_fixture_eval_suite,
 )
 
@@ -23,16 +25,31 @@ def test_fixture_eval_suite_passes_against_manifest_truth(tmp_path) -> None:
     results_path = eval_run.output_dir / EVAL_RESULTS_FILE
     report_path = eval_run.output_dir / EVAL_REPORT_FILE
     payload = json.loads(results_path.read_text())
+    dataset_rows_path = eval_run.output_dir / PHOENIX_DATASET_ROWS_FILE
+    dataset_rows = [
+        json.loads(line)
+        for line in dataset_rows_path.read_text().splitlines()
+    ]
 
     assert eval_run.passed is True
     assert payload["passed"] is True
     assert payload["summary"] == {"failed": 0, "passed": 4, "total": 4}
     assert report_path.is_file()
+    assert dataset_rows_path.is_file()
+    assert build_phoenix_dataset_rows(eval_run) == dataset_rows
     assert "Cases: `4/4`" in report_path.read_text()
     for result in eval_run.results:
+        assert result.status_check_passed is True
+        assert result.rule_id_check_passed is True
         assert result.citation_check_passed is True
         assert result.secret_leak_check_passed is True
+        assert result.quality_score == 1.0
         assert result.artifact_dir.is_dir()
+    first_row = dataset_rows[0]
+    assert first_row["id"].startswith("agent-permit-fixture-")
+    assert set(first_row) == {"id", "inputs", "outputs", "metadata"}
+    assert "expected_permit_status" in first_row["outputs"]
+    assert "quality_score" in first_row["metadata"]
 
 
 def test_eval_cli_writes_local_artifacts(tmp_path) -> None:
@@ -56,8 +73,10 @@ def test_eval_cli_writes_local_artifacts(tmp_path) -> None:
     assert stderr.getvalue() == ""
     assert "Status: eval_complete" in stdout.getvalue()
     assert "Cases: 4/4 passed" in stdout.getvalue()
+    assert "Phoenix dataset rows:" in stdout.getvalue()
     assert (tmp_path / "cli-output" / EVAL_RESULTS_FILE).is_file()
     assert (tmp_path / "cli-output" / EVAL_REPORT_FILE).is_file()
+    assert (tmp_path / "cli-output" / PHOENIX_DATASET_ROWS_FILE).is_file()
 
 
 def test_eval_cli_rejects_missing_fixture_root(tmp_path) -> None:

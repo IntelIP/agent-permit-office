@@ -92,6 +92,17 @@ uv run --extra deep-agent --extra phoenix agent-permit investigate \
 
 Tracing is off by default. The `--phoenix` flag initializes Phoenix/OpenTelemetry before the Deep Agent runtime is created.
 
+Evidence tools emit local OpenTelemetry spans when tracing is available. Span attributes include:
+
+- `agent_permit.tool.name`
+- `agent_permit.scan_run_id`
+- `agent_permit.permit_status`
+- `agent_permit.tool.input.arg_count`
+- `agent_permit.tool.input.kwarg_keys`
+- `agent_permit.tool.output_chars`
+- `agent_permit.tool.output_lines`
+- `agent_permit.tool.error_type`
+
 ## Optional LangSmith Tracing
 
 Set environment variables:

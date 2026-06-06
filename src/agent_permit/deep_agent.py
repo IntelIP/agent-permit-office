@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from functools import wraps
 import json
 from typing import Any
 
+from agent_permit import observability
 from agent_permit.evidence_context import EvidenceContext
 from agent_permit.investigation import critique_investigation_report
 
@@ -162,7 +164,7 @@ def build_evidence_tools(context: EvidenceContext) -> list[Callable[..., str]]:
             return _json_text({"error": "unknown_rule_id", "rule_id": rule_id})
         return _json_text(rule)
 
-    return [
+    tools = [
         list_evidence_artifacts,
         read_evidence_artifact,
         summarize_evidence_context,
@@ -175,6 +177,34 @@ def build_evidence_tools(context: EvidenceContext) -> list[Callable[..., str]]:
         get_credential_refs,
         explain_rule,
     ]
+    return [_instrument_evidence_tool(context, tool) for tool in tools]
+
+
+def _instrument_evidence_tool(
+    context: EvidenceContext,
+    tool: Callable[..., str],
+) -> Callable[..., str]:
+    @wraps(tool)
+    def traced_tool(*args: Any, **kwargs: Any) -> str:
+        input_metadata = observability.build_evidence_tool_input_metadata(
+            args,
+            kwargs,
+        )
+        with observability.trace_evidence_tool_call(
+            tool_name=tool.__name__,
+            scan_run_id=context.scan_run_id,
+            permit_status=context.permit_status,
+            input_metadata=input_metadata,
+        ) as span:
+            try:
+                result = tool(*args, **kwargs)
+            except Exception as exc:
+                observability.record_evidence_tool_error(span, exc)
+                raise
+            observability.record_evidence_tool_result(span, result)
+            return result
+
+    return traced_tool
 
 
 def create_deep_agent_investigator(

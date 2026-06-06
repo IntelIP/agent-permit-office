@@ -30,6 +30,7 @@ Output:
 .agent-permit/evals/local-eval/
   eval-results.json
   eval-report.md
+  phoenix-dataset-rows.jsonl
   cases/<fixture-id>/.agent-permit/runs/<scan-run-id>/
 ```
 
@@ -39,8 +40,32 @@ The eval harness checks:
 - expected deterministic rule IDs
 - citation support for the investigation report
 - artifact secret-leak markers
+- aggregate quality score from the deterministic checks
 
 This remains the regression gate even when Phoenix tracing is enabled.
+
+`phoenix-dataset-rows.jsonl` uses stable local examples shaped for Phoenix-style datasets:
+
+```json
+{
+  "id": "agent-permit-fixture-risky-ci-agent",
+  "inputs": {
+    "fixture_id": "risky-ci-agent",
+    "artifact_dir": ".agent-permit/runs/<run_id>"
+  },
+  "outputs": {
+    "expected_permit_status": "blocked",
+    "expected_rule_ids": ["ci-pr-target-write-token"]
+  },
+  "metadata": {
+    "actual_permit_status": "blocked",
+    "quality_score": 1.0,
+    "passed": true
+  }
+}
+```
+
+These rows are not uploaded automatically. They are local review/export artifacts until we decide to require a running Phoenix server for dataset creation.
 
 ## Phoenix Tracing
 
@@ -81,6 +106,7 @@ Useful trace fields:
 - Deep Agent coordinator span
 - specialist subagent spans
 - evidence tool calls
+- evidence tool metadata: tool name, scan run ID, permit status, argument count, keyword names, output size, error type
 - model latency and errors
 - trace metadata such as `scan_run_id` and `permit_status`
 
@@ -108,14 +134,15 @@ Reason: the scanner truth set is still small. First prove deterministic fixture 
 
 Next useful slice:
 
-1. Add Phoenix trace metadata for every evidence tool call.
-2. Export local eval results into a Phoenix-compatible dataset shape.
-3. Add a small LLM judge only for investigation quality, not permit status.
-4. Compare Deep Agent prompts/models by citation failure rate and token cost.
+1. Add optional Phoenix dataset upload when a local server is running.
+2. Add a small LLM judge only for investigation quality, not permit status.
+3. Compare Deep Agent prompts/models by citation failure rate and token cost.
+4. Create trace-derived datasets from real repo validation runs.
 
 ## References
 
 - Phoenix OTEL setup: https://www.arize.com/docs/phoenix/tracing/how-to-tracing/setup-tracing/setup-using-phoenix-otel
 - OpenInference LangChain instrumentation: https://arize-ai.github.io/openinference/python/instrumentation/openinference-instrumentation-langchain/
+- Phoenix dataset creation: https://arize.com/docs/phoenix/datasets-and-experiments/how-to-datasets/creating-datasets
 - Phoenix evals overview: https://arize.com/docs/phoenix/evaluation/llm-evals
 - Phoenix eval SDK: https://arize.com/docs/phoenix/sdk-api-reference/python/arize-phoenix-evals
