@@ -4,7 +4,8 @@ import re
 
 
 _SECRET_ASSIGNMENT_RE = re.compile(
-    r"\b([A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD|PRIVATE_KEY)[A-Z0-9_]*)"
+    r"\b([A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD|PRIVATE_KEY|"
+    r"DATABASE_URL|DB_URL|DSN|CONNECTION_STRING|WEBHOOK_URL)[A-Z0-9_]*)"
     r"\s*=\s*(\"[^\"]+\"|'[^']+'|\S+)",
     re.IGNORECASE,
 )

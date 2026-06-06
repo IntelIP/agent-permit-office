@@ -9,6 +9,7 @@ Current implementation:
 - The scan writes metadata-only `file-inventory.json` with file classifications, hashes, and skip counts.
 - MCP config scan writes `agent-bom.json` and `raw-findings.json` for `.mcp.json`, `mcp.json`, and `claude_desktop_config.json`.
 - Prompt scan adds line-cited findings for risky `AGENTS.md`, `CLAUDE.md`, and skill `SKILL.md` instructions.
+- Credential scan records env/example and code credential variable names in `agent-bom.json`.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
 Current work:

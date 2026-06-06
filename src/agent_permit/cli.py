@@ -10,6 +10,7 @@ from typing import TextIO
 from agent_permit import __version__
 from agent_permit.artifacts import RunArtifactWriter
 from agent_permit.models import ScanRunStatus
+from agent_permit.scanners.credential_refs import CredentialReferenceScanner
 from agent_permit.scanners.file_inventory import FileInventoryScanner
 from agent_permit.scanners.mcp_config import McpConfigScanner
 from agent_permit.scanners.prompt_instructions import PromptInstructionScanner
@@ -88,6 +89,12 @@ def run_scan(
             scan_run_id=scan_run.id,
             inventory=inventory,
         )
+        credential_refs = CredentialReferenceScanner().scan(
+            target_path,
+            scan_run_id=scan_run.id,
+            inventory=inventory,
+        )
+        mcp_result.agent_bom.credential_refs.extend(credential_refs)
         prompt_findings = PromptInstructionScanner().scan(
             target_path,
             scan_run_id=scan_run.id,
