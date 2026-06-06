@@ -20,6 +20,7 @@ from agent_permit.models import ScanRunStatus
 from agent_permit.path_finder import CapabilityPathFinder
 from agent_permit.permit_engine import PermitEngine
 from agent_permit.reporting import build_summary_markdown
+from agent_permit.rule_registry import RULE_DEFINITIONS
 from agent_permit.scanners.ci_workflows import CiWorkflowScanner
 from agent_permit.scanners.credential_refs import CredentialReferenceScanner
 from agent_permit.scanners.file_inventory import FileInventoryScanner
@@ -91,6 +92,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="enable LangSmith tracing for a live Deep Agent run",
     )
+    rules_parser = subparsers.add_parser(
+        "rules",
+        help="list deterministic scanner rules",
+    )
+    rules_parser.add_argument(
+        "--scanner",
+        help="filter rules by scanner name, for example ci_workflows",
+    )
     return parser
 
 
@@ -123,6 +132,8 @@ def main(
             stdout=stdout,
             stderr=stderr,
         )
+    if args.command == "rules":
+        return run_rules(args.scanner, stdout=stdout)
 
     parser.print_help(file=stdout)
     return 0
@@ -311,4 +322,24 @@ def run_investigate(
         for rule_id in critic_result.missing_citation_rule_ids:
             print(f"Missing rule citation: {rule_id}", file=stderr)
         return 1
+    return 0
+
+
+def run_rules(scanner: str | None, *, stdout: TextIO) -> int:
+    rules = [
+        rule
+        for rule in RULE_DEFINITIONS
+        if scanner is None or rule.scanner == scanner
+    ]
+    print("Agent Permit Office", file=stdout)
+    print("Status: rules_listed", file=stdout)
+    print(f"Rules: {len(rules)}", file=stdout)
+    if scanner is not None:
+        print(f"Scanner: {scanner}", file=stdout)
+    for rule in rules:
+        print(
+            f"- {rule.rule_id} [{rule.default_severity.value}] "
+            f"{rule.scanner}: {rule.title}",
+            file=stdout,
+        )
     return 0

@@ -315,6 +315,20 @@ Backlog:
 | Demo repo | Public-ready example showing value. | Done: `docs/demo.md` uses safe and risky fixtures to show approved and blocked paths. |
 | Setup docs | Clear install/run instructions. | Done: README plus `docs/github-action.md` document local, CI, exclusions, artifacts, and Action use. |
 
+## Sprint 7: MVP Hardening
+
+Goal:
+
+- reduce drift before broader real-repo use
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Rule registry | Stable deterministic rule catalog. | Done: `rule_registry.py`, `agent-permit rules`, fixture rule coverage tests. |
+| Real repo smoke | Scan non-fixture repo path. | Done: local self-scan with `--exclude "tests/fixtures/**"` returns `approved`. |
+| Artifact UX | Easier operator inspection. | Done: rules command plus MVP hardening docs. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:

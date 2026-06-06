@@ -43,6 +43,12 @@ Write a cited investigation from scan artifacts:
 uv run agent-permit investigate .agent-permit/runs/<run_id>
 ```
 
+List deterministic rules:
+
+```bash
+uv run agent-permit rules
+```
+
 Current work:
 
 - [LangChain Deep Agents Architecture Research](docs/research/langchain-deep-agents-architecture.md)
@@ -56,6 +62,7 @@ Current work:
 - [GitHub Action](docs/github-action.md)
 - [Demo](docs/demo.md)
 - [Deep Agent Investigator](docs/deep-agent-investigator.md)
+- [MVP Hardening](docs/mvp-hardening.md)
 - [End-to-End System Diagram](docs/system-diagram-end-to-end.md)
 - [Project Management and Sprint Plan](docs/project-management-sprint-plan.md)
 - [Plane Execution Sync](docs/plane-execution-sync.md)

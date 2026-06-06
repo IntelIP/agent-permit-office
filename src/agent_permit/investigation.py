@@ -4,28 +4,11 @@ from dataclasses import dataclass
 import re
 
 from agent_permit.evidence_context import EvidenceContext
+from agent_permit.rule_registry import DETERMINISTIC_RULE_IDS
 
 
 _CITATION_RE = re.compile(r"\[(?P<citation>(?:finding|rule|path|control|artifact):[^\]]+|permit|summary|risk-report)\]")
 _RULE_ID_RE = re.compile(r"\b(?:ci|mcp|prompt)-[a-z0-9-]+\b")
-KNOWN_DETERMINISTIC_RULE_IDS = frozenset(
-    {
-        "ci-pr-target-head-checkout",
-        "ci-pr-target-write-token",
-        "ci-pull-request-target",
-        "ci-secret-reference",
-        "ci-write-all-permissions",
-        "ci-write-permission",
-        "mcp-config-invalid-json",
-        "mcp-stdio-credential-ref",
-        "mcp-unpinned-package-command",
-        "prompt-approval-bypass",
-        "prompt-credential-exfiltration",
-        "prompt-hidden-instruction",
-        "prompt-ignore-instructions",
-        "prompt-safety-disable",
-    }
-)
 
 
 @dataclass(frozen=True)
@@ -112,7 +95,7 @@ def critique_investigation_report(
     mentioned_rules = {
         rule_id
         for rule_id in _RULE_ID_RE.findall(report_markdown)
-        if rule_id in KNOWN_DETERMINISTIC_RULE_IDS
+        if rule_id in DETERMINISTIC_RULE_IDS
     }
     unsupported_rule_ids = tuple(sorted(mentioned_rules - known_rules))
     missing_citation_rule_ids = tuple(

@@ -146,6 +146,10 @@ Deferred follow-up:
 
 - `APO-44`: Add optional SARIF writer and upload workflow
 
+Sprint 7 hardening items:
+
+- `APO-45`: Centralize deterministic rule registry and rules CLI - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.
