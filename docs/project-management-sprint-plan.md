@@ -311,7 +311,7 @@ Backlog:
 | --- | --- | --- |
 | CI mode | `agent-permit scan . --ci`. | Done: exits non-zero for `needs_review` and `blocked`. |
 | Markdown summary | PR-friendly output. | Done: `summary.md` includes status, counts, top findings, and artifact list. |
-| SARIF research spike | Decide whether SARIF belongs in MVP. | Recommendation documented. |
+| SARIF research spike | Decide whether SARIF belongs in MVP. | Done: defer first-class SARIF from MVP until GitHub Action packaging and stable rule IDs exist. |
 | Demo repo | Public-ready example showing value. | Safe and risky paths visible. |
 | Setup docs | Clear install/run instructions. | New user can run local scan. |
 

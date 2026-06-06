@@ -138,13 +138,16 @@ Sprint 6 backlog items:
 
 - `APO-25`: Implement CI mode with blocking exit codes
 - `APO-26`: Generate PR-friendly Markdown summary
-- `APO-27`: Decide SARIF support for MVP
+- `APO-27`: Decide SARIF support for MVP - done, defer first-class SARIF until GitHub Action packaging and stable rule IDs exist.
 - `APO-28`: Create public-ready demo repo or demo fixture
 - `APO-29`: Write install and first-scan setup docs
+
+Deferred follow-up:
+
+- `APO-44`: Add optional SARIF writer and upload workflow
 
 ## Operating Rule
 
 Plane is now the execution tracker.
 
 Repo Markdown stays the planning artifact source, but active delivery progress should move through Plane states and cycles.
-

@@ -38,6 +38,7 @@ Current work:
 - [Codebase and Services Blueprint](docs/codebase-and-services-blueprint.md)
 - [Deterministic Scanners and Model Plan](docs/scanner-and-model-plan.md)
 - [Static Analysis and Agent Security Research](docs/research/static-analysis-agent-security-research.md)
+- [SARIF MVP Decision](docs/research/sarif-mvp-decision.md)
 - [End-to-End System Diagram](docs/system-diagram-end-to-end.md)
 - [Project Management and Sprint Plan](docs/project-management-sprint-plan.md)
 - [Plane Execution Sync](docs/plane-execution-sync.md)
