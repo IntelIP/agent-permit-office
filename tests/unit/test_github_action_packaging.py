@@ -18,6 +18,8 @@ def test_root_composite_action_packages_ci_scan() -> None:
     assert "github/codeql-action/upload-sarif@v4" in action_text
     assert "continue-on-error: true" in action_text
     assert "security-events: write" in action_text
+    assert "--baseline" in action_text
+    assert "--ci-new-findings-only" in action_text
     assert "GITHUB_STEP_SUMMARY" in action_text
 
 

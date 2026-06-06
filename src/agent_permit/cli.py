@@ -10,6 +10,17 @@ from typing import TextIO
 
 from agent_permit import __version__
 from agent_permit.artifacts import RunArtifactWriter
+from agent_permit.baseline import (
+    BASELINE_FILE,
+    DIFF_JSON_FILE,
+    DIFF_MARKDOWN_FILE,
+    build_finding_baseline,
+    build_finding_diff_markdown,
+    diff_findings,
+    load_finding_baseline,
+    write_finding_baseline,
+    write_finding_diff_artifacts,
+)
 from agent_permit.capability_graph import CapabilityGraphBuilder
 from agent_permit.deep_agent import invoke_deep_agent_investigator
 from agent_permit.evidence_context import EvidenceContext
@@ -93,6 +104,19 @@ def build_parser() -> argparse.ArgumentParser:
         "--sarif-category",
         default=DEFAULT_SARIF_CATEGORY,
         help=f"SARIF automation category; default {DEFAULT_SARIF_CATEGORY}",
+    )
+    scan_parser.add_argument(
+        "--baseline",
+        type=Path,
+        help="finding baseline JSON to compare against during scan",
+    )
+    scan_parser.add_argument(
+        "--ci-new-findings-only",
+        action="store_true",
+        help=(
+            "with --ci and --baseline, exit non-zero only when the scan "
+            "introduces new baseline diff findings"
+        ),
     )
     investigate_parser = subparsers.add_parser(
         "investigate",
@@ -205,6 +229,43 @@ def build_parser() -> argparse.ArgumentParser:
         "--scanner",
         help="filter rules by scanner name, for example ci_workflows",
     )
+    baseline_parser = subparsers.add_parser(
+        "baseline",
+        help="write a finding baseline from existing scan artifacts",
+    )
+    baseline_parser.add_argument(
+        "artifact_dir",
+        type=Path,
+        help=".agent-permit/runs/<run_id> artifact directory",
+    )
+    baseline_parser.add_argument(
+        "--output",
+        type=Path,
+        help=f"baseline output path; defaults to artifact_dir/{BASELINE_FILE}",
+    )
+    diff_parser = subparsers.add_parser(
+        "diff",
+        help="compare existing scan artifacts against a finding baseline",
+    )
+    diff_parser.add_argument(
+        "artifact_dir",
+        type=Path,
+        help=".agent-permit/runs/<run_id> artifact directory",
+    )
+    diff_parser.add_argument(
+        "--baseline",
+        required=True,
+        type=Path,
+        help="finding baseline JSON to compare against",
+    )
+    diff_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help=(
+            f"diff output directory; defaults to artifact_dir with "
+            f"{DIFF_JSON_FILE} and {DIFF_MARKDOWN_FILE}"
+        ),
+    )
     sarif_parser = subparsers.add_parser(
         "sarif",
         help="write SARIF output from existing scan artifacts",
@@ -246,6 +307,8 @@ def main(
             exclude_patterns=args.exclude,
             write_sarif=args.sarif,
             sarif_category=args.sarif_category,
+            baseline_path=args.baseline,
+            ci_new_findings_only=args.ci_new_findings_only,
             stdout=stdout,
             stderr=stderr,
         )
@@ -282,6 +345,21 @@ def main(
         )
     if args.command == "rules":
         return run_rules(args.scanner, stdout=stdout)
+    if args.command == "baseline":
+        return run_baseline(
+            args.artifact_dir,
+            output_path=args.output,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    if args.command == "diff":
+        return run_diff(
+            args.artifact_dir,
+            baseline_path=args.baseline,
+            output_dir=args.output_dir,
+            stdout=stdout,
+            stderr=stderr,
+        )
     if args.command == "sarif":
         return run_sarif(
             args.artifact_dir,
@@ -303,6 +381,8 @@ def run_scan(
     exclude_patterns: Sequence[str] | None = None,
     write_sarif: bool = False,
     sarif_category: str = DEFAULT_SARIF_CATEGORY,
+    baseline_path: Path | None = None,
+    ci_new_findings_only: bool = False,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
@@ -312,8 +392,21 @@ def run_scan(
     if not target_path.is_dir():
         print(f"error: target path must be a directory: {target_path}", file=stderr)
         return 2
+    if ci_new_findings_only and baseline_path is None:
+        print("error: --ci-new-findings-only requires --baseline", file=stderr)
+        return 2
+
+    baseline = None
+    if baseline_path is not None:
+        try:
+            baseline = load_finding_baseline(baseline_path)
+        except (FileNotFoundError, ValueError, PermissionError) as exc:
+            print(f"error: failed to load baseline: {exc}", file=stderr)
+            return 2
 
     try:
+        finding_diff = None
+        sarif_path = None
         artifact_writer = RunArtifactWriter()
         scan_run = artifact_writer.create_run(
             target_path,
@@ -365,12 +458,24 @@ def run_scan(
             findings=graph_result.findings,
             graph_paths=graph_path_report,
         )
+        if baseline is not None and baseline_path is not None:
+            finding_diff = diff_findings(
+                baseline=baseline,
+                current_findings=graph_result.findings,
+                scan_run_id=scan_run.id,
+                baseline_path=baseline_path,
+            )
         summary_markdown = build_summary_markdown(
             permit=permit_evaluation.permit,
             findings=graph_result.findings,
             graph_paths=graph_path_report,
             controls=permit_evaluation.controls,
         )
+        if finding_diff is not None:
+            summary_markdown += "\n" + build_finding_diff_markdown(
+                finding_diff,
+                heading_level=2,
+            )
         artifact_writer.write_agent_bom(scan_run, mcp_result.agent_bom)
         artifact_writer.write_codebase_map(scan_run, graph_result.codebase_map)
         artifact_writer.write_graph_paths(scan_run, graph_path_report)
@@ -382,7 +487,11 @@ def run_scan(
             scan_run,
             permit_evaluation.risk_report_markdown,
         )
-        sarif_path = None
+        if finding_diff is not None:
+            write_finding_diff_artifacts(
+                finding_diff,
+                scan_run.artifact_dir,
+            )
         if write_sarif:
             sarif_path = write_sarif_file(
                 EvidenceContext.load(scan_run.artifact_dir),
@@ -420,11 +529,19 @@ def run_scan(
     print(f"Controls: {len(permit_evaluation.controls.controls)}", file=stdout)
     print(f"Permit status: {permit_evaluation.permit.status}", file=stdout)
     print(f"Summary: {scan_run.artifact_dir / 'summary.md'}", file=stdout)
+    if finding_diff is not None:
+        print(f"Baseline: {baseline_path}", file=stdout)
+        print(f"New findings: {len(finding_diff.new_findings)}", file=stdout)
+        print(f"Resolved findings: {len(finding_diff.resolved_findings)}", file=stdout)
+        print(f"Unchanged findings: {len(finding_diff.unchanged_findings)}", file=stdout)
+        print(f"Diff: {scan_run.artifact_dir / DIFF_JSON_FILE}", file=stdout)
     if sarif_path is not None:
         print(f"SARIF: {sarif_path}", file=stdout)
     if ci:
         print("CI mode: on", file=stdout)
     print("Next: review summary.md and risk-report.md", file=stdout)
+    if ci and ci_new_findings_only:
+        return 1 if finding_diff is not None and finding_diff.new_findings else 0
     if ci and permit_evaluation.permit.status in {"blocked", "needs_review"}:
         return 1
     return 0
@@ -634,6 +751,84 @@ def run_rules(scanner: str | None, *, stdout: TextIO) -> int:
             f"{rule.scanner}: {rule.title}",
             file=stdout,
         )
+    return 0
+
+
+def run_baseline(
+    artifact_dir: Path,
+    *,
+    output_path: Path | None = None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        context = EvidenceContext.load(artifact_dir)
+    except (FileNotFoundError, PermissionError, ValueError) as exc:
+        print(f"error: failed to load scan artifacts: {exc}", file=stderr)
+        return 2
+
+    output_path = output_path or (context.artifact_dir / BASELINE_FILE)
+    baseline = build_finding_baseline(
+        context.findings,
+        scan_run_id=context.scan_run_id,
+    )
+    try:
+        baseline_path = write_finding_baseline(baseline, output_path)
+    except OSError as exc:
+        print(f"error: failed to write baseline: {exc}", file=stderr)
+        return 1
+
+    print("Agent Permit Office", file=stdout)
+    print("Status: baseline_complete", file=stdout)
+    print(f"Artifacts: {context.artifact_dir}", file=stdout)
+    print(f"Baseline: {baseline_path}", file=stdout)
+    print(f"Findings: {len(baseline.findings)}", file=stdout)
+    return 0
+
+
+def run_diff(
+    artifact_dir: Path,
+    *,
+    baseline_path: Path,
+    output_dir: Path | None = None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        context = EvidenceContext.load(artifact_dir)
+    except (FileNotFoundError, PermissionError, ValueError) as exc:
+        print(f"error: failed to load scan artifacts: {exc}", file=stderr)
+        return 2
+    try:
+        baseline = load_finding_baseline(baseline_path)
+    except (FileNotFoundError, ValueError, PermissionError) as exc:
+        print(f"error: failed to load baseline: {exc}", file=stderr)
+        return 2
+
+    diff_report = diff_findings(
+        baseline=baseline,
+        current_findings=context.findings,
+        scan_run_id=context.scan_run_id,
+        baseline_path=baseline_path,
+    )
+    try:
+        json_path, markdown_path = write_finding_diff_artifacts(
+            diff_report,
+            output_dir or context.artifact_dir,
+        )
+    except OSError as exc:
+        print(f"error: failed to write diff artifacts: {exc}", file=stderr)
+        return 1
+
+    print("Agent Permit Office", file=stdout)
+    print("Status: diff_complete", file=stdout)
+    print(f"Artifacts: {context.artifact_dir}", file=stdout)
+    print(f"Baseline: {baseline_path}", file=stdout)
+    print(f"New findings: {len(diff_report.new_findings)}", file=stdout)
+    print(f"Resolved findings: {len(diff_report.resolved_findings)}", file=stdout)
+    print(f"Unchanged findings: {len(diff_report.unchanged_findings)}", file=stdout)
+    print(f"Diff: {json_path}", file=stdout)
+    print(f"Diff report: {markdown_path}", file=stdout)
     return 0
 
 

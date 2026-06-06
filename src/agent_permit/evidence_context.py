@@ -19,6 +19,9 @@ ALLOWED_EVIDENCE_ARTIFACTS = frozenset(
     {
         "agent-bom.json",
         "controls.json",
+        "finding-baseline.json",
+        "finding-diff.json",
+        "finding-diff.md",
         "graph-paths.json",
         "permit.yaml",
         "raw-findings.json",

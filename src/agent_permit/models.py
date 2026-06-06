@@ -254,6 +254,35 @@ class Finding(StrictModel):
     source_fact_ids: list[str] = Field(default_factory=list)
 
 
+class FindingBaselineEntry(StrictModel):
+    key: str
+    finding_id: str
+    rule_id: str
+    title: str
+    severity: Severity
+    category: FindingCategory
+    path: str
+    line_start: int | None = Field(default=None, ge=1)
+    line_end: int | None = Field(default=None, ge=1)
+
+
+class FindingBaseline(StrictModel):
+    version: int = 1
+    scan_run_id: str
+    generated_at: datetime
+    findings: list[FindingBaselineEntry] = Field(default_factory=list)
+
+
+class FindingDiffReport(StrictModel):
+    scan_run_id: str
+    baseline_path: str
+    baseline_count: int
+    current_count: int
+    new_findings: list[FindingBaselineEntry] = Field(default_factory=list)
+    resolved_findings: list[FindingBaselineEntry] = Field(default_factory=list)
+    unchanged_findings: list[FindingBaselineEntry] = Field(default_factory=list)
+
+
 class EvidencePack(StrictModel):
     id: str
     finding_id: str

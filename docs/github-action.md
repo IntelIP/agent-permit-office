@@ -47,6 +47,8 @@ For production use, pin `OWNER/agent-permit-office` to a release tag or commit S
 | `sarif` | `false` | Generate `results.sarif` in the scan artifact directory. |
 | `upload-sarif` | `false` | Upload `results.sarif` to GitHub code scanning. Requires `security-events: write`. |
 | `sarif-category` | `agent-permit-office` | Code scanning category. |
+| `baseline` | empty | Optional finding baseline JSON path, relative to `GITHUB_WORKSPACE` unless absolute. |
+| `ci-new-findings-only` | `false` | With `baseline`, fail CI only when new findings are introduced. |
 
 ## Outputs
 
@@ -121,6 +123,30 @@ jobs:
 ```
 
 Upload is opt-in because GitHub requires code scanning write permission. The upload step is non-blocking; permit enforcement remains independent, so the action fails based on permit status, not SARIF upload result.
+
+## Baseline And Diff Mode
+
+Use baseline mode when a repo has accepted inherited findings and you want CI to fail only on newly introduced findings.
+
+```yaml
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: OWNER/agent-permit-office@v0.1.0
+        with:
+          path: .
+          baseline: .agent-permit/finding-baseline.json
+          ci-new-findings-only: "true"
+```
+
+Default `--ci` behavior is unchanged. Without `ci-new-findings-only`, the action still fails on `needs_review` or `blocked` permit status. With `ci-new-findings-only`, the action writes `finding-diff.json` and `finding-diff.md`, keeps permit status unchanged, and exits non-zero only when new findings appear.
 
 ## Excluding Intentional Fixtures
 

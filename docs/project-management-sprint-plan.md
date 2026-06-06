@@ -436,6 +436,22 @@ Backlog:
 | Secret safety | Avoid repeating sensitive workflow references in uploaded SARIF. | Done: SARIF omits source snippets and uses file/line locations only. |
 | Agent boundary | Keep Deep Agent output out of code scanning alerts. | Done: SARIF is generated only from deterministic scan artifacts. |
 
+## Sprint 15: Baseline And Diff Mode
+
+Goal:
+
+- let teams adopt Agent Permit Office in existing repos by failing CI only on newly introduced findings
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Finding baseline | Create a stable baseline from completed scan artifacts. | Done: `agent-permit baseline` writes `finding-baseline.json`. |
+| Finding diff | Classify current findings against a baseline. | Done: `agent-permit diff` writes `finding-diff.json` and `finding-diff.md`. |
+| CI new-only gate | Preserve permit status while optionally failing only on new findings. | Done: `scan --baseline --ci-new-findings-only` gates on diff new findings. |
+| GitHub Action inputs | Expose baseline mode in the composite action. | Done: `baseline` and `ci-new-findings-only` inputs added. |
+| Safety boundary | Keep baseline safe to commit. | Done: baseline entries omit source snippets and raw secret values. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
@@ -474,11 +490,11 @@ Notion page later:
 
 ## Immediate Next Step
 
-Validate Sprint 14 locally:
+Validate Sprint 15 locally:
 
 ```text
 uv run pytest
-uv run agent-permit scan . --ci --exclude "tests/fixtures/**" --sarif
+uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
 ```
 
-After validation, decide whether Sprint 15 should focus on SARIF schema validation, baseline/diff mode, or HTML review output.
+After validation, decide whether Sprint 16 should focus on SARIF schema validation, HTML review output, or repo policy configuration.

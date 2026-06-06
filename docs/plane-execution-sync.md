@@ -178,6 +178,10 @@ Sprint 14 SARIF/code scanning items:
 
 - `APO-52`: Add SARIF writer and GitHub code scanning surface - done
 
+Sprint 15 baseline/diff items:
+
+- `APO-53`: Add baseline and diff mode for CI findings - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.
