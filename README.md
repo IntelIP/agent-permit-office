@@ -11,6 +11,7 @@ Current implementation:
 - Prompt scan adds line-cited findings for risky `AGENTS.md`, `CLAUDE.md`, and skill `SKILL.md` instructions.
 - Credential scan records env/example and code credential variable names in `agent-bom.json`.
 - CI scan adds line-cited findings for risky GitHub Actions triggers, permissions, and secret usage.
+- Graph builder writes `codebase-map.json` with files, MCP servers, credential refs, prompt instructions, workflows, and relationship edges.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
 Current work:

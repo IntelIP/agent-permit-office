@@ -66,6 +66,7 @@ jobs:
     assert (artifact_dir / "scan-run.json").is_file()
     inventory = json.loads((artifact_dir / "file-inventory.json").read_text())
     agent_bom = json.loads((artifact_dir / "agent-bom.json").read_text())
+    codebase_map = json.loads((artifact_dir / "codebase-map.json").read_text())
     raw_findings_text = (artifact_dir / "raw-findings.json").read_text()
     raw_findings = json.loads(raw_findings_text)
     scan_run = json.loads((artifact_dir / "scan-run.json").read_text())
@@ -77,6 +78,14 @@ jobs:
     assert agent_bom["mcp_servers"][0]["name"] == "github-tools"
     assert agent_bom["credential_refs"][0]["name"] == "GITHUB_TOKEN"
     assert agent_bom["credential_refs"][1]["name"] == "OPENAI_API_KEY"
+    assert len(codebase_map["nodes"]) == 9
+    assert len(codebase_map["edges"]) == 5
+    assert {node["id"] for node in codebase_map["nodes"]} >= {
+        "credential-ref:GITHUB_TOKEN",
+        "credential-ref:OPENAI_API_KEY",
+        "mcp-server:.mcp.json:github-tools",
+        "workflow:.github/workflows/agent.yml",
+    }
     assert len(raw_findings["findings"]) == 6
     assert {
         finding["rule_id"] for finding in raw_findings["findings"]
@@ -99,6 +108,8 @@ jobs:
     assert "Prompt findings: 1" in stdout.getvalue()
     assert "CI findings: 3" in stdout.getvalue()
     assert "Findings: 6" in stdout.getvalue()
+    assert "Graph nodes: 9" in stdout.getvalue()
+    assert "Graph edges: 5" in stdout.getvalue()
 
 
 def test_scan_command_rejects_missing_path(tmp_path) -> None:

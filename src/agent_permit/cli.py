@@ -9,6 +9,7 @@ from typing import TextIO
 
 from agent_permit import __version__
 from agent_permit.artifacts import RunArtifactWriter
+from agent_permit.capability_graph import CapabilityGraphBuilder
 from agent_permit.models import ScanRunStatus
 from agent_permit.scanners.ci_workflows import CiWorkflowScanner
 from agent_permit.scanners.credential_refs import CredentialReferenceScanner
@@ -107,8 +108,15 @@ def run_scan(
             inventory=inventory,
         )
         findings = [*mcp_result.findings, *prompt_findings, *ci_findings]
+        graph_result = CapabilityGraphBuilder().build(
+            scan_run_id=scan_run.id,
+            inventory=inventory,
+            agent_bom=mcp_result.agent_bom,
+            findings=findings,
+        )
         artifact_writer.write_agent_bom(scan_run, mcp_result.agent_bom)
-        artifact_writer.write_raw_findings(scan_run, findings)
+        artifact_writer.write_codebase_map(scan_run, graph_result.codebase_map)
+        artifact_writer.write_raw_findings(scan_run, graph_result.findings)
         scan_run.status = ScanRunStatus.COMPLETED
         scan_run.completed_at = datetime.now(timezone.utc)
         artifact_writer.write_scan_run(scan_run)
@@ -134,6 +142,8 @@ def run_scan(
     )
     print(f"Prompt findings: {len(prompt_findings)}", file=stdout)
     print(f"CI findings: {len(ci_findings)}", file=stdout)
-    print(f"Findings: {len(findings)}", file=stdout)
-    print("Next: Agent Capability Graph", file=stdout)
+    print(f"Findings: {len(graph_result.findings)}", file=stdout)
+    print(f"Graph nodes: {len(graph_result.codebase_map.nodes)}", file=stdout)
+    print(f"Graph edges: {len(graph_result.codebase_map.edges)}", file=stdout)
+    print("Next: source/sink taxonomy and path finder", file=stdout)
     return 0

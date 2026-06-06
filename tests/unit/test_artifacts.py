@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from agent_permit.artifacts import RunArtifactWriter, create_run_id
 from agent_permit.models import (
     AgentBom,
+    CodebaseMap,
     Confidence,
     EvidenceLocation,
     FileInventory,
@@ -11,6 +12,8 @@ from agent_permit.models import (
     Finding,
     FindingCategory,
     McpServerSummary,
+    GraphNode,
+    GraphNodeKind,
     Severity,
 )
 
@@ -118,6 +121,29 @@ def test_write_file_inventory_replaces_placeholder(tmp_path) -> None:
     assert payload["files"][0]["path"] == "AGENTS.md"
     assert payload["files"][0]["kind"] == "agent_instruction"
     assert payload["skipped"] == {"junk_dir": 1}
+
+
+def test_write_codebase_map_replaces_placeholder(tmp_path) -> None:
+    target = tmp_path / "safe-agent"
+    target.mkdir()
+    writer = RunArtifactWriter()
+    scan_run = writer.create_run(target, run_id="run-map")
+    codebase_map = CodebaseMap(
+        scan_run_id=scan_run.id,
+        nodes=[
+            GraphNode(
+                id="file:AGENTS.md",
+                kind=GraphNodeKind.FILE,
+                label="AGENTS.md",
+                source_fact_ids=["file:AGENTS.md"],
+            )
+        ],
+    )
+
+    writer.write_codebase_map(scan_run, codebase_map)
+
+    payload = json.loads((scan_run.artifact_dir / "codebase-map.json").read_text())
+    assert payload["nodes"][0]["id"] == "file:AGENTS.md"
 
 
 def test_write_agent_bom_and_raw_findings_replace_placeholders(tmp_path) -> None:

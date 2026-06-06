@@ -118,6 +118,12 @@ class RunArtifactWriter:
             agent_bom.model_dump(mode="json"),
         )
 
+    def write_codebase_map(self, scan_run: ScanRun, codebase_map: CodebaseMap) -> None:
+        self._write_json(
+            scan_run.artifact_dir / "codebase-map.json",
+            codebase_map.model_dump(mode="json"),
+        )
+
     def write_raw_findings(
         self,
         scan_run: ScanRun,

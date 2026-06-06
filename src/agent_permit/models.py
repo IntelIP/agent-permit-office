@@ -111,6 +111,7 @@ class GraphEdgeKind(str, Enum):
 class GraphNodeKind(str, Enum):
     AGENT = "agent"
     SUBAGENT = "subagent"
+    FILE = "file"
     TOOL = "tool"
     MCP_SERVER = "mcp_server"
     PROMPT = "prompt"
