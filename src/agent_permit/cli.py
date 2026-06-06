@@ -10,6 +10,12 @@ from typing import TextIO
 from agent_permit import __version__
 from agent_permit.artifacts import RunArtifactWriter
 from agent_permit.capability_graph import CapabilityGraphBuilder
+from agent_permit.deep_agent import invoke_deep_agent_investigator
+from agent_permit.evidence_context import EvidenceContext
+from agent_permit.investigation import (
+    build_investigation_markdown,
+    critique_investigation_report,
+)
 from agent_permit.models import ScanRunStatus
 from agent_permit.path_finder import CapabilityPathFinder
 from agent_permit.permit_engine import PermitEngine
@@ -59,6 +65,32 @@ def build_parser() -> argparse.ArgumentParser:
             "multiple patterns"
         ),
     )
+    investigate_parser = subparsers.add_parser(
+        "investigate",
+        help="write a cited investigation report from existing scan artifacts",
+    )
+    investigate_parser.add_argument(
+        "artifact_dir",
+        type=Path,
+        help=".agent-permit/runs/<run_id> artifact directory",
+    )
+    investigate_parser.add_argument(
+        "--output",
+        type=Path,
+        help="report output path; defaults to artifact_dir/agent-investigation.md",
+    )
+    investigate_parser.add_argument(
+        "--model",
+        help=(
+            "optional Deep Agents model string, for example openai:gpt-5.4; "
+            "without this flag the command writes deterministic report markdown"
+        ),
+    )
+    investigate_parser.add_argument(
+        "--langsmith",
+        action="store_true",
+        help="enable LangSmith tracing for a live Deep Agent run",
+    )
     return parser
 
 
@@ -79,6 +111,15 @@ def main(
             args.run_id,
             ci=args.ci,
             exclude_patterns=args.exclude,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    if args.command == "investigate":
+        return run_investigate(
+            args.artifact_dir,
+            output_path=args.output,
+            model=args.model,
+            enable_langsmith=args.langsmith,
             stdout=stdout,
             stderr=stderr,
         )
@@ -208,5 +249,66 @@ def run_scan(
         print("CI mode: on", file=stdout)
     print("Next: review summary.md and risk-report.md", file=stdout)
     if ci and permit_evaluation.permit.status in {"blocked", "needs_review"}:
+        return 1
+    return 0
+
+
+def run_investigate(
+    artifact_dir: Path,
+    *,
+    output_path: Path | None = None,
+    model: str | None = None,
+    enable_langsmith: bool = False,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        context = EvidenceContext.load(artifact_dir)
+    except (FileNotFoundError, PermissionError, ValueError) as exc:
+        print(f"error: failed to load scan artifacts: {exc}", file=stderr)
+        return 2
+
+    try:
+        if model:
+            report_markdown = invoke_deep_agent_investigator(
+                context,
+                model=model,
+                enable_langsmith=enable_langsmith,
+            )
+        else:
+            report_markdown = build_investigation_markdown(context)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=stderr)
+        return 2
+    except Exception as exc:
+        print(f"error: Deep Agent investigation failed: {exc}", file=stderr)
+        return 1
+
+    critic_result = critique_investigation_report(context, report_markdown)
+    output_path = output_path or (context.artifact_dir / "agent-investigation.md")
+    try:
+        output_path.write_text(report_markdown, encoding="utf-8")
+    except OSError as exc:
+        print(f"error: failed to write investigation report: {exc}", file=stderr)
+        return 1
+
+    print("Agent Permit Office", file=stdout)
+    print("Status: investigation_complete", file=stdout)
+    print(f"Artifacts: {context.artifact_dir}", file=stdout)
+    print(f"Report: {output_path}", file=stdout)
+    print(f"Permit status: {context.permit_status}", file=stdout)
+    print(f"Findings: {len(context.findings)}", file=stdout)
+    print(f"Citation check: {'passed' if critic_result.supported else 'failed'}", file=stdout)
+    if model:
+        print(f"Deep Agent model: {model}", file=stdout)
+    if enable_langsmith:
+        print("LangSmith tracing: requested", file=stdout)
+    if not critic_result.supported:
+        for citation in critic_result.unsupported_citations:
+            print(f"Unsupported citation: {citation}", file=stderr)
+        for rule_id in critic_result.unsupported_rule_ids:
+            print(f"Unsupported rule id: {rule_id}", file=stderr)
+        for rule_id in critic_result.missing_citation_rule_ids:
+            print(f"Missing rule citation: {rule_id}", file=stderr)
         return 1
     return 0

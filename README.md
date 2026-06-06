@@ -37,6 +37,12 @@ Run with an exclusion:
 uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
 ```
 
+Write a cited investigation from scan artifacts:
+
+```bash
+uv run agent-permit investigate .agent-permit/runs/<run_id>
+```
+
 Current work:
 
 - [LangChain Deep Agents Architecture Research](docs/research/langchain-deep-agents-architecture.md)
@@ -49,6 +55,7 @@ Current work:
 - [SARIF MVP Decision](docs/research/sarif-mvp-decision.md)
 - [GitHub Action](docs/github-action.md)
 - [Demo](docs/demo.md)
+- [Deep Agent Investigator](docs/deep-agent-investigator.md)
 - [End-to-End System Diagram](docs/system-diagram-end-to-end.md)
 - [Project Management and Sprint Plan](docs/project-management-sprint-plan.md)
 - [Plane Execution Sync](docs/plane-execution-sync.md)

@@ -293,11 +293,11 @@ Backlog:
 
 | Item | Outcome | Acceptance criteria |
 | --- | --- | --- |
-| Controlled tools | Deep Agent reads evidence packs and graph summaries only. | No shell, MCP execution, secret access, or raw repo write. |
-| Coordinator prompt | Agent writes cited permit narrative. | Report cannot include unsupported finding. |
-| Specialist subagents | MCP, prompt, policy, and critic roles. | Each consumes bounded artifacts. |
-| LangSmith tracing | Optional trace visibility. | Can run with tracing off. |
-| Report critic | Checks unsupported claims and missing citations. | Test fixture catches invented claim. |
+| Controlled tools | Deep Agent reads evidence packs and graph summaries only. | Done: evidence tools expose bounded artifacts only; `codebase-map.json` and repo files are not readable. |
+| Coordinator prompt | Agent writes cited permit narrative. | Done: `agent-permit investigate` writes citation-checked Markdown. |
+| Specialist subagents | MCP, prompt, policy, and critic roles. | Done: optional Deep Agents specs define MCP, prompt, policy, and citation critic subagents. |
+| LangSmith tracing | Optional trace visibility. | Done: `--langsmith` requests tracing for live Deep Agent runs; tracing stays off by default. |
+| Report critic | Checks unsupported claims and missing citations. | Done: tests catch invented finding citations and unsupported rule IDs. |
 
 ## Sprint 6: CI And Demo
 

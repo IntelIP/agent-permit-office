@@ -17,6 +17,12 @@ dependencies = [
   "pydantic>=2.11",
 ]
 
+[project.optional-dependencies]
+deep-agent = [
+  "deepagents>=0.6.3",
+  "langchain-openai>=1.1.0",
+]
+
 [project.scripts]
 agent-permit = "agent_permit.cli:main"
 

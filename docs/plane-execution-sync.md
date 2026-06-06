@@ -128,11 +128,11 @@ Sprint 4 backlog items:
 
 Sprint 5 backlog items:
 
-- `APO-20`: Build controlled graph and evidence tools for Deep Agent
-- `APO-21`: Create Deep Agent coordinator prompt
-- `APO-22`: Add MCP, prompt, policy, and critic subagents
-- `APO-23`: Add optional LangSmith tracing for investigation runs
-- `APO-24`: Test report critic catches invented claims
+- `APO-20`: Build controlled graph and evidence tools for Deep Agent - done
+- `APO-21`: Create Deep Agent coordinator prompt - done
+- `APO-22`: Add MCP, prompt, policy, and critic subagents - done
+- `APO-23`: Add optional LangSmith tracing for investigation runs - done
+- `APO-24`: Test report critic catches invented claims - done
 
 Sprint 6 backlog items:
 
