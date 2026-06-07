@@ -222,6 +222,10 @@ Sprint 25 open source release and open-core planning items:
 
 - `APO-63`: Plan open-source release and open-core business path - done
 
+Sprint 26 public repo hardening items:
+
+- `APO-64`: Add public repo governance and release hardening - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

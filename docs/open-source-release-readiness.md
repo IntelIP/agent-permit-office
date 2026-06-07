@@ -54,15 +54,15 @@ Do not publish until these are true:
 
 | Area | Gate | Status |
 | --- | --- | --- |
-| License | `LICENSE` exists with chosen OSI-approved license. | missing |
-| Security | `SECURITY.md` defines vulnerability reporting and no-secret policy. | missing |
-| Contribution | `CONTRIBUTING.md` explains rule fixtures, tests, and scanner safety boundary. | missing |
-| Conduct | `CODE_OF_CONDUCT.md` exists or project explicitly defers it. | missing |
-| Support | `SUPPORT.md` tells users what is community vs paid. | missing |
+| License | `LICENSE` exists with chosen OSI-approved license. | added: Apache-2.0 |
+| Security | `SECURITY.md` defines vulnerability reporting and no-secret policy. | added |
+| Contribution | `CONTRIBUTING.md` explains rule fixtures, tests, and scanner safety boundary. | added |
+| Conduct | `CODE_OF_CONDUCT.md` exists or project explicitly defers it. | added |
+| Support | `SUPPORT.md` tells users what is community vs paid. | added |
 | README | README has install, quickstart, demo, architecture, limits, and OpenRouter/Phoenix notes. | partial |
-| Demo artifact | HTML report screenshot or committed sanitized sample report is linked. | partial |
+| Demo artifact | HTML report screenshot or committed sanitized sample report is linked. | strategy added; sample missing |
 | Packaging | package metadata is public-ready; release tags are defined. | partial |
-| CI | GitHub Actions run tests and self-scan with fixture exclusions. | partial |
+| CI | GitHub Actions run tests and self-scan with fixture exclusions. | added |
 | Secret hygiene | no `.env.local`, generated private reports, API keys, or live traces are committed. | needs check |
 | Legal/commercial | license, trademark, open-core boundary, and company docs reviewed. | missing |
 
@@ -101,7 +101,7 @@ Before remote creation:
 ```bash
 git status --short
 find . -maxdepth 3 -name ".env*"
-uv run pytest
+uv run --all-extras pytest
 uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
 uv run agent-permit open-source-demo docs/evals/open-source-live-repos.json \
   --repo-root /tmp/agent-permit-open-source-validation \

@@ -612,6 +612,23 @@ Backlog:
 | Project sync | README and Plane sync point to the plan. | Done: README links release/business docs; Plane sync records `APO-63`. |
 | Local proof | Docs do not break current MVP. | Done: `uv run pytest` passed 117 tests; CLI help smoke passed; self-scan approved with fixture exclusions. |
 
+## Sprint 26: Public Repo Hardening
+
+Goal:
+
+- make the repo credible for public open-source launch without publishing it yet
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Governance files | Public repo has basic trust and contribution surfaces. | Done: added `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, `ROADMAP.md`, and `CHANGELOG.md`. |
+| License metadata | Package metadata matches the public license. | Done: `pyproject.toml` uses Apache-2.0. |
+| Public CI | GitHub Actions run normal tests and self-scan. | Done: added `.github/workflows/ci.yml` with all-extras pytest and fixture-excluded self-scan. |
+| Demo artifact strategy | Public demo artifacts can be committed safely later. | Done: added `docs/sanitized-demo-artifacts.md`. |
+| Project sync | README and Plane sync reference Sprint 26 artifacts. | Done: README links sanitized demo artifact strategy; Plane sync records `APO-64`. |
+| Local proof | Changes do not break current MVP. | Done: `uv run --frozen --all-extras pytest` passed 117 tests; help smoke passed; self-scan approved with fixture exclusions. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
