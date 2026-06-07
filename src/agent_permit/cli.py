@@ -32,6 +32,13 @@ from agent_permit.deep_agent import (
     DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
     invoke_deep_agent_investigator_with_metadata,
 )
+from agent_permit.demo import (
+    DEFAULT_OPEN_SOURCE_DEMO_ROOT,
+    OPEN_SOURCE_DEMO_HTML_FILE,
+    OPEN_SOURCE_DEMO_REPORT_FILE,
+    OPEN_SOURCE_DEMO_RESULTS_FILE,
+    run_open_source_demo,
+)
 from agent_permit.evidence_context import EvidenceContext
 from agent_permit.evals import (
     DEFAULT_PHOENIX_BASE_URL,
@@ -392,6 +399,75 @@ def build_parser() -> argparse.ArgumentParser:
             "multiple patterns"
         ),
     )
+    open_source_demo_parser = subparsers.add_parser(
+        "open-source-demo",
+        help="prepare recent open-source repos and run the live validation demo",
+    )
+    open_source_demo_parser.add_argument(
+        "manifest",
+        type=Path,
+        help="JSON manifest with source URLs, local paths, and expectations",
+    )
+    open_source_demo_parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=DEFAULT_OPEN_SOURCE_DEMO_ROOT,
+        help=f"clone/refresh root; default {DEFAULT_OPEN_SOURCE_DEMO_ROOT}",
+    )
+    open_source_demo_parser.add_argument(
+        "--run-id",
+        help="explicit demo run ID for repeatable output paths",
+    )
+    open_source_demo_parser.add_argument(
+        "--output",
+        type=Path,
+        help="output directory; defaults to .agent-permit/open-source-demos/<run_id>",
+    )
+    open_source_demo_parser.add_argument(
+        "--skip-refresh",
+        action="store_true",
+        help="do not pull existing local checkouts before validation",
+    )
+    open_source_demo_parser.add_argument(
+        "--skip-live",
+        action="store_true",
+        help="prepare/refresh repos and write demo report without live LLM validation",
+    )
+    open_source_demo_parser.add_argument(
+        "--model",
+        help=(
+            "Deep Agents model string; defaults to "
+            f"{DEFAULT_DEEP_AGENT_MODEL}"
+        ),
+    )
+    open_source_demo_parser.add_argument(
+        "--agent-recursion-limit",
+        type=int,
+        default=DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+        help=(
+            "max LangGraph recursion steps for live Deep Agent runs; default "
+            f"{DEFAULT_DEEP_AGENT_RECURSION_LIMIT}"
+        ),
+    )
+    open_source_demo_parser.add_argument(
+        "--phoenix",
+        action="store_true",
+        help="enable Phoenix/OpenTelemetry tracing for each live investigation",
+    )
+    open_source_demo_parser.add_argument(
+        "--langsmith",
+        action="store_true",
+        help="enable LangSmith tracing for each live investigation",
+    )
+    open_source_demo_parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help=(
+            "gitignore-style pattern to skip during inventory; repeat for "
+            "multiple patterns"
+        ),
+    )
     rules_parser = subparsers.add_parser(
         "rules",
         help="list deterministic scanner rules",
@@ -537,6 +613,22 @@ def main(
             repo_root=args.repo_root,
             validation_run_id=args.run_id,
             output_dir=args.output,
+            model=args.model,
+            agent_recursion_limit=args.agent_recursion_limit,
+            enable_phoenix=args.phoenix,
+            enable_langsmith=args.langsmith,
+            exclude_patterns=args.exclude,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    if args.command == "open-source-demo":
+        return run_open_source_demo_cli(
+            args.manifest,
+            repo_root=args.repo_root,
+            demo_run_id=args.run_id,
+            output_dir=args.output,
+            refresh_repos=not args.skip_refresh,
+            run_live_validation=not args.skip_live,
             model=args.model,
             agent_recursion_limit=args.agent_recursion_limit,
             enable_phoenix=args.phoenix,
@@ -1222,6 +1314,90 @@ def run_live_validate_real(
     if enable_langsmith:
         print("LangSmith tracing: requested", file=stdout)
     return 0 if validation_run.passed else 1
+
+
+def run_open_source_demo_cli(
+    manifest_path: Path,
+    *,
+    repo_root: Path,
+    demo_run_id: str | None = None,
+    output_dir: Path | None = None,
+    refresh_repos: bool = True,
+    run_live_validation: bool = True,
+    model: str | None = None,
+    agent_recursion_limit: int = DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+    enable_phoenix: bool = False,
+    enable_langsmith: bool = False,
+    exclude_patterns: Sequence[str] | None = None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if not manifest_path.exists():
+        print(f"error: manifest does not exist: {manifest_path}", file=stderr)
+        return 2
+    if not manifest_path.is_file():
+        print(f"error: manifest must be a file: {manifest_path}", file=stderr)
+        return 2
+
+    try:
+        demo_run = run_open_source_demo(
+            manifest_path,
+            repo_root=repo_root,
+            demo_run_id=demo_run_id,
+            output_dir=output_dir,
+            prepare_repos=True,
+            refresh_repos=refresh_repos,
+            run_live_validation=run_live_validation,
+            model=model,
+            agent_recursion_limit=agent_recursion_limit,
+            enable_phoenix=enable_phoenix,
+            enable_langsmith=enable_langsmith,
+            exclude_patterns=tuple(exclude_patterns or ()),
+        )
+    except (OSError, ValueError, RuntimeError, KeyError, json.JSONDecodeError) as exc:
+        print(f"error: open source demo failed: {exc}", file=stderr)
+        return 1
+
+    repos_ready = sum(1 for result in demo_run.repo_results if result.status != "failed")
+    total_repos = len(demo_run.repo_results)
+    validation = demo_run.validation_run
+    print("Agent Permit Office", file=stdout)
+    print("Status: open_source_demo_complete", file=stdout)
+    print(f"Demo run: {demo_run.demo_run_id}", file=stdout)
+    print(f"Manifest: {demo_run.manifest_path}", file=stdout)
+    print(f"Repo root: {demo_run.repo_root}", file=stdout)
+    print(f"Output: {demo_run.output_dir}", file=stdout)
+    print(f"Repos ready: {repos_ready}/{total_repos}", file=stdout)
+    if validation is None:
+        print("Live validation: skipped", file=stdout)
+    else:
+        passed = sum(1 for result in validation.results if result.passed)
+        total = len(validation.results)
+        total_tokens = sum(result.total_tokens for result in validation.results)
+        cached_tokens = sum(result.cached_tokens for result in validation.results)
+        input_tokens = sum(result.input_tokens for result in validation.results)
+        cache_hit_ratio = (
+            round(cached_tokens / input_tokens, 4)
+            if input_tokens
+            else 0.0
+        )
+        print(f"Live validation: {passed}/{total} passed", file=stdout)
+        print(f"Total tokens: {total_tokens}", file=stdout)
+        print(f"Cached tokens: {cached_tokens}", file=stdout)
+        print(f"Cache hit ratio: {cache_hit_ratio:.2%}", file=stdout)
+    print(
+        f"Results: {demo_run.output_dir / OPEN_SOURCE_DEMO_RESULTS_FILE}",
+        file=stdout,
+    )
+    print(
+        f"Report: {demo_run.output_dir / OPEN_SOURCE_DEMO_REPORT_FILE}",
+        file=stdout,
+    )
+    print(
+        f"HTML: {demo_run.output_dir / OPEN_SOURCE_DEMO_HTML_FILE}",
+        file=stdout,
+    )
+    return 0 if demo_run.passed else 1
 
 
 def run_rules(scanner: str | None, *, stdout: TextIO) -> int:

@@ -152,3 +152,43 @@ Sprint 23 manifest result:
 - aggregate artifacts: `.agent-permit/live-repo-validations/sprint23-open-source-live/`
 
 The first manifest run also exposed noisy Phoenix re-registration warnings when multiple live validations ran in one process. Phoenix tracing setup is now idempotent, so repeated repo validations reuse the first tracing config instead of re-registering instrumentation.
+
+## Sprint 24 Demo Package
+
+The open-source validation path is now wrapped as one demo command:
+
+```bash
+uv run --extra deep-agent --extra phoenix agent-permit open-source-demo \
+  docs/evals/open-source-live-repos.json \
+  --repo-root /tmp/agent-permit-open-source-validation \
+  --run-id sprint24-open-source-demo \
+  --agent-recursion-limit 20 \
+  --phoenix \
+  --exclude ".agent-permit/**"
+```
+
+The command:
+
+1. clones missing repos with shallow blob-filtered clones
+2. refreshes existing clean repos with `git pull --ff-only`
+3. ignores untracked generated `.agent-permit` artifacts during dirty checks
+4. runs the committed live validation manifest unless `--skip-live` is set
+5. writes JSON, Markdown, and HTML demo reports
+
+Demo output:
+
+```text
+.agent-permit/open-source-demos/<run_id>/
+  open-source-demo-results.json
+  open-source-demo-report.md
+  open-source-demo-report.html
+  live-validation/
+```
+
+Smoke result without duplicate live model spend:
+
+- run ID: `sprint24-open-source-demo-smoke`
+- repo prep: `5/5`
+- live validation: skipped
+- Markdown report: `.agent-permit/open-source-demos/sprint24-open-source-demo-smoke/open-source-demo-report.md`
+- HTML report: `.agent-permit/open-source-demos/sprint24-open-source-demo-smoke/open-source-demo-report.html`

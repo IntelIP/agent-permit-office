@@ -82,3 +82,28 @@ The runner writes:
 ```
 
 The manifest checks expected permit statuses and expected/forbidden rule families. Each repo still gets its own `.agent-permit/runs/<run_id>-<repo_id>/live-validation.json`.
+
+For demos, use the one-command wrapper:
+
+```bash
+OPENROUTER_TIMEOUT_SECONDS=30 \
+OPENROUTER_MAX_COMPLETION_TOKENS=2400 \
+PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006 \
+uv run --extra deep-agent --extra phoenix agent-permit open-source-demo \
+  docs/evals/open-source-live-repos.json \
+  --repo-root /tmp/agent-permit-open-source-validation \
+  --run-id local-open-source-demo \
+  --agent-recursion-limit 20 \
+  --phoenix \
+  --exclude ".agent-permit/**"
+```
+
+The wrapper clone/refreshes manifest repos, runs `live-validate-real`, and writes:
+
+```text
+.agent-permit/open-source-demos/<run_id>/
+  open-source-demo-results.json
+  open-source-demo-report.md
+  open-source-demo-report.html
+  live-validation/
+```

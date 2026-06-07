@@ -126,6 +126,18 @@ uv run --extra deep-agent --extra phoenix agent-permit live-validate-real \
   --exclude ".agent-permit/**"
 ```
 
+Run the full open-source demo path, including clone/refresh and shareable reports:
+
+```bash
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent --extra phoenix agent-permit open-source-demo \
+  docs/evals/open-source-live-repos.json \
+  --repo-root /tmp/agent-permit-open-source-validation \
+  --agent-recursion-limit 20 \
+  --phoenix \
+  --exclude ".agent-permit/**"
+```
+
 List deterministic rules:
 
 ```bash

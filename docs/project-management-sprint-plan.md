@@ -580,6 +580,22 @@ Backlog:
 | Cost telemetry | Suite-level usage is visible. | Done: aggregate output includes model calls, total tokens, input tokens, cached tokens, and cache-hit ratio. |
 | Tests | Manifest runner has no-spend coverage. | Done: tests fake live validation and assert aggregate JSON/Markdown output. |
 
+## Sprint 24: Open Source Demo Package
+
+Goal:
+
+- package the open-source validation proof into one local demo command
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Repo prep | Demo command can clone or refresh manifest repos. | Done: `agent-permit open-source-demo` clones missing repos and refreshes clean existing repos with `git pull --ff-only`. |
+| Dirty safety | Refresh avoids destructive resets. | Done: tracked local changes block refresh; generated untracked `.agent-permit` artifacts do not. |
+| Live path | Demo command can run the manifest validation suite. | Done: wrapper calls `live-validate-real` unless `--skip-live` is set. |
+| Demo artifacts | Output is easy to show. | Done: command writes JSON, Markdown, and HTML reports under `.agent-permit/open-source-demos/<run_id>/`. |
+| Tests | Demo path has no-spend coverage. | Done: tests fake prep/live validation and assert report paths. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
@@ -618,8 +634,8 @@ Notion page later:
 
 ## Immediate Next Step
 
-Run Sprint 23 live validation from the committed manifest:
+Run Sprint 24 demo command:
 
 ```text
-agent-permit live-validate-real docs/evals/open-source-live-repos.json
+agent-permit open-source-demo docs/evals/open-source-live-repos.json
 ```
