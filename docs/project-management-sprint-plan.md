@@ -547,6 +547,22 @@ Backlog:
 | Test seam | Unit tests avoid live model spend. | Done: fake Deep Agent path proves scan, report, citation, and JSON summary behavior. |
 | Docs | Operator can run the harness without manual shell stitching. | Done: README and live validation docs include `live-validate`. |
 
+## Sprint 22: Open Source Live Validation
+
+Goal:
+
+- prove the live validation harness on current open source agent and MCP repositories
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Repo selection | Validate against recently active public repos. | Done: five repos were checked for recent GitHub activity and shallow-cloned locally. |
+| Deterministic scans | Establish repo-level permit statuses before live reports. | Done: results covered approved, needs_review, and blocked statuses. |
+| Live harness runs | Run Sonnet 4.6 Deep Agent reports with Phoenix requested. | Done: all five repos passed after rerunning one prompt-hardened approved case. |
+| Failure handling | Let citation critic catch unsupported model output. | Done: initial placeholder `[rule:<rule_id>]` failure was caught and fixed. |
+| Evidence doc | Store repeatable results and next hardening target. | Done: `docs/open-source-live-validation.md`. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
@@ -585,16 +601,8 @@ Notion page later:
 
 ## Immediate Next Step
 
-Validate Sprint 21 locally:
+Turn Sprint 22 into a repeatable manifest runner:
 
 ```text
-uv run pytest
-OPENROUTER_TIMEOUT_SECONDS=30 \
-OPENROUTER_MAX_COMPLETION_TOKENS=2400 \
-PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006 \
-  uv run --extra deep-agent --extra phoenix agent-permit live-validate \
-  tests/fixtures/risky-ci-agent \
-  --run-id sprint21-live-fixture \
-  --agent-recursion-limit 20 \
-  --phoenix
+target interface: agent-permit live-validate-real docs/evals/open-source-live-repos.json
 ```

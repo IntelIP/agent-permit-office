@@ -142,6 +142,7 @@ def test_deep_agent_tools_and_subagents_are_artifact_bounded(tmp_path) -> None:
     assert "execute shell commands" in DEEP_AGENT_SYSTEM_PROMPT
     assert "Every mention of a scanner rule ID" in DEEP_AGENT_SYSTEM_PROMPT
     assert "Do not write preamble" in DEEP_AGENT_SYSTEM_PROMPT
+    assert "Never write literal citation templates" in DEEP_AGENT_SYSTEM_PROMPT
     assert tool_names >= {
         "list_evidence_artifacts",
         "read_evidence_artifact",

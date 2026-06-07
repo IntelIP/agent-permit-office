@@ -206,6 +206,10 @@ Sprint 21 live validation harness items:
 
 - `APO-59`: Productize live scan and Deep Agent validation harness - done
 
+Sprint 22 open source live validation items:
+
+- `APO-60`: Run live validation against recent open source agent repos - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

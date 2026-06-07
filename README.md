@@ -136,6 +136,7 @@ Current work:
 - [Repository Policy Configuration](docs/repository-policy-config.md)
 - [OpenRouter Model Decision](docs/openrouter-model-decision.md)
 - [Live Deep Agent Validation](docs/live-deep-agent-validation.md)
+- [Open Source Live Validation](docs/open-source-live-validation.md)
 - [Demo](docs/demo.md)
 - [Deep Agent Investigator](docs/deep-agent-investigator.md)
 - [Phoenix Observability and Evaluation](docs/phoenix-observability-evaluation.md)
