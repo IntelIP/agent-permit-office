@@ -2,17 +2,22 @@ import json
 from io import StringIO
 from pathlib import Path
 
+import agent_permit.cli as cli
 from agent_permit.cli import main
 from agent_permit.evals import (
     EVAL_REPORT_FILE,
     EVAL_RESULTS_FILE,
+    LIVE_REPO_VALIDATION_REPORT_FILE,
+    LIVE_REPO_VALIDATION_RESULTS_FILE,
     PHOENIX_DATASET_ROWS_FILE,
     PhoenixDatasetUploadResult,
     REAL_REPO_EVAL_REPORT_FILE,
     REAL_REPO_EVAL_RESULTS_FILE,
     build_phoenix_dataset_rows,
+    load_live_repo_validation_cases,
     load_real_repo_cases,
     run_fixture_eval_suite,
+    run_live_repo_validation_suite,
     run_real_repo_eval_suite,
     upload_phoenix_dataset_rows,
 )
@@ -367,6 +372,103 @@ def test_real_repo_eval_cli_rejects_missing_manifest(tmp_path) -> None:
     assert f"manifest does not exist: {missing}" in stderr.getvalue()
 
 
+def test_live_repo_validation_suite_runs_manifest_repos(tmp_path, monkeypatch) -> None:
+    repo_root = tmp_path / "repos"
+    repo_root.mkdir()
+    _write_real_repo_fixture(repo_root / "agent-repo")
+    manifest_path = _write_live_repo_manifest(tmp_path, local_path="agent-repo")
+    monkeypatch.setattr(cli, "run_live_validate", _fake_run_live_validate)
+
+    validation_run = run_live_repo_validation_suite(
+        manifest_path,
+        repo_root=repo_root,
+        validation_run_id="live-real",
+        output_dir=tmp_path / "live-output",
+        agent_recursion_limit=9,
+        enable_phoenix=True,
+        exclude_patterns=(".agent-permit/**",),
+    )
+    payload = json.loads(
+        (validation_run.output_dir / LIVE_REPO_VALIDATION_RESULTS_FILE).read_text()
+    )
+
+    assert validation_run.passed is True
+    assert payload["passed"] is True
+    assert payload["summary"] == {
+        "cache_hit_ratio": 0.5,
+        "cached_tokens": 50,
+        "failed": 0,
+        "input_tokens": 100,
+        "passed": 1,
+        "total": 1,
+        "total_tokens": 140,
+    }
+    assert (validation_run.output_dir / LIVE_REPO_VALIDATION_REPORT_FILE).is_file()
+    result = validation_run.results[0]
+    assert result.run_id == "live-real-agent-repo"
+    assert result.actual_permit_status == "needs_review"
+    assert result.actual_rule_ids == ("ci-secret-reference", "ci-write-permission")
+    assert result.citation_check_passed is True
+    assert result.model_calls == 1
+    assert result.input_tokens == 100
+    assert result.total_tokens == 140
+    assert result.cached_tokens == 50
+    assert result.cache_hit_ratio == 0.5
+
+
+def test_live_repo_validation_cli_writes_artifacts(tmp_path, monkeypatch) -> None:
+    repo_root = tmp_path / "repos"
+    repo_root.mkdir()
+    _write_real_repo_fixture(repo_root / "agent-repo")
+    manifest_path = _write_live_repo_manifest(tmp_path, local_path="agent-repo")
+    stdout = StringIO()
+    stderr = StringIO()
+    monkeypatch.setattr(cli, "run_live_validate", _fake_run_live_validate)
+
+    exit_code = main(
+        [
+            "live-validate-real",
+            str(manifest_path),
+            "--repo-root",
+            str(repo_root),
+            "--run-id",
+            "cli-live-real",
+            "--output",
+            str(tmp_path / "cli-live-output"),
+            "--agent-recursion-limit",
+            "9",
+            "--phoenix",
+            "--exclude",
+            ".agent-permit/**",
+        ],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert exit_code == 0
+    assert stderr.getvalue() == ""
+    assert "Status: live_repo_validation_complete" in stdout.getvalue()
+    assert "Repos: 1/1 passed" in stdout.getvalue()
+    assert "Cache hit ratio: 50.00%" in stdout.getvalue()
+    assert (tmp_path / "cli-live-output" / LIVE_REPO_VALIDATION_RESULTS_FILE).is_file()
+    assert (tmp_path / "cli-live-output" / LIVE_REPO_VALIDATION_REPORT_FILE).is_file()
+
+
+def test_live_repo_validation_manifest_resolves_relative_paths(tmp_path) -> None:
+    repo_root = tmp_path / "repos"
+    repo_root.mkdir()
+    manifest_path = _write_live_repo_manifest(tmp_path, local_path="agent-repo")
+
+    cases = load_live_repo_validation_cases(manifest_path, repo_root=repo_root)
+
+    assert cases[0].repo_path == (repo_root / "agent-repo").resolve()
+    assert cases[0].expected_permit_status == "needs_review"
+    assert cases[0].expected_rule_ids_present == (
+        "ci-secret-reference",
+        "ci-write-permission",
+    )
+
+
 def _write_real_repo_fixture(repo_path: Path) -> None:
     workflow_dir = repo_path / ".github" / "workflows"
     workflow_dir.mkdir(parents=True)
@@ -416,3 +518,92 @@ def _write_real_repo_manifest(tmp_path: Path, *, local_path: str) -> Path:
         encoding="utf-8",
     )
     return manifest_path
+
+
+def _write_live_repo_manifest(tmp_path: Path, *, local_path: str) -> Path:
+    manifest_path = tmp_path / "live-repos.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "repos": [
+                    {
+                        "id": "agent-repo",
+                        "source": "local-test",
+                        "local_path": local_path,
+                        "expected_permit_status": "needs_review",
+                        "expected_rule_ids_present": [
+                            "ci-secret-reference",
+                            "ci-write-permission",
+                        ],
+                        "expected_rule_ids_absent": [
+                            "ci-pull-request-target",
+                        ],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return manifest_path
+
+
+def _fake_run_live_validate(target_path: Path, *, run_id: str, stdout, **_kwargs) -> int:
+    artifact_dir = target_path / ".agent-permit" / "runs" / run_id
+    artifact_dir.mkdir(parents=True)
+    report_path = artifact_dir / "agent-investigation.md"
+    usage_path = artifact_dir / "openrouter-usage.json"
+    validation_path = artifact_dir / "live-validation.json"
+    report_path.write_text("# Report\n", encoding="utf-8")
+    usage_path.write_text(
+        json.dumps(
+            {
+                "cached_tokens": 50,
+                "input_tokens": 100,
+                "model_calls": 1,
+                "total_tokens": 140,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (artifact_dir / "raw-findings.json").write_text(
+        json.dumps(
+            {
+                "findings": [
+                    {"rule_id": "ci-secret-reference"},
+                    {"rule_id": "ci-write-permission"},
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(
+            {
+                "artifact_dir": str(artifact_dir),
+                "citation_check": {"status": "passed", "supported": True},
+                "controls": 4,
+                "findings": 2,
+                "graph_paths": 2,
+                "permit_status": "needs_review",
+                "report_path": str(report_path),
+                "run_id": run_id,
+                "status": "passed",
+                "usage_path": str(usage_path),
+                "usage_summary": {
+                    "cache_hit_ratio": 0.5,
+                    "cached_tokens": 50,
+                    "input_tokens": 100,
+                    "model_calls": 1,
+                    "total_tokens": 140,
+                },
+                "validation_path": str(validation_path),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print("Status: live_validation_complete", file=stdout)
+    return 0

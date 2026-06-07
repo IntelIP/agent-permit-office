@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 from io import StringIO
 import shutil
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -129,6 +131,29 @@ def test_phoenix_collector_endpoint_normalizes_ui_base_url() -> None:
     assert observability.normalize_phoenix_collector_endpoint(
         "http://localhost:6006/v1/traces"
     ) == "http://localhost:6006/v1/traces"
+
+
+def test_phoenix_tracing_config_is_idempotent(monkeypatch) -> None:
+    calls = []
+    phoenix_module = types.ModuleType("phoenix")
+    otel_module = types.ModuleType("phoenix.otel")
+
+    def fake_register(**kwargs):
+        calls.append(kwargs)
+
+    otel_module.register = fake_register
+    monkeypatch.setitem(sys.modules, "phoenix", phoenix_module)
+    monkeypatch.setitem(sys.modules, "phoenix.otel", otel_module)
+    monkeypatch.setattr(observability, "_PHOENIX_TRACING_CONFIG", None)
+
+    first = observability.configure_phoenix_tracing(endpoint="http://localhost:6006")
+    second = observability.configure_phoenix_tracing(
+        endpoint="http://localhost:6006/v1/traces"
+    )
+
+    assert first == second
+    assert len(calls) == 1
+    assert calls[0]["endpoint"] == "http://localhost:6006/v1/traces"
 
 
 def test_deep_agent_tools_and_subagents_are_artifact_bounded(tmp_path) -> None:

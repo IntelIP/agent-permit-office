@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "description": "Recent open-source agent/MCP repos for live Deep Agent validation. Clone or refresh repos separately, then run with --repo-root.",
+  "repos": [
+    {
+      "id": "open-swe",
+      "source": "https://github.com/langchain-ai/open-swe",
+      "local_path": "langchain-ai__open-swe",
+      "expected_permit_status": "needs_review",
+      "expected_rule_ids_present": [
+        "ci-secret-reference",
+        "ci-write-permission"
+      ],
+      "expected_rule_ids_absent": [
+        "ci-pr-target-head-checkout",
+        "ci-pr-target-write-token",
+        "ci-pull-request-target"
+      ],
+      "notes": "Recent LangChain agent repo; Sprint 22 found workflow secret references and write permissions."
+    },
+    {
+      "id": "github-mcp-server",
+      "source": "https://github.com/github/github-mcp-server",
+      "local_path": "github__github-mcp-server",
+      "expected_permit_status": "needs_review",
+      "expected_rule_ids_present": [
+        "ci-secret-reference",
+        "ci-write-permission"
+      ],
+      "expected_rule_ids_absent": [
+        "ci-pr-target-head-checkout",
+        "ci-pr-target-write-token",
+        "ci-pull-request-target"
+      ],
+      "notes": "Official GitHub MCP server; Sprint 22 found broader CI review signals."
+    },
+    {
+      "id": "mcp-use",
+      "source": "https://github.com/mcp-use/mcp-use",
+      "local_path": "mcp-use__mcp-use",
+      "expected_permit_status": "blocked",
+      "expected_rule_ids_present": [
+        "ci-pr-target-write-token",
+        "ci-pull-request-target",
+        "ci-secret-reference",
+        "ci-write-permission"
+      ],
+      "expected_rule_ids_absent": [
+        "ci-pr-target-head-checkout"
+      ],
+      "notes": "Large MCP framework repo; Sprint 22 found blocked pull_request_target token-scope risk."
+    },
+    {
+      "id": "lightagent",
+      "source": "https://github.com/wanxingai/LightAgent",
+      "local_path": "wanxingai__LightAgent",
+      "expected_permit_status": "approved",
+      "expected_rule_ids_present": [],
+      "expected_rule_ids_absent": [
+        "ci-pr-target-head-checkout",
+        "ci-pr-target-write-token",
+        "ci-pull-request-target",
+        "ci-secret-reference",
+        "ci-write-permission"
+      ],
+      "notes": "Approved-path live validation control case."
+    },
+    {
+      "id": "open-multi-agent-canvas",
+      "source": "https://github.com/CopilotKit/open-multi-agent-canvas",
+      "local_path": "CopilotKit__open-multi-agent-canvas",
+      "expected_permit_status": "approved",
+      "expected_rule_ids_present": [],
+      "expected_rule_ids_absent": [
+        "ci-pr-target-head-checkout",
+        "ci-pr-target-write-token",
+        "ci-pull-request-target",
+        "ci-secret-reference",
+        "ci-write-permission"
+      ],
+      "notes": "Approved-path control case that exposed and verified the literal citation-template prompt fix."
+    }
+  ]
+}

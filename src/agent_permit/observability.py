@@ -12,6 +12,7 @@ DEFAULT_PHOENIX_BASE_URL = "http://localhost:6006"
 DEFAULT_PHOENIX_ENDPOINT = f"{DEFAULT_PHOENIX_BASE_URL}/v1/traces"
 DEFAULT_OBSERVABILITY_PROJECT = "agent-permit-office"
 EVIDENCE_TOOL_SPAN_NAME = "agent_permit.evidence_tool"
+_PHOENIX_TRACING_CONFIG: PhoenixTracingConfig | None = None
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,21 @@ def configure_phoenix_tracing(
     endpoint: str | None = None,
     auto_instrument: bool = True,
 ) -> PhoenixTracingConfig:
+    global _PHOENIX_TRACING_CONFIG
+    resolved_endpoint = normalize_phoenix_collector_endpoint(
+        endpoint or os.environ.get(
+            "PHOENIX_COLLECTOR_ENDPOINT",
+            DEFAULT_PHOENIX_ENDPOINT,
+        )
+    )
+    if _PHOENIX_TRACING_CONFIG is not None:
+        os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = _PHOENIX_TRACING_CONFIG.endpoint
+        os.environ.setdefault(
+            "PHOENIX_PROJECT_NAME",
+            _PHOENIX_TRACING_CONFIG.project_name,
+        )
+        return _PHOENIX_TRACING_CONFIG
+
     try:
         from phoenix.otel import register
     except ImportError as exc:
@@ -35,12 +51,6 @@ def configure_phoenix_tracing(
             "uv run --extra phoenix agent-permit investigate ..."
         ) from exc
 
-    resolved_endpoint = normalize_phoenix_collector_endpoint(
-        endpoint or os.environ.get(
-            "PHOENIX_COLLECTOR_ENDPOINT",
-            DEFAULT_PHOENIX_ENDPOINT,
-        )
-    )
     os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = resolved_endpoint
     os.environ.setdefault("PHOENIX_PROJECT_NAME", project_name)
     register(
@@ -48,11 +58,12 @@ def configure_phoenix_tracing(
         endpoint=resolved_endpoint,
         auto_instrument=auto_instrument,
     )
-    return PhoenixTracingConfig(
+    _PHOENIX_TRACING_CONFIG = PhoenixTracingConfig(
         project_name=project_name,
         endpoint=resolved_endpoint,
         auto_instrument=auto_instrument,
     )
+    return _PHOENIX_TRACING_CONFIG
 
 
 def normalize_phoenix_collector_endpoint(endpoint: str) -> str:

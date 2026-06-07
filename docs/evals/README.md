@@ -36,3 +36,49 @@ The runner scans local checkouts and writes:
 ```
 
 The manifest intentionally checks expected status and rule families. It does not require exact finding counts because public repos can drift.
+
+## Open Source Live Repos
+
+`open-source-live-repos.json` defines the current live Deep Agent validation set:
+
+- `langchain-ai/open-swe`
+- `github/github-mcp-server`
+- `mcp-use/mcp-use`
+- `wanxingai/LightAgent`
+- `CopilotKit/open-multi-agent-canvas`
+
+Clone or refresh the repos separately:
+
+```bash
+mkdir -p /tmp/agent-permit-open-source-validation-20260607
+git clone --depth 1 --filter=blob:none https://github.com/langchain-ai/open-swe.git /tmp/agent-permit-open-source-validation-20260607/langchain-ai__open-swe
+git clone --depth 1 --filter=blob:none https://github.com/github/github-mcp-server.git /tmp/agent-permit-open-source-validation-20260607/github__github-mcp-server
+git clone --depth 1 --filter=blob:none https://github.com/mcp-use/mcp-use.git /tmp/agent-permit-open-source-validation-20260607/mcp-use__mcp-use
+git clone --depth 1 --filter=blob:none https://github.com/wanxingai/LightAgent.git /tmp/agent-permit-open-source-validation-20260607/wanxingai__LightAgent
+git clone --depth 1 --filter=blob:none https://github.com/CopilotKit/open-multi-agent-canvas.git /tmp/agent-permit-open-source-validation-20260607/CopilotKit__open-multi-agent-canvas
+```
+
+Run:
+
+```bash
+OPENROUTER_TIMEOUT_SECONDS=30 \
+OPENROUTER_MAX_COMPLETION_TOKENS=2400 \
+PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006 \
+uv run --extra deep-agent --extra phoenix agent-permit live-validate-real \
+  docs/evals/open-source-live-repos.json \
+  --repo-root /tmp/agent-permit-open-source-validation-20260607 \
+  --run-id local-open-source-live \
+  --agent-recursion-limit 20 \
+  --phoenix \
+  --exclude ".agent-permit/**"
+```
+
+The runner writes:
+
+```text
+.agent-permit/live-repo-validations/<run_id>/
+  live-repo-validation-results.json
+  live-repo-validation-report.md
+```
+
+The manifest checks expected permit statuses and expected/forbidden rule families. Each repo still gets its own `.agent-permit/runs/<run_id>-<repo_id>/live-validation.json`.

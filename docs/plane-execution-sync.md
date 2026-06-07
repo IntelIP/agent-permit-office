@@ -210,6 +210,10 @@ Sprint 22 open source live validation items:
 
 - `APO-60`: Run live validation against recent open source agent repos - done
 
+Sprint 23 live validation manifest runner items:
+
+- `APO-61`: Add manifest runner for open source live validation - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

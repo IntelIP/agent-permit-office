@@ -103,6 +103,52 @@ The harness is now useful against real public repos:
 - It caught an LLM citation failure before marking a validation passed.
 - Prompt caching worked across all runs, with cache-hit ratios from 55.70% to 73.14%.
 
-Next hardening target:
+## Sprint 23 Manifest Runner
 
-- turn this manual open-source validation set into a repeatable manifest runner for `live-validate`
+The manual validation loop is now productized as:
+
+```bash
+uv run --extra deep-agent --extra phoenix agent-permit live-validate-real \
+  docs/evals/open-source-live-repos.json \
+  --repo-root /tmp/agent-permit-open-source-validation-20260607 \
+  --run-id sprint23-open-source-live \
+  --agent-recursion-limit 20 \
+  --phoenix \
+  --exclude ".agent-permit/**"
+```
+
+Aggregate output:
+
+```text
+.agent-permit/live-repo-validations/<run_id>/
+  live-repo-validation-results.json
+  live-repo-validation-report.md
+```
+
+Each repo still writes its own run artifacts:
+
+```text
+<repo>/.agent-permit/runs/<run_id>-<repo_id>/live-validation.json
+```
+
+The manifest runner checks:
+
+- live validation status
+- citation critic result
+- expected permit status
+- expected rule IDs present
+- forbidden rule IDs absent
+- aggregate model calls, tokens, cached tokens, and cache-hit ratio
+
+Sprint 23 manifest result:
+
+- run ID: `sprint23-open-source-live`
+- status: `passed`
+- repos: `5/5`
+- total tokens: `218,401`
+- input tokens: `209,761`
+- cached tokens: `140,970`
+- cache hit ratio: `67.21%`
+- aggregate artifacts: `.agent-permit/live-repo-validations/sprint23-open-source-live/`
+
+The first manifest run also exposed noisy Phoenix re-registration warnings when multiple live validations ran in one process. Phoenix tracing setup is now idempotent, so repeated repo validations reuse the first tracing config instead of re-registering instrumentation.

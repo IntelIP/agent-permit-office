@@ -114,6 +114,18 @@ Run repeatable real-repo evals against local public clones:
 uv run agent-permit eval-real docs/evals/real-repos.json --repo-root /tmp/agent-permit-validation
 ```
 
+Run repeatable live validation against local recent open-source clones:
+
+```bash
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent --extra phoenix agent-permit live-validate-real \
+  docs/evals/open-source-live-repos.json \
+  --repo-root /tmp/agent-permit-open-source-validation-20260607 \
+  --agent-recursion-limit 20 \
+  --phoenix \
+  --exclude ".agent-permit/**"
+```
+
 List deterministic rules:
 
 ```bash

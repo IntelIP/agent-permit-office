@@ -24,6 +24,9 @@ PHOENIX_DATASET_ROWS_FILE = "phoenix-dataset-rows.jsonl"
 REAL_REPO_EVALS_DIR = "real-repo-evals"
 REAL_REPO_EVAL_RESULTS_FILE = "real-repo-eval-results.json"
 REAL_REPO_EVAL_REPORT_FILE = "real-repo-eval-report.md"
+LIVE_REPO_VALIDATIONS_DIR = "live-repo-validations"
+LIVE_REPO_VALIDATION_RESULTS_FILE = "live-repo-validation-results.json"
+LIVE_REPO_VALIDATION_REPORT_FILE = "live-repo-validation-report.md"
 DEFAULT_PHOENIX_DATASET_NAME = "agent-permit-fixture-evals"
 DEFAULT_PHOENIX_BASE_URL = "http://localhost:6006"
 
@@ -139,6 +142,69 @@ class RealRepoEvalRun:
         return all(result.passed for result in self.results)
 
 
+@dataclass(frozen=True)
+class LiveRepoValidationCase:
+    repo_id: str
+    repo_path: Path
+    source: str
+    expected_permit_status: str | None
+    expected_rule_ids_present: tuple[str, ...]
+    expected_rule_ids_absent: tuple[str, ...]
+    run_id: str | None
+    notes: str
+
+
+@dataclass(frozen=True)
+class LiveRepoValidationResult:
+    repo_id: str
+    passed: bool
+    live_validation_passed: bool
+    expectation_check_passed: bool
+    source: str
+    repo_path: Path
+    run_id: str
+    expected_permit_status: str | None
+    actual_permit_status: str
+    expected_rule_ids_present: tuple[str, ...]
+    expected_rule_ids_absent: tuple[str, ...]
+    actual_rule_ids: tuple[str, ...]
+    missing_rule_ids: tuple[str, ...]
+    forbidden_rule_ids: tuple[str, ...]
+    status_check_passed: bool
+    expected_rule_check_passed: bool
+    forbidden_rule_check_passed: bool
+    citation_check_passed: bool
+    findings_count: int
+    graph_paths_count: int
+    controls_count: int
+    model_calls: int
+    input_tokens: int
+    total_tokens: int
+    cached_tokens: int
+    cache_hit_ratio: float
+    artifact_dir: Path
+    report_path: Path | None
+    usage_path: Path | None
+    validation_path: Path | None
+    error_message: str
+    duration_seconds: float
+
+
+@dataclass(frozen=True)
+class LiveRepoValidationRun:
+    validation_run_id: str
+    output_dir: Path
+    manifest_path: Path
+    repo_root: Path | None
+    results: tuple[LiveRepoValidationResult, ...]
+    started_at: datetime
+    completed_at: datetime
+
+    @property
+    def passed(self) -> bool:
+        return all(result.passed for result in self.results)
+
+
 def create_eval_run_id(now: datetime | None = None) -> str:
     timestamp = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     return timestamp.strftime("%Y%m%dT%H%M%SZ")
@@ -188,6 +254,43 @@ def load_real_repo_cases(
                 expected_rule_ids_absent=tuple(
                     sorted(entry.get("expected_rule_ids_absent", []))
                 ),
+                notes=str(entry.get("notes", "")),
+            )
+        )
+    return cases
+
+
+def load_live_repo_validation_cases(
+    manifest_path: Path,
+    *,
+    repo_root: Path | None = None,
+) -> list[LiveRepoValidationCase]:
+    manifest_path = manifest_path.resolve()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    repos = manifest.get("repos", [])
+    if not repos:
+        raise ValueError(f"no repos found in manifest {manifest_path}")
+    cases: list[LiveRepoValidationCase] = []
+    for entry in repos:
+        repo_path = Path(str(entry["local_path"]))
+        if not repo_path.is_absolute():
+            repo_path = (repo_root or manifest_path.parent) / repo_path
+        expected_status = entry.get("expected_permit_status")
+        cases.append(
+            LiveRepoValidationCase(
+                repo_id=str(entry["id"]),
+                repo_path=repo_path.resolve(),
+                source=str(entry.get("source", "")),
+                expected_permit_status=(
+                    str(expected_status) if expected_status is not None else None
+                ),
+                expected_rule_ids_present=tuple(
+                    sorted(entry.get("expected_rule_ids_present", []))
+                ),
+                expected_rule_ids_absent=tuple(
+                    sorted(entry.get("expected_rule_ids_absent", []))
+                ),
+                run_id=str(entry["run_id"]) if entry.get("run_id") else None,
                 notes=str(entry.get("notes", "")),
             )
         )
@@ -264,6 +367,55 @@ def run_real_repo_eval_suite(
     )
     _write_real_repo_eval_artifacts(eval_run)
     return eval_run
+
+
+def run_live_repo_validation_suite(
+    manifest_path: Path,
+    *,
+    repo_root: Path | None = None,
+    validation_run_id: str | None = None,
+    output_dir: Path | None = None,
+    model: str | None = None,
+    agent_recursion_limit: int = 12,
+    enable_phoenix: bool = False,
+    enable_langsmith: bool = False,
+    exclude_patterns: tuple[str, ...] = (),
+) -> LiveRepoValidationRun:
+    manifest_path = manifest_path.resolve()
+    repo_root = repo_root.resolve() if repo_root is not None else None
+    validation_run_id = validation_run_id or create_eval_run_id()
+    output_dir = (
+        output_dir
+        or (Path.cwd() / ARTIFACT_ROOT / LIVE_REPO_VALIDATIONS_DIR / validation_run_id)
+    ).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    started_at = datetime.now(timezone.utc)
+
+    cases = load_live_repo_validation_cases(manifest_path, repo_root=repo_root)
+    results = [
+        _run_live_repo_validation_case(
+            case,
+            validation_run_id,
+            model=model,
+            agent_recursion_limit=agent_recursion_limit,
+            enable_phoenix=enable_phoenix,
+            enable_langsmith=enable_langsmith,
+            exclude_patterns=exclude_patterns,
+        )
+        for case in cases
+    ]
+    completed_at = datetime.now(timezone.utc)
+    validation_run = LiveRepoValidationRun(
+        validation_run_id=validation_run_id,
+        output_dir=output_dir,
+        manifest_path=manifest_path,
+        repo_root=repo_root,
+        results=tuple(results),
+        started_at=started_at,
+        completed_at=completed_at,
+    )
+    _write_live_repo_validation_artifacts(validation_run)
+    return validation_run
 
 
 def _run_fixture_case(
@@ -419,6 +571,116 @@ def _run_real_repo_case(
     )
 
 
+def _run_live_repo_validation_case(
+    case: LiveRepoValidationCase,
+    validation_run_id: str,
+    *,
+    model: str | None,
+    agent_recursion_limit: int,
+    enable_phoenix: bool,
+    enable_langsmith: bool,
+    exclude_patterns: tuple[str, ...],
+) -> LiveRepoValidationResult:
+    from agent_permit.cli import run_live_validate
+
+    if not case.repo_path.exists():
+        raise RuntimeError(f"repo path does not exist for {case.repo_id}: {case.repo_path}")
+    if not case.repo_path.is_dir():
+        raise RuntimeError(f"repo path must be a directory for {case.repo_id}: {case.repo_path}")
+
+    start = time.perf_counter()
+    run_id = case.run_id or f"{validation_run_id}-{case.repo_id}"
+    artifact_dir = case.repo_path / ARTIFACT_ROOT / "runs" / run_id
+    with _NullWriter() as stdout, _NullWriter() as stderr:
+        exit_code = run_live_validate(
+            case.repo_path,
+            run_id=run_id,
+            model=model,
+            agent_recursion_limit=agent_recursion_limit,
+            enable_phoenix=enable_phoenix,
+            enable_langsmith=enable_langsmith,
+            exclude_patterns=exclude_patterns,
+            stdout=stdout,
+            stderr=stderr,
+        )
+        stdout_text = stdout.text
+        stderr_text = stderr.text
+
+    validation_path = artifact_dir / "live-validation.json"
+    validation_payload = _read_json_file(validation_path)
+    actual_status = str(validation_payload.get("permit_status", "unknown"))
+    findings_count = int(validation_payload.get("findings") or 0)
+    graph_paths_count = int(validation_payload.get("graph_paths") or 0)
+    controls_count = int(validation_payload.get("controls") or 0)
+    citation_payload = validation_payload.get("citation_check", {})
+    citation_check_passed = (
+        isinstance(citation_payload, dict)
+        and citation_payload.get("supported") is True
+    )
+    usage_payload = validation_payload.get("usage_summary", {})
+    usage = usage_payload if isinstance(usage_payload, dict) else {}
+    live_validation_passed = (
+        exit_code == 0
+        and validation_payload.get("status") == "passed"
+        and citation_check_passed
+    )
+    actual_rule_ids = _load_artifact_rule_ids(artifact_dir)
+    expected_present = tuple(sorted(case.expected_rule_ids_present))
+    expected_absent = tuple(sorted(case.expected_rule_ids_absent))
+    missing_rule_ids = tuple(sorted(set(expected_present) - set(actual_rule_ids)))
+    forbidden_rule_ids = tuple(sorted(set(expected_absent) & set(actual_rule_ids)))
+    status_check_passed = (
+        case.expected_permit_status is None
+        or case.expected_permit_status == actual_status
+    )
+    expected_rule_check_passed = not missing_rule_ids
+    forbidden_rule_check_passed = not forbidden_rule_ids
+    expectation_check_passed = (
+        status_check_passed
+        and expected_rule_check_passed
+        and forbidden_rule_check_passed
+    )
+    report_path = _optional_path(validation_payload.get("report_path"))
+    usage_path = _optional_path(validation_payload.get("usage_path"))
+    error_message = "\n".join(
+        text for text in (stderr_text.strip(), stdout_text.strip()) if text
+    )
+    return LiveRepoValidationResult(
+        repo_id=case.repo_id,
+        passed=live_validation_passed and expectation_check_passed,
+        live_validation_passed=live_validation_passed,
+        expectation_check_passed=expectation_check_passed,
+        source=case.source,
+        repo_path=case.repo_path,
+        run_id=run_id,
+        expected_permit_status=case.expected_permit_status,
+        actual_permit_status=actual_status,
+        expected_rule_ids_present=expected_present,
+        expected_rule_ids_absent=expected_absent,
+        actual_rule_ids=actual_rule_ids,
+        missing_rule_ids=missing_rule_ids,
+        forbidden_rule_ids=forbidden_rule_ids,
+        status_check_passed=status_check_passed,
+        expected_rule_check_passed=expected_rule_check_passed,
+        forbidden_rule_check_passed=forbidden_rule_check_passed,
+        citation_check_passed=citation_check_passed,
+        findings_count=findings_count,
+        graph_paths_count=graph_paths_count,
+        controls_count=controls_count,
+        model_calls=int(usage.get("model_calls") or 0),
+        input_tokens=int(usage.get("input_tokens") or 0),
+        total_tokens=int(usage.get("total_tokens") or 0),
+        cached_tokens=int(usage.get("cached_tokens") or 0),
+        cache_hit_ratio=float(usage.get("cache_hit_ratio") or 0.0),
+        artifact_dir=artifact_dir,
+        report_path=report_path,
+        usage_path=usage_path,
+        validation_path=validation_path if validation_path.is_file() else None,
+        error_message=error_message if not live_validation_passed else "",
+        duration_seconds=round(time.perf_counter() - start, 4),
+    )
+
+
 def _write_eval_artifacts(eval_run: FixtureEvalRun) -> None:
     (eval_run.output_dir / EVAL_RESULTS_FILE).write_text(
         json.dumps(_eval_run_payload(eval_run), indent=2, sort_keys=True) + "\n",
@@ -446,6 +708,24 @@ def _write_real_repo_eval_artifacts(eval_run: RealRepoEvalRun) -> None:
     )
     (eval_run.output_dir / REAL_REPO_EVAL_REPORT_FILE).write_text(
         build_real_repo_eval_report_markdown(eval_run),
+        encoding="utf-8",
+    )
+
+
+def _write_live_repo_validation_artifacts(
+    validation_run: LiveRepoValidationRun,
+) -> None:
+    (validation_run.output_dir / LIVE_REPO_VALIDATION_RESULTS_FILE).write_text(
+        json.dumps(
+            _live_repo_validation_run_payload(validation_run),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (validation_run.output_dir / LIVE_REPO_VALIDATION_REPORT_FILE).write_text(
+        build_live_repo_validation_report_markdown(validation_run),
         encoding="utf-8",
     )
 
@@ -529,6 +809,78 @@ def build_real_repo_eval_report_markdown(eval_run: RealRepoEvalRun) -> str:
                 f"- missing rules: `{', '.join(result.missing_rule_ids) or 'none'}`",
                 f"- forbidden rules found: `{', '.join(result.forbidden_rule_ids) or 'none'}`",
                 f"- artifacts: `{result.artifact_dir}`",
+                "",
+            ]
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def build_live_repo_validation_report_markdown(
+    validation_run: LiveRepoValidationRun,
+) -> str:
+    passed = sum(1 for result in validation_run.results if result.passed)
+    total = len(validation_run.results)
+    total_tokens = sum(result.total_tokens for result in validation_run.results)
+    input_tokens = sum(result.input_tokens for result in validation_run.results)
+    cached_tokens = sum(result.cached_tokens for result in validation_run.results)
+    cache_hit_ratio = (
+        round(cached_tokens / input_tokens, 4)
+        if input_tokens
+        else 0.0
+    )
+    lines = [
+        "# Agent Permit Office Live Repo Validation Report",
+        "",
+        f"Validation run: `{validation_run.validation_run_id}`",
+        f"Status: `{'passed' if validation_run.passed else 'failed'}`",
+        f"Repos: `{passed}/{total}`",
+        f"Manifest: `{validation_run.manifest_path}`",
+        f"Total tokens: `{total_tokens}`",
+        f"Cached tokens: `{cached_tokens}`",
+        f"Cache hit ratio: `{cache_hit_ratio:.2%}`",
+        "",
+        "## Repos",
+        "",
+        "| Repo | Status | Permit | Findings | Paths | Controls | Citations | Expectations | Tokens | Cached |",
+        "| --- | --- | --- | ---: | ---: | ---: | --- | --- | ---: | ---: |",
+    ]
+    for result in validation_run.results:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    result.repo_id,
+                    "pass" if result.passed else "fail",
+                    result.actual_permit_status,
+                    str(result.findings_count),
+                    str(result.graph_paths_count),
+                    str(result.controls_count),
+                    "pass" if result.citation_check_passed else "fail",
+                    "pass" if result.expectation_check_passed else "fail",
+                    str(result.total_tokens),
+                    str(result.cached_tokens),
+                ]
+            )
+            + " |"
+        )
+    lines.append("")
+    lines.append("## Failures")
+    lines.append("")
+    failures = [result for result in validation_run.results if not result.passed]
+    if not failures:
+        lines.append("No failures.")
+    for result in failures:
+        lines.extend(
+            [
+                f"### {result.repo_id}",
+                "",
+                f"- live validation: `{'pass' if result.live_validation_passed else 'fail'}`",
+                f"- expectation check: `{'pass' if result.expectation_check_passed else 'fail'}`",
+                f"- expected status: `{result.expected_permit_status or 'not set'}`",
+                f"- actual status: `{result.actual_permit_status}`",
+                f"- missing rules: `{', '.join(result.missing_rule_ids) or 'none'}`",
+                f"- forbidden rules found: `{', '.join(result.forbidden_rule_ids) or 'none'}`",
+                f"- validation: `{result.validation_path or 'not written'}`",
                 "",
             ]
         )
@@ -714,6 +1066,108 @@ def _real_repo_eval_run_payload(eval_run: RealRepoEvalRun) -> dict[str, Any]:
             for result in eval_run.results
         ],
     }
+
+
+def _live_repo_validation_run_payload(
+    validation_run: LiveRepoValidationRun,
+) -> dict[str, Any]:
+    total_tokens = sum(result.total_tokens for result in validation_run.results)
+    input_tokens = sum(result.input_tokens for result in validation_run.results)
+    cached_tokens = sum(result.cached_tokens for result in validation_run.results)
+    return {
+        "validation_run_id": validation_run.validation_run_id,
+        "manifest_path": str(validation_run.manifest_path),
+        "repo_root": (
+            str(validation_run.repo_root)
+            if validation_run.repo_root is not None
+            else None
+        ),
+        "output_dir": str(validation_run.output_dir),
+        "started_at": validation_run.started_at.isoformat(),
+        "completed_at": validation_run.completed_at.isoformat(),
+        "passed": validation_run.passed,
+        "summary": {
+            "total": len(validation_run.results),
+            "passed": sum(1 for result in validation_run.results if result.passed),
+            "failed": sum(1 for result in validation_run.results if not result.passed),
+            "total_tokens": total_tokens,
+            "input_tokens": input_tokens,
+            "cached_tokens": cached_tokens,
+            "cache_hit_ratio": (
+                round(cached_tokens / input_tokens, 4)
+                if input_tokens
+                else 0.0
+            ),
+        },
+        "results": [
+            {
+                "repo_id": result.repo_id,
+                "passed": result.passed,
+                "live_validation_passed": result.live_validation_passed,
+                "expectation_check_passed": result.expectation_check_passed,
+                "source": result.source,
+                "repo_path": str(result.repo_path),
+                "run_id": result.run_id,
+                "expected_permit_status": result.expected_permit_status,
+                "actual_permit_status": result.actual_permit_status,
+                "expected_rule_ids_present": list(result.expected_rule_ids_present),
+                "expected_rule_ids_absent": list(result.expected_rule_ids_absent),
+                "actual_rule_ids": list(result.actual_rule_ids),
+                "missing_rule_ids": list(result.missing_rule_ids),
+                "forbidden_rule_ids": list(result.forbidden_rule_ids),
+                "status_check_passed": result.status_check_passed,
+                "expected_rule_check_passed": result.expected_rule_check_passed,
+                "forbidden_rule_check_passed": result.forbidden_rule_check_passed,
+                "citation_check_passed": result.citation_check_passed,
+                "findings_count": result.findings_count,
+                "graph_paths_count": result.graph_paths_count,
+                "controls_count": result.controls_count,
+                "model_calls": result.model_calls,
+                "input_tokens": result.input_tokens,
+                "total_tokens": result.total_tokens,
+                "cached_tokens": result.cached_tokens,
+                "cache_hit_ratio": result.cache_hit_ratio,
+                "artifact_dir": str(result.artifact_dir),
+                "report_path": str(result.report_path) if result.report_path else None,
+                "usage_path": str(result.usage_path) if result.usage_path else None,
+                "validation_path": (
+                    str(result.validation_path) if result.validation_path else None
+                ),
+                "error_message": result.error_message,
+                "duration_seconds": result.duration_seconds,
+            }
+            for result in validation_run.results
+        ],
+    }
+
+
+def _read_json_file(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _load_artifact_rule_ids(artifact_dir: Path) -> tuple[str, ...]:
+    payload = _read_json_file(artifact_dir / "raw-findings.json")
+    findings = payload.get("findings", [])
+    if not isinstance(findings, list):
+        return ()
+    rule_ids = {
+        str(finding.get("rule_id"))
+        for finding in findings
+        if isinstance(finding, dict) and finding.get("rule_id")
+    }
+    return tuple(sorted(rule_ids))
+
+
+def _optional_path(value: object) -> Path | None:
+    if not isinstance(value, str) or not value:
+        return None
+    return Path(value)
 
 
 def _artifact_tree_contains_secret_marker(artifact_dir: Path) -> bool:

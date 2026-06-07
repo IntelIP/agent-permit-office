@@ -38,10 +38,13 @@ from agent_permit.evals import (
     DEFAULT_PHOENIX_DATASET_NAME,
     EVAL_REPORT_FILE,
     EVAL_RESULTS_FILE,
+    LIVE_REPO_VALIDATION_REPORT_FILE,
+    LIVE_REPO_VALIDATION_RESULTS_FILE,
     PHOENIX_DATASET_ROWS_FILE,
     REAL_REPO_EVAL_REPORT_FILE,
     REAL_REPO_EVAL_RESULTS_FILE,
     run_fixture_eval_suite,
+    run_live_repo_validation_suite,
     run_real_repo_eval_suite,
     upload_phoenix_dataset_rows,
 )
@@ -328,6 +331,67 @@ def build_parser() -> argparse.ArgumentParser:
             "multiple patterns"
         ),
     )
+    live_real_parser = subparsers.add_parser(
+        "live-validate-real",
+        help="run live validation against local real-repo checkouts from a manifest",
+    )
+    live_real_parser.add_argument(
+        "manifest",
+        type=Path,
+        help="JSON manifest with repo paths and live validation expectations",
+    )
+    live_real_parser.add_argument(
+        "--repo-root",
+        type=Path,
+        help="base directory used to resolve relative manifest local_path values",
+    )
+    live_real_parser.add_argument(
+        "--run-id",
+        help="explicit validation run ID for repeatable live validation",
+    )
+    live_real_parser.add_argument(
+        "--output",
+        type=Path,
+        help=(
+            "output directory; defaults to "
+            ".agent-permit/live-repo-validations/<run_id>"
+        ),
+    )
+    live_real_parser.add_argument(
+        "--model",
+        help=(
+            "Deep Agents model string; defaults to "
+            f"{DEFAULT_DEEP_AGENT_MODEL}"
+        ),
+    )
+    live_real_parser.add_argument(
+        "--agent-recursion-limit",
+        type=int,
+        default=DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+        help=(
+            "max LangGraph recursion steps for live Deep Agent runs; default "
+            f"{DEFAULT_DEEP_AGENT_RECURSION_LIMIT}"
+        ),
+    )
+    live_real_parser.add_argument(
+        "--phoenix",
+        action="store_true",
+        help="enable Phoenix/OpenTelemetry tracing for each live investigation",
+    )
+    live_real_parser.add_argument(
+        "--langsmith",
+        action="store_true",
+        help="enable LangSmith tracing for each live investigation",
+    )
+    live_real_parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help=(
+            "gitignore-style pattern to skip during inventory; repeat for "
+            "multiple patterns"
+        ),
+    )
     rules_parser = subparsers.add_parser(
         "rules",
         help="list deterministic scanner rules",
@@ -463,6 +527,20 @@ def main(
             repo_root=args.repo_root,
             eval_run_id=args.run_id,
             output_dir=args.output,
+            exclude_patterns=args.exclude,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    if args.command == "live-validate-real":
+        return run_live_validate_real(
+            args.manifest,
+            repo_root=args.repo_root,
+            validation_run_id=args.run_id,
+            output_dir=args.output,
+            model=args.model,
+            agent_recursion_limit=args.agent_recursion_limit,
+            enable_phoenix=args.phoenix,
+            enable_langsmith=args.langsmith,
             exclude_patterns=args.exclude,
             stdout=stdout,
             stderr=stderr,
@@ -1068,6 +1146,82 @@ def run_real_eval(
         file=stdout,
     )
     return 0 if eval_run.passed else 1
+
+
+def run_live_validate_real(
+    manifest_path: Path,
+    *,
+    repo_root: Path | None = None,
+    validation_run_id: str | None = None,
+    output_dir: Path | None = None,
+    model: str | None = None,
+    agent_recursion_limit: int = DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+    enable_phoenix: bool = False,
+    enable_langsmith: bool = False,
+    exclude_patterns: Sequence[str] | None = None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if not manifest_path.exists():
+        print(f"error: manifest does not exist: {manifest_path}", file=stderr)
+        return 2
+    if not manifest_path.is_file():
+        print(f"error: manifest must be a file: {manifest_path}", file=stderr)
+        return 2
+    if repo_root is not None and not repo_root.is_dir():
+        print(f"error: repo root must be a directory: {repo_root}", file=stderr)
+        return 2
+
+    try:
+        validation_run = run_live_repo_validation_suite(
+            manifest_path,
+            repo_root=repo_root,
+            validation_run_id=validation_run_id,
+            output_dir=output_dir,
+            model=model,
+            agent_recursion_limit=agent_recursion_limit,
+            enable_phoenix=enable_phoenix,
+            enable_langsmith=enable_langsmith,
+            exclude_patterns=tuple(exclude_patterns or ()),
+        )
+    except (OSError, ValueError, RuntimeError, KeyError, json.JSONDecodeError) as exc:
+        print(f"error: live repo validation failed: {exc}", file=stderr)
+        return 1
+
+    passed = sum(1 for result in validation_run.results if result.passed)
+    total = len(validation_run.results)
+    total_tokens = sum(result.total_tokens for result in validation_run.results)
+    cached_tokens = sum(result.cached_tokens for result in validation_run.results)
+    input_tokens = sum(result.input_tokens for result in validation_run.results)
+    cache_hit_ratio = (
+        round(cached_tokens / input_tokens, 4)
+        if input_tokens
+        else 0.0
+    )
+    print("Agent Permit Office", file=stdout)
+    print("Status: live_repo_validation_complete", file=stdout)
+    print(f"Validation run: {validation_run.validation_run_id}", file=stdout)
+    print(f"Manifest: {validation_run.manifest_path}", file=stdout)
+    if validation_run.repo_root is not None:
+        print(f"Repo root: {validation_run.repo_root}", file=stdout)
+    print(f"Output: {validation_run.output_dir}", file=stdout)
+    print(f"Repos: {passed}/{total} passed", file=stdout)
+    print(f"Total tokens: {total_tokens}", file=stdout)
+    print(f"Cached tokens: {cached_tokens}", file=stdout)
+    print(f"Cache hit ratio: {cache_hit_ratio:.2%}", file=stdout)
+    print(
+        f"Results: {validation_run.output_dir / LIVE_REPO_VALIDATION_RESULTS_FILE}",
+        file=stdout,
+    )
+    print(
+        f"Report: {validation_run.output_dir / LIVE_REPO_VALIDATION_REPORT_FILE}",
+        file=stdout,
+    )
+    if enable_phoenix:
+        print("Phoenix tracing: requested", file=stdout)
+    if enable_langsmith:
+        print("LangSmith tracing: requested", file=stdout)
+    return 0 if validation_run.passed else 1
 
 
 def run_rules(scanner: str | None, *, stdout: TextIO) -> int:

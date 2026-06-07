@@ -563,6 +563,23 @@ Backlog:
 | Failure handling | Let citation critic catch unsupported model output. | Done: initial placeholder `[rule:<rule_id>]` failure was caught and fixed. |
 | Evidence doc | Store repeatable results and next hardening target. | Done: `docs/open-source-live-validation.md`. |
 
+## Sprint 23: Live Validation Manifest Runner
+
+Goal:
+
+- make open source live validation repeatable without shell loops
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Manifest | Recent open-source validation set is committed. | Done: `docs/evals/open-source-live-repos.json` defines five local checkout targets and expected outcomes. |
+| CLI runner | Operator can run the whole set in one command. | Done: `agent-permit live-validate-real <manifest>` runs each repo through the live Deep Agent harness. |
+| Aggregate artifacts | Results are reviewable outside individual repo folders. | Done: runner writes `live-repo-validation-results.json` and `live-repo-validation-report.md`. |
+| Expectation gate | Drift and live failures are visible. | Done: runner checks live status, citations, expected permit status, expected rules, and forbidden rules. |
+| Cost telemetry | Suite-level usage is visible. | Done: aggregate output includes model calls, total tokens, input tokens, cached tokens, and cache-hit ratio. |
+| Tests | Manifest runner has no-spend coverage. | Done: tests fake live validation and assert aggregate JSON/Markdown output. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
@@ -601,8 +618,8 @@ Notion page later:
 
 ## Immediate Next Step
 
-Turn Sprint 22 into a repeatable manifest runner:
+Run Sprint 23 live validation from the committed manifest:
 
 ```text
-target interface: agent-permit live-validate-real docs/evals/open-source-live-repos.json
+agent-permit live-validate-real docs/evals/open-source-live-repos.json
 ```
