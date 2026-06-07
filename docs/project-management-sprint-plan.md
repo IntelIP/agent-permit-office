@@ -531,6 +531,22 @@ Backlog:
 | Real repo live report | Produce citation-checked Deep Agent report. | Done: Sonnet 4.6 report passed citation critic with 88 lines and no sentinel residue. |
 | Cost telemetry | Record real-repo usage. | Done: 3 model calls, 32,340 total tokens, 17,213 cached tokens, 57.21% cache hit ratio. |
 
+## Sprint 21: Live Validation Harness
+
+Goal:
+
+- turn manual live scan/investigation wrappers into one repeatable MVP validation command
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| CLI command | Operator can validate a repo in one command. | Done: `agent-permit live-validate <repo>` scans fresh and invokes the live Deep Agent path. |
+| Validation artifact | Runs produce machine-readable evidence. | Done: `live-validation.json` records paths, counts, model, tracing flags, exit codes, citation result, and OpenRouter usage. |
+| Exit contract | Product outcomes do not break validation. | Done: scanner/agent/citation failures fail; `blocked` and `needs_review` permit statuses pass when investigation succeeds. |
+| Test seam | Unit tests avoid live model spend. | Done: fake Deep Agent path proves scan, report, citation, and JSON summary behavior. |
+| Docs | Operator can run the harness without manual shell stitching. | Done: README and live validation docs include `live-validate`. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
@@ -569,15 +585,16 @@ Notion page later:
 
 ## Immediate Next Step
 
-Validate Sprint 20 locally:
+Validate Sprint 21 locally:
 
 ```text
 uv run pytest
+OPENROUTER_TIMEOUT_SECONDS=30 \
+OPENROUTER_MAX_COMPLETION_TOKENS=2400 \
 PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006 \
-  OPENROUTER_TIMEOUT_SECONDS=30 \
-  OPENROUTER_MAX_COMPLETION_TOKENS=2400 \
-  uv run --extra deep-agent --extra phoenix agent-permit investigate \
-  .agent-permit/runs/<run_id> --agent-recursion-limit 20 --phoenix
+  uv run --extra deep-agent --extra phoenix agent-permit live-validate \
+  tests/fixtures/risky-ci-agent \
+  --run-id sprint21-live-fixture \
+  --agent-recursion-limit 20 \
+  --phoenix
 ```
-
-After validation, Sprint 21 should productize a repeatable live validation harness instead of relying on manual shell wrappers.

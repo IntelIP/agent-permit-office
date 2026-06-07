@@ -202,6 +202,10 @@ Sprint 20 Phoenix and real repo live validation items:
 
 - `APO-58`: Validate Phoenix trace export and real repo Deep Agent report - done
 
+Sprint 21 live validation harness items:
+
+- `APO-59`: Productize live scan and Deep Agent validation harness - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

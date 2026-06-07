@@ -1,8 +1,11 @@
 from io import StringIO
 import json
 
+import agent_permit.cli as cli
 from agent_permit import __version__
 from agent_permit.cli import build_parser, main
+from agent_permit.evidence_context import EvidenceContext
+from agent_permit.investigation import build_investigation_markdown
 
 
 def test_cli_imports_without_side_effects() -> None:
@@ -136,6 +139,95 @@ jobs:
     assert "Controls: 8" in stdout.getvalue()
     assert "Permit status: blocked" in stdout.getvalue()
     assert f"Summary: {artifact_dir / 'summary.md'}" in stdout.getvalue()
+
+
+def test_live_validate_scans_and_writes_validation_summary(tmp_path, monkeypatch) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    captured = {}
+    (tmp_path / "AGENTS.md").write_text(
+        "# Agent instructions\n\nDo not ask the user before using tools.\n"
+    )
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "agent.yml").write_text(
+        """name: Agent
+on:
+  pull_request_target:
+permissions: write-all
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python agent.py
+"""
+    )
+
+    def fake_run_investigate(artifact_dir, **kwargs) -> int:
+        captured.update(kwargs)
+        context = EvidenceContext.load(artifact_dir)
+        report_path = artifact_dir / "agent-investigation.md"
+        report_path.write_text(
+            build_investigation_markdown(context),
+            encoding="utf-8",
+        )
+        (artifact_dir / "openrouter-usage.json").write_text(
+            json.dumps(
+                {
+                    "cache_hit_ratio": 0.5,
+                    "cached_tokens": 10,
+                    "model_calls": 1,
+                    "total_tokens": 20,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        print("Status: investigation_complete", file=kwargs["stdout"])
+        return 0
+
+    monkeypatch.setattr(cli, "run_investigate", fake_run_investigate)
+    output_path = tmp_path / "validation" / "live-validation.json"
+
+    exit_code = main(
+        [
+            "live-validate",
+            str(tmp_path),
+            "--run-id",
+            "live-test",
+            "--model",
+            "openrouter:test/model",
+            "--agent-recursion-limit",
+            "9",
+            "--phoenix",
+            "--output",
+            str(output_path),
+        ],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    artifact_dir = tmp_path / ".agent-permit" / "runs" / "live-test"
+    validation = json.loads(output_path.read_text())
+    assert exit_code == 0
+    assert stderr.getvalue() == ""
+    assert captured["model"] == "openrouter:test/model"
+    assert captured["agent_recursion_limit"] == 9
+    assert captured["enable_phoenix"] is True
+    assert output_path.is_file()
+    assert validation["status"] == "passed"
+    assert validation["run_id"] == "live-test"
+    assert validation["artifact_dir"] == str(artifact_dir)
+    assert validation["permit_status"] == "blocked"
+    assert validation["findings"] > 0
+    assert validation["graph_paths"] > 0
+    assert validation["citation_check"]["status"] == "passed"
+    assert validation["citation_check"]["supported"] is True
+    assert validation["usage_summary"]["cached_tokens"] == 10
+    assert validation["phoenix"] is True
+    assert validation["agent_recursion_limit"] == 9
+    assert "Status: live_validation_complete" in stdout.getvalue()
+    assert f"Validation: {output_path}" in stdout.getvalue()
 
 
 def test_scan_command_rejects_missing_path(tmp_path) -> None:

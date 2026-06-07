@@ -21,6 +21,7 @@ Current implementation:
 - Policy mode reads `agent-permit-policy.json` or `--policy` and writes `policy-evaluation.json`.
 - Eval mode writes fixture regression and Phoenix dataset-row artifacts under `.agent-permit/evals/<run_id>/`.
 - Investigation mode uses a required bounded LangChain Deep Agent, defaulting to Claude Sonnet 4.6 through OpenRouter.
+- Live validation mode scans fresh, runs the Deep Agent, citation-checks the report, and writes `live-validation.json`.
 - Optional Phoenix/OpenTelemetry tracing can be enabled for live Deep Agent investigations, including evidence-tool spans.
 - Real `.env` files and generated/junk directories are skipped; secret values are not emitted.
 
@@ -54,6 +55,15 @@ Write a cited Deep Agent investigation from scan artifacts:
 ```bash
 export OPENROUTER_API_KEY=<key>
 uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+```
+
+Run the full live validation harness:
+
+```bash
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent --extra phoenix agent-permit live-validate . \
+  --agent-recursion-limit 20 \
+  --phoenix
 ```
 
 Write the offline deterministic fallback for tests or no-key debugging:

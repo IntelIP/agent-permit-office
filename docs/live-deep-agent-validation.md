@@ -156,3 +156,56 @@ Usage summary:
 ## Next Validation
 
 Run one GPT-5.5 comparison only if Sonnet 4.6 fails a harder real-repo citation or report-quality check. Otherwise, next work should be productizing a live validation harness that records these run metrics without manual shell wrappers.
+
+## Sprint 21 Live Validation Harness
+
+`agent-permit live-validate <repo>` productizes the manual validation path:
+
+```bash
+OPENROUTER_TIMEOUT_SECONDS=30 \
+OPENROUTER_MAX_COMPLETION_TOKENS=2400 \
+uv run --extra deep-agent --extra phoenix agent-permit live-validate . \
+  --run-id sprint21-live-validation \
+  --agent-recursion-limit 20 \
+  --phoenix
+```
+
+Flow:
+
+1. Run a fresh deterministic scan with `ci=false`.
+2. Run the required live Deep Agent investigation on the new artifact directory.
+3. Re-run the deterministic citation critic against the written report.
+4. Write `live-validation.json` next to the report unless `--output` is provided.
+
+Pass/fail contract:
+
+- scanner failure fails the harness
+- live Deep Agent failure fails the harness
+- citation critic failure fails the harness
+- `blocked` and `needs_review` permit statuses do not fail the harness because they are valid permit outcomes
+
+The validation artifact records:
+
+- target repo and run ID
+- artifact, report, usage, and validation paths
+- scan and investigation exit codes
+- permit status, finding count, graph-path count, control count, and credential count
+- selected model and recursion limit
+- Phoenix/LangSmith request flags
+- citation critic result
+- OpenRouter usage summary when available
+
+Fixture harness result:
+
+- run ID: `sprint21-live-fixture`
+- exit code: `0`
+- status: `live_validation_complete`
+- permit status: `blocked`
+- findings: `4`
+- graph paths: `1`
+- controls: `5`
+- citation check: `passed`
+- model calls: `3`
+- total tokens: `29,725`
+- cached tokens: `16,717`
+- cache hit ratio: `59.8%`

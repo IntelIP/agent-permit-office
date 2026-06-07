@@ -3,13 +3,19 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from datetime import datetime, timezone
+from io import StringIO
 import json
 from pathlib import Path
 import sys
-from typing import TextIO
+from typing import Any, TextIO
 
 from agent_permit import __version__
-from agent_permit.artifacts import RunArtifactWriter
+from agent_permit.artifacts import (
+    ARTIFACT_ROOT,
+    RUNS_DIR,
+    RunArtifactWriter,
+    create_run_id,
+)
 from agent_permit.baseline import (
     BASELINE_FILE,
     DIFF_JSON_FILE,
@@ -70,6 +76,7 @@ from agent_permit.scanners.prompt_instructions import PromptInstructionScanner
 
 
 DEFAULT_DEEP_AGENT_MODEL = f"openrouter:{OPENROUTER_DEFAULT_MODEL}"
+LIVE_VALIDATION_FILE = "live-validation.json"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -188,6 +195,66 @@ def build_parser() -> argparse.ArgumentParser:
         "--phoenix",
         action="store_true",
         help="enable Phoenix/OpenTelemetry tracing for a live Deep Agent run",
+    )
+    live_validate_parser = subparsers.add_parser(
+        "live-validate",
+        help="scan a repo and run the live Deep Agent validation harness",
+    )
+    live_validate_parser.add_argument("path", type=Path, help="repo path to validate")
+    live_validate_parser.add_argument(
+        "--run-id",
+        help="explicit run ID for repeatable live validation",
+    )
+    live_validate_parser.add_argument(
+        "--model",
+        help=(
+            "Deep Agents model string; defaults to "
+            f"{DEFAULT_DEEP_AGENT_MODEL}"
+        ),
+    )
+    live_validate_parser.add_argument(
+        "--agent-recursion-limit",
+        type=int,
+        default=DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+        help=(
+            "max LangGraph recursion steps for live Deep Agent runs; default "
+            f"{DEFAULT_DEEP_AGENT_RECURSION_LIMIT}"
+        ),
+    )
+    live_validate_parser.add_argument(
+        "--phoenix",
+        action="store_true",
+        help="enable Phoenix/OpenTelemetry tracing for the live investigation",
+    )
+    live_validate_parser.add_argument(
+        "--langsmith",
+        action="store_true",
+        help="enable LangSmith tracing for the live investigation",
+    )
+    live_validate_parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help=(
+            "gitignore-style pattern to skip during inventory; repeat for "
+            "multiple patterns"
+        ),
+    )
+    live_validate_parser.add_argument(
+        "--policy",
+        type=Path,
+        help=(
+            f"policy JSON path; defaults to {DEFAULT_POLICY_FILE} when present "
+            "in the validated repo"
+        ),
+    )
+    live_validate_parser.add_argument(
+        "--output",
+        type=Path,
+        help=(
+            "live validation JSON output path; defaults to "
+            f"artifact_dir/{LIVE_VALIDATION_FILE}"
+        ),
     )
     eval_parser = subparsers.add_parser(
         "eval",
@@ -362,6 +429,20 @@ def main(
             agent_recursion_limit=args.agent_recursion_limit,
             enable_langsmith=args.langsmith,
             enable_phoenix=args.phoenix,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    if args.command == "live-validate":
+        return run_live_validate(
+            args.path,
+            run_id=args.run_id,
+            model=args.model,
+            agent_recursion_limit=args.agent_recursion_limit,
+            enable_phoenix=args.phoenix,
+            enable_langsmith=args.langsmith,
+            exclude_patterns=args.exclude,
+            policy_path=args.policy,
+            output_path=args.output,
             stdout=stdout,
             stderr=stderr,
         )
@@ -715,6 +796,160 @@ def run_investigate(
     return 0
 
 
+def run_live_validate(
+    target_path: Path,
+    *,
+    run_id: str | None = None,
+    model: str | None = None,
+    agent_recursion_limit: int = DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+    enable_phoenix: bool = False,
+    enable_langsmith: bool = False,
+    exclude_patterns: Sequence[str] | None = None,
+    policy_path: Path | None = None,
+    output_path: Path | None = None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    selected_model = model or DEFAULT_DEEP_AGENT_MODEL
+    validation_run_id = run_id or create_run_id(target_path)
+    artifact_dir = (
+        target_path.resolve()
+        / ARTIFACT_ROOT
+        / RUNS_DIR
+        / validation_run_id
+    )
+
+    scan_stdout = StringIO()
+    scan_stderr = StringIO()
+    scan_exit_code = run_scan(
+        target_path,
+        validation_run_id,
+        ci=False,
+        exclude_patterns=exclude_patterns,
+        policy_path=policy_path,
+        stdout=scan_stdout,
+        stderr=scan_stderr,
+    )
+    if scan_exit_code != 0:
+        _write_prefixed_output(scan_stdout.getvalue(), stdout)
+        _write_prefixed_output(scan_stderr.getvalue(), stderr)
+        return scan_exit_code
+
+    investigation_stdout = StringIO()
+    investigation_stderr = StringIO()
+    investigation_exit_code = run_investigate(
+        artifact_dir,
+        output_path=None,
+        model=selected_model,
+        deterministic_only=False,
+        agent_recursion_limit=agent_recursion_limit,
+        enable_langsmith=enable_langsmith,
+        enable_phoenix=enable_phoenix,
+        stdout=investigation_stdout,
+        stderr=investigation_stderr,
+    )
+
+    try:
+        context = EvidenceContext.load(artifact_dir)
+    except (FileNotFoundError, PermissionError, ValueError) as exc:
+        _write_prefixed_output(investigation_stderr.getvalue(), stderr)
+        print(f"error: failed to load validation artifacts: {exc}", file=stderr)
+        return 1
+
+    report_path = artifact_dir / "agent-investigation.md"
+    usage_path = artifact_dir / "openrouter-usage.json"
+    validation_path = output_path or (artifact_dir / LIVE_VALIDATION_FILE)
+    citation_check: dict[str, Any] = {
+        "supported": False,
+        "unsupported_citations": [],
+        "unsupported_rule_ids": [],
+        "missing_citation_rule_ids": [],
+        "status": "not_run",
+    }
+    if report_path.is_file():
+        critic_result = critique_investigation_report(
+            context,
+            report_path.read_text(encoding="utf-8"),
+        )
+        citation_check = {
+            "supported": critic_result.supported,
+            "unsupported_citations": list(critic_result.unsupported_citations),
+            "unsupported_rule_ids": list(critic_result.unsupported_rule_ids),
+            "missing_citation_rule_ids": list(
+                critic_result.missing_citation_rule_ids
+            ),
+            "status": "passed" if critic_result.supported else "failed",
+        }
+
+    summary = context.summary()
+    passed = investigation_exit_code == 0 and citation_check["supported"] is True
+    usage_summary = _read_json_file_if_exists(usage_path)
+    validation_payload = {
+        "status": "passed" if passed else "failed",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "run_id": validation_run_id,
+        "target": str(target_path.resolve()),
+        "artifact_dir": str(artifact_dir),
+        "report_path": str(report_path) if report_path.is_file() else None,
+        "usage_path": str(usage_path) if usage_path.is_file() else None,
+        "validation_path": str(validation_path),
+        "scan_exit_code": scan_exit_code,
+        "investigation_exit_code": investigation_exit_code,
+        "permit_status": summary.permit_status,
+        "findings": summary.findings_count,
+        "graph_paths": summary.graph_paths_count,
+        "controls": summary.controls_count,
+        "credentials": len(summary.credential_names),
+        "available_artifacts": list(summary.available_artifacts),
+        "model": selected_model,
+        "agent_recursion_limit": agent_recursion_limit,
+        "phoenix": enable_phoenix,
+        "langsmith": enable_langsmith,
+        "citation_check": citation_check,
+        "usage_summary": usage_summary,
+    }
+    try:
+        validation_path.parent.mkdir(parents=True, exist_ok=True)
+        validation_path.write_text(
+            json.dumps(validation_payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        print(f"error: failed to write live validation: {exc}", file=stderr)
+        return 1
+
+    _write_prefixed_output(investigation_stderr.getvalue(), stderr)
+    print("Agent Permit Office", file=stdout)
+    print(
+        f"Status: {'live_validation_complete' if passed else 'live_validation_failed'}",
+        file=stdout,
+    )
+    print(f"Target: {target_path.resolve()}", file=stdout)
+    print(f"Run ID: {validation_run_id}", file=stdout)
+    print(f"Artifacts: {artifact_dir}", file=stdout)
+    print(f"Permit status: {summary.permit_status}", file=stdout)
+    print(f"Findings: {summary.findings_count}", file=stdout)
+    print(f"Graph paths: {summary.graph_paths_count}", file=stdout)
+    print(f"Controls: {summary.controls_count}", file=stdout)
+    print(f"Citation check: {citation_check['status']}", file=stdout)
+    print(f"Deep Agent model: {selected_model}", file=stdout)
+    print(f"Deep Agent recursion limit: {agent_recursion_limit}", file=stdout)
+    print(
+        f"Phoenix tracing: {'requested' if enable_phoenix else 'not_requested'}",
+        file=stdout,
+    )
+    print(
+        f"LangSmith tracing: {'requested' if enable_langsmith else 'not_requested'}",
+        file=stdout,
+    )
+    if report_path.is_file():
+        print(f"Report: {report_path}", file=stdout)
+    if usage_path.is_file():
+        print(f"OpenRouter usage: {usage_path}", file=stdout)
+    print(f"Validation: {validation_path}", file=stdout)
+    return 0 if passed else (investigation_exit_code or 1)
+
+
 def run_eval(
     fixture_root: Path,
     *,
@@ -964,3 +1199,20 @@ def run_sarif(
     print(f"Findings: {len(context.findings)}", file=stdout)
     print(f"Category: {category}", file=stdout)
     return 0
+
+
+def _read_json_file_if_exists(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def _write_prefixed_output(text: str, stream: TextIO) -> None:
+    if text.strip():
+        print(text.rstrip(), file=stream)
