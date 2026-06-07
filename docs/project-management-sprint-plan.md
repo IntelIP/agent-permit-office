@@ -596,6 +596,22 @@ Backlog:
 | Demo artifacts | Output is easy to show. | Done: command writes JSON, Markdown, and HTML reports under `.agent-permit/open-source-demos/<run_id>/`. |
 | Tests | Demo path has no-spend coverage. | Done: tests fake prep/live validation and assert report paths. |
 
+## Sprint 25: Open Source Release And Open Core Plan
+
+Goal:
+
+- turn local MVP proof into a public-release and business-readiness plan
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Release readiness | Public GitHub repo gates are explicit. | Done: `docs/open-source-release-readiness.md` defines license, security, docs, CI, packaging, and hygiene gates. |
+| Open-core boundary | Free core vs paid product is clear. | Done: `docs/open-core-business-plan.md` defines open-source core, commercial tiers, pricing hypotheses, cost guardrails, moat, and GTM. |
+| Source-backed plan | Licensing and open-core claims cite current references. | Done: OSI, Sentry/Fair Source, HashiCorp/BUSL, and OpenTofu references are linked in docs. |
+| Project sync | README and Plane sync point to the plan. | Done: README links release/business docs; Plane sync records `APO-63`. |
+| Local proof | Docs do not break current MVP. | Done: `uv run pytest` passed 117 tests; CLI help smoke passed; self-scan approved with fixture exclusions. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:

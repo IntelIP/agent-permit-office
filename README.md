@@ -161,6 +161,8 @@ Current work:
 - [OpenRouter Model Decision](docs/openrouter-model-decision.md)
 - [Live Deep Agent Validation](docs/live-deep-agent-validation.md)
 - [Open Source Live Validation](docs/open-source-live-validation.md)
+- [Open Source Release Readiness](docs/open-source-release-readiness.md)
+- [Open Core Business Plan](docs/open-core-business-plan.md)
 - [Demo](docs/demo.md)
 - [Deep Agent Investigator](docs/deep-agent-investigator.md)
 - [Phoenix Observability and Evaluation](docs/phoenix-observability-evaluation.md)

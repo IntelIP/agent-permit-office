@@ -218,6 +218,10 @@ Sprint 24 open source demo package items:
 
 - `APO-62`: Package open source validation as a demo command - done
 
+Sprint 25 open source release and open-core planning items:
+
+- `APO-63`: Plan open-source release and open-core business path - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.
