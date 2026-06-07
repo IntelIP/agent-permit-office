@@ -19,6 +19,8 @@ It does not yet have hosted product analytics because there is no hosted control
 | Citation critic | built | command exit, `live-validation.json` |
 | Aggregate severity validation | built | citation critic aggregate checks |
 | Run metrics | built | `run-metrics.json` |
+| Local analytics events | built | `analytics-events.jsonl` |
+| Eval trends | built | `.agent-permit/eval-trends/<run_id>/` |
 | OpenRouter usage | built | `openrouter-usage.json` |
 | Live validation | built | `live-validation.json` |
 | Fixture evals | built | `.agent-permit/evals/<run_id>/eval-results.json` |
@@ -46,8 +48,6 @@ Missing product analytics:
 
 Missing eval analytics:
 
-- trend file across eval runs
-- severity aggregate consistency score
 - Deep Agent citation failure rate over time
 - model quality comparison
 - cache hit trend
@@ -107,6 +107,8 @@ Reason:
 
 Write local product-style events without sending them anywhere.
 
+Status: built in Sprint 30.
+
 Events:
 
 - `scan_started`
@@ -121,6 +123,8 @@ Events:
 No user identity. No repo contents. No secret values.
 
 ### 3. Eval Trend Report
+
+Status: built in Sprint 30 for fixture evals.
 
 Add:
 
@@ -177,7 +181,7 @@ Analytics should answer:
 Next analytics work should stay local-first:
 
 ```text
-analytics-events.jsonl + eval trend report + local dashboard
+local dashboard over run-metrics.json + analytics-events.jsonl + eval trends
 ```
 
 Hosted product analytics comes later with the open-core control plane.

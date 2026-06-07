@@ -20,7 +20,8 @@ Current implementation:
 - Baseline mode writes deterministic finding baselines and diffs so CI can fail only on newly introduced findings.
 - Policy mode reads `agent-permit-policy.json` or `--policy` and writes `policy-evaluation.json`.
 - Scan and live validation runs write sanitized `run-metrics.json` for local product/eval analytics.
-- Eval mode writes fixture regression and Phoenix dataset-row artifacts under `.agent-permit/evals/<run_id>/`.
+- Scan, live validation, and eval flows append local `analytics-events.jsonl`.
+- Eval mode writes fixture regression, Phoenix dataset rows, and eval trend artifacts.
 - Investigation mode uses a required bounded LangChain Deep Agent, defaulting to Claude Sonnet 4.6 through OpenRouter.
 - Live validation mode scans fresh, runs the Deep Agent, citation-checks the report, and writes `live-validation.json`.
 - Optional Phoenix/OpenTelemetry tracing can be enabled for live Deep Agent investigations, including evidence-tool spans.
@@ -49,6 +50,12 @@ Run with an exclusion:
 
 ```bash
 uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
+```
+
+Summarize local analytics events:
+
+```bash
+uv run agent-permit analytics summarize .
 ```
 
 Write a cited Deep Agent investigation from scan artifacts:

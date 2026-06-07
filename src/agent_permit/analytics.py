@@ -24,7 +24,26 @@ from agent_permit.models import (
 
 
 RUN_METRICS_FILE = "run-metrics.json"
+ANALYTICS_EVENTS_FILE = "analytics-events.jsonl"
+EVAL_TRENDS_DIR = "eval-trends"
+EVAL_TRENDS_JSON_FILE = "eval-trends.json"
+EVAL_TRENDS_MARKDOWN_FILE = "eval-trends.md"
+FIXTURE_EVAL_RESULTS_FILE = "eval-results.json"
 SEVERITIES = ("critical", "high", "medium", "low", "info")
+
+
+class AnalyticsEvent(StrictModel):
+    version: int = 1
+    event_name: str
+    occurred_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    run_id: str | None = None
+    run_type: str | None = None
+    target_hash: str | None = None
+    status: str | None = None
+    permit_status: str | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class RunMetrics(StrictModel):
@@ -69,6 +88,91 @@ class RunMetrics(StrictModel):
     phoenix: bool | None = None
     langsmith: bool | None = None
     available_artifacts: list[str] = Field(default_factory=list)
+
+
+def build_analytics_event(
+    event_name: str,
+    *,
+    run_id: str | None = None,
+    run_type: str | None = None,
+    target_hash: str | None = None,
+    status: str | None = None,
+    permit_status: str | None = None,
+    payload: dict[str, Any] | None = None,
+) -> AnalyticsEvent:
+    return AnalyticsEvent(
+        event_name=event_name,
+        run_id=run_id,
+        run_type=run_type,
+        target_hash=target_hash,
+        status=status,
+        permit_status=permit_status,
+        payload=_json_safe_payload(payload or {}),
+    )
+
+
+def event_from_metrics(
+    event_name: str,
+    metrics: RunMetrics,
+    *,
+    status: str | None = None,
+    payload: dict[str, Any] | None = None,
+) -> AnalyticsEvent:
+    return build_analytics_event(
+        event_name,
+        run_id=metrics.run_id,
+        run_type=metrics.run_type,
+        target_hash=metrics.target_hash,
+        status=status or metrics.status,
+        permit_status=metrics.permit_status,
+        payload=payload,
+    )
+
+
+def analytics_events_path(root_path: Path) -> Path:
+    return root_path.resolve() / ".agent-permit" / ANALYTICS_EVENTS_FILE
+
+
+def analytics_events_path_for_output(output_dir: Path) -> Path:
+    artifact_root = nearest_artifact_root(output_dir)
+    if artifact_root is not None:
+        return artifact_root / ANALYTICS_EVENTS_FILE
+    return output_dir.resolve() / ANALYTICS_EVENTS_FILE
+
+
+def append_analytics_event(path: Path, event: AnalyticsEvent) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event.model_dump(mode="json"), sort_keys=True) + "\n")
+
+
+def read_analytics_events(path: Path) -> list[AnalyticsEvent]:
+    if not path.is_file():
+        return []
+    events: list[AnalyticsEvent] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            events.append(AnalyticsEvent.model_validate(json.loads(line)))
+    return events
+
+
+def build_analytics_summary(path: Path) -> dict[str, Any]:
+    event_path = path if path.is_file() else analytics_events_path(path)
+    events = read_analytics_events(event_path)
+    counts = Counter(event.event_name for event in events)
+    status_counts = Counter(
+        event.status for event in events if event.status is not None
+    )
+    latest_event = events[-1] if events else None
+    return {
+        "events_path": str(event_path),
+        "total_events": len(events),
+        "event_counts": dict(sorted(counts.items())),
+        "status_counts": dict(sorted(status_counts.items())),
+        "latest_event": (
+            latest_event.model_dump(mode="json") if latest_event is not None else None
+        ),
+    }
 
 
 def build_scan_run_metrics(
@@ -162,6 +266,112 @@ def write_run_metrics(path: Path, metrics: RunMetrics) -> None:
         json.dumps(metrics.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def eval_trends_dir_for_output(output_dir: Path, eval_run_id: str) -> Path:
+    artifact_root = nearest_artifact_root(output_dir)
+    if artifact_root is not None:
+        return artifact_root / EVAL_TRENDS_DIR / eval_run_id
+    return output_dir.resolve() / EVAL_TRENDS_DIR / eval_run_id
+
+
+def write_eval_trends(output_dir: Path, eval_run_id: str) -> tuple[Path, Path]:
+    trend_dir = eval_trends_dir_for_output(output_dir, eval_run_id)
+    trend_dir.mkdir(parents=True, exist_ok=True)
+    payload = build_eval_trends(output_dir=output_dir, trend_run_id=eval_run_id)
+    json_path = trend_dir / EVAL_TRENDS_JSON_FILE
+    markdown_path = trend_dir / EVAL_TRENDS_MARKDOWN_FILE
+    json_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    markdown_path.write_text(
+        build_eval_trends_markdown(payload),
+        encoding="utf-8",
+    )
+    return json_path, markdown_path
+
+
+def build_eval_trends(
+    *,
+    output_dir: Path,
+    trend_run_id: str,
+) -> dict[str, Any]:
+    run_summaries = [
+        _eval_result_summary(path)
+        for path in _discover_fixture_eval_result_paths(output_dir)
+    ]
+    run_summaries = [summary for summary in run_summaries if summary is not None]
+    latest = run_summaries[-1] if run_summaries else None
+    total_cases = sum(int(run["total_cases"]) for run in run_summaries)
+    failed_cases = sum(int(run["failed_cases"]) for run in run_summaries)
+    citation_failures = sum(int(run["citation_failures"]) for run in run_summaries)
+    aggregate_mismatches = sum(int(run["aggregate_mismatches"]) for run in run_summaries)
+    pass_rates = [float(run["pass_rate"]) for run in run_summaries]
+    return {
+        "version": 1,
+        "trend_run_id": trend_run_id,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": {
+            "runs": len(run_summaries),
+            "latest_run_id": latest["eval_run_id"] if latest else None,
+            "latest_passed": latest["passed"] if latest else None,
+            "latest_pass_rate": latest["pass_rate"] if latest else None,
+            "best_pass_rate": max(pass_rates) if pass_rates else None,
+            "worst_pass_rate": min(pass_rates) if pass_rates else None,
+            "total_cases": total_cases,
+            "failed_cases": failed_cases,
+            "citation_failures": citation_failures,
+            "aggregate_mismatches": aggregate_mismatches,
+        },
+        "runs": run_summaries,
+    }
+
+
+def build_eval_trends_markdown(payload: dict[str, Any]) -> str:
+    summary = payload["summary"]
+    lines = [
+        "# Agent Permit Office Eval Trends",
+        "",
+        f"Trend run: `{payload['trend_run_id']}`",
+        f"Runs: `{summary['runs']}`",
+        f"Latest run: `{summary['latest_run_id'] or 'none'}`",
+        f"Latest pass rate: `{_format_rate(summary['latest_pass_rate'])}`",
+        f"Failed cases: `{summary['failed_cases']}`",
+        f"Citation failures: `{summary['citation_failures']}`",
+        f"Aggregate mismatches: `{summary['aggregate_mismatches']}`",
+        "",
+        "## Runs",
+        "",
+        "| Run | Status | Cases | Pass Rate | Quality | Citation Failures | Aggregate Mismatches |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for run in payload["runs"]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(run["eval_run_id"]),
+                    "pass" if run["passed"] else "fail",
+                    f"{run['passed_cases']}/{run['total_cases']}",
+                    _format_rate(run["pass_rate"]),
+                    f"{float(run['average_quality_score']):.2f}",
+                    str(run["citation_failures"]),
+                    str(run["aggregate_mismatches"]),
+                ]
+            )
+            + " |"
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def nearest_artifact_root(path: Path) -> Path | None:
+    resolved = path.resolve()
+    candidates = [resolved, *resolved.parents]
+    for candidate in candidates:
+        if candidate.name == ".agent-permit":
+            return candidate
+    return None
 
 
 def target_fingerprint(
@@ -258,3 +468,84 @@ def _read_json(path: Path) -> dict[str, Any]:
 def _enum_value(value: object) -> str:
     raw_value = getattr(value, "value", value)
     return str(raw_value)
+
+
+def _json_safe_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    safe: dict[str, Any] = {}
+    for key, value in payload.items():
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            safe[key] = value
+        elif isinstance(value, (list, tuple)):
+            safe[key] = [
+                item
+                for item in value
+                if isinstance(item, (str, int, float, bool)) or item is None
+            ]
+        else:
+            safe[key] = str(value)
+    return safe
+
+
+def _discover_fixture_eval_result_paths(output_dir: Path) -> list[Path]:
+    output_dir = output_dir.resolve()
+    artifact_root = nearest_artifact_root(output_dir)
+    if artifact_root is None:
+        path = output_dir / FIXTURE_EVAL_RESULTS_FILE
+        return [path] if path.is_file() else []
+    evals_dir = artifact_root / "evals"
+    return sorted(evals_dir.glob(f"*/{FIXTURE_EVAL_RESULTS_FILE}"))
+
+
+def _eval_result_summary(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    payload = _read_json(path)
+    results = payload.get("results") or []
+    if not isinstance(results, list):
+        results = []
+    total_cases = len(results)
+    passed_cases = sum(1 for result in results if _result_bool(result, "passed"))
+    failed_cases = total_cases - passed_cases
+    quality_scores = [
+        float(result.get("quality_score") or 0.0)
+        for result in results
+        if isinstance(result, dict)
+    ]
+    return {
+        "eval_run_id": str(payload.get("eval_run_id", path.parent.name)),
+        "passed": bool(payload.get("passed", False)),
+        "total_cases": total_cases,
+        "passed_cases": passed_cases,
+        "failed_cases": failed_cases,
+        "pass_rate": round(passed_cases / total_cases, 4) if total_cases else 0.0,
+        "average_quality_score": (
+            round(sum(quality_scores) / len(quality_scores), 4)
+            if quality_scores
+            else 0.0
+        ),
+        "status_failures": _failure_count(results, "status_check_passed"),
+        "rule_failures": _failure_count(results, "rule_id_check_passed"),
+        "citation_failures": _failure_count(results, "citation_check_passed"),
+        "secret_leak_failures": _failure_count(results, "secret_leak_check_passed"),
+        "aggregate_mismatches": sum(
+            int(result.get("aggregate_mismatches") or 0)
+            for result in results
+            if isinstance(result, dict)
+        ),
+        "started_at": payload.get("started_at"),
+        "completed_at": payload.get("completed_at"),
+    }
+
+
+def _failure_count(results: list[Any], key: str) -> int:
+    return sum(1 for result in results if not _result_bool(result, key))
+
+
+def _result_bool(result: Any, key: str) -> bool:
+    return isinstance(result, dict) and result.get(key) is True
+
+
+def _format_rate(value: Any) -> str:
+    if value is None:
+        return "n/a"
+    return f"{float(value):.2%}"

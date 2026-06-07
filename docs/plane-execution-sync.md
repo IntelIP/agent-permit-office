@@ -238,6 +238,10 @@ Sprint 29 local metrics foundation items:
 
 - `APO-67`: Add local run metrics foundation - done
 
+Sprint 30 event stream and eval trends items:
+
+- `APO-68`: Add analytics event stream and eval trends - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

@@ -4,6 +4,11 @@ from pathlib import Path
 
 import agent_permit.cli as cli
 from agent_permit.cli import main
+from agent_permit.analytics import (
+    ANALYTICS_EVENTS_FILE,
+    EVAL_TRENDS_JSON_FILE,
+    EVAL_TRENDS_MARKDOWN_FILE,
+)
 from agent_permit.evals import (
     EVAL_REPORT_FILE,
     EVAL_RESULTS_FILE,
@@ -47,6 +52,26 @@ def test_fixture_eval_suite_passes_against_manifest_truth(tmp_path) -> None:
     assert payload["summary"] == {"failed": 0, "passed": 4, "total": 4}
     assert report_path.is_file()
     assert dataset_rows_path.is_file()
+    trend_json_path = (
+        eval_run.output_dir / "eval-trends" / "unit-eval" / EVAL_TRENDS_JSON_FILE
+    )
+    trend_markdown_path = (
+        eval_run.output_dir / "eval-trends" / "unit-eval" / EVAL_TRENDS_MARKDOWN_FILE
+    )
+    assert trend_json_path.is_file()
+    assert trend_markdown_path.is_file()
+    trend_payload = json.loads(trend_json_path.read_text())
+    assert trend_payload["summary"]["runs"] == 1
+    assert trend_payload["summary"]["latest_run_id"] == "unit-eval"
+    assert trend_payload["summary"]["latest_pass_rate"] == 1.0
+    events = [
+        json.loads(line)
+        for line in (eval_run.output_dir / ANALYTICS_EVENTS_FILE)
+        .read_text()
+        .splitlines()
+    ]
+    assert [event["event_name"] for event in events] == ["eval_completed"]
+    assert events[0]["payload"]["total_cases"] == 4
     assert build_phoenix_dataset_rows(eval_run) == dataset_rows
     assert "Cases: `4/4`" in report_path.read_text()
     for result in eval_run.results:
@@ -88,6 +113,16 @@ def test_eval_cli_writes_local_artifacts(tmp_path) -> None:
     assert (tmp_path / "cli-output" / EVAL_RESULTS_FILE).is_file()
     assert (tmp_path / "cli-output" / EVAL_REPORT_FILE).is_file()
     assert (tmp_path / "cli-output" / PHOENIX_DATASET_ROWS_FILE).is_file()
+    assert (
+        tmp_path
+        / "cli-output"
+        / "eval-trends"
+        / "cli-eval"
+        / EVAL_TRENDS_JSON_FILE
+    ).is_file()
+    assert (tmp_path / "cli-output" / ANALYTICS_EVENTS_FILE).is_file()
+    assert "Eval trends:" in stdout.getvalue()
+    assert "Events:" in stdout.getvalue()
 
 
 def test_eval_cli_uploads_to_phoenix_when_requested(tmp_path, monkeypatch) -> None:

@@ -17,9 +17,19 @@ from agent_permit.artifacts import (
     create_run_id,
 )
 from agent_permit.analytics import (
+    ANALYTICS_EVENTS_FILE,
+    EVAL_TRENDS_JSON_FILE,
+    EVAL_TRENDS_MARKDOWN_FILE,
     RUN_METRICS_FILE,
+    analytics_events_path,
+    analytics_events_path_for_output,
+    append_analytics_event,
+    build_analytics_event,
+    build_analytics_summary,
     build_live_validation_metrics,
     build_scan_run_metrics,
+    eval_trends_dir_for_output,
+    event_from_metrics,
     write_run_metrics,
 )
 from agent_permit.baseline import (
@@ -405,6 +415,25 @@ def build_parser() -> argparse.ArgumentParser:
             "multiple patterns"
         ),
     )
+    analytics_parser = subparsers.add_parser(
+        "analytics",
+        help="inspect local analytics event artifacts",
+    )
+    analytics_subparsers = analytics_parser.add_subparsers(dest="analytics_command")
+    analytics_summary_parser = analytics_subparsers.add_parser(
+        "summarize",
+        help="summarize a local analytics-events.jsonl stream",
+    )
+    analytics_summary_parser.add_argument(
+        "path",
+        nargs="?",
+        type=Path,
+        default=Path("."),
+        help=(
+            "repo path containing .agent-permit/analytics-events.jsonl, "
+            "or an analytics-events.jsonl file"
+        ),
+    )
     open_source_demo_parser = subparsers.add_parser(
         "open-source-demo",
         help="prepare recent open-source repos and run the live validation demo",
@@ -645,6 +674,11 @@ def main(
         )
     if args.command == "rules":
         return run_rules(args.scanner, stdout=stdout)
+    if args.command == "analytics":
+        if args.analytics_command == "summarize":
+            return run_analytics_summarize(args.path, stdout=stdout, stderr=stderr)
+        parser.print_help(file=stdout)
+        return 0
     if args.command == "baseline":
         return run_baseline(
             args.artifact_dir,
@@ -723,6 +757,16 @@ def run_scan(
                 "exclude_patterns": list(exclude_patterns or []),
                 "policy_path": str(resolved_policy_path) if resolved_policy_path else None,
             },
+        )
+        event_path = analytics_events_path(target_path)
+        append_analytics_event(
+            event_path,
+            build_analytics_event(
+                "scan_started",
+                run_id=scan_run.id,
+                run_type="scan",
+                status="started",
+            ),
         )
         inventory = FileInventoryScanner(
             exclude_patterns=exclude_patterns,
@@ -822,18 +866,31 @@ def run_scan(
         scan_run.status = ScanRunStatus.COMPLETED
         scan_run.completed_at = datetime.now(timezone.utc)
         artifact_writer.write_scan_run(scan_run)
+        run_metrics = build_scan_run_metrics(
+            scan_run=scan_run,
+            target_path=target_path,
+            inventory=inventory,
+            agent_bom=mcp_result.agent_bom,
+            codebase_map=graph_result.codebase_map,
+            findings=graph_result.findings,
+            graph_paths=graph_path_report,
+            controls=permit_evaluation.controls,
+            permit=permit_evaluation.permit,
+        )
         write_run_metrics(
             scan_run.artifact_dir / RUN_METRICS_FILE,
-            build_scan_run_metrics(
-                scan_run=scan_run,
-                target_path=target_path,
-                inventory=inventory,
-                agent_bom=mcp_result.agent_bom,
-                codebase_map=graph_result.codebase_map,
-                findings=graph_result.findings,
-                graph_paths=graph_path_report,
-                controls=permit_evaluation.controls,
-                permit=permit_evaluation.permit,
+            run_metrics,
+        )
+        append_analytics_event(
+            event_path,
+            event_from_metrics("scan_completed", run_metrics),
+        )
+        append_analytics_event(
+            event_path,
+            event_from_metrics(
+                "permit_decided",
+                run_metrics,
+                payload={"permit_status": run_metrics.permit_status},
             ),
         )
     except OSError as exc:
@@ -866,6 +923,7 @@ def run_scan(
     print(f"Permit status: {permit_evaluation.permit.status}", file=stdout)
     print(f"Summary: {scan_run.artifact_dir / 'summary.md'}", file=stdout)
     print(f"Metrics: {scan_run.artifact_dir / RUN_METRICS_FILE}", file=stdout)
+    print(f"Events: {analytics_events_path(target_path)}", file=stdout)
     if policy_evaluation is not None:
         print(f"Policy: {resolved_policy_path}", file=stdout)
         print(f"Policy adjustments: {len(policy_evaluation.adjustments)}", file=stdout)
@@ -1111,22 +1169,57 @@ def run_live_validate(
             json.dumps(validation_payload, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        run_metrics = build_live_validation_metrics(
+            context=context,
+            target_path=target_path,
+            status=validation_payload["status"],
+            started_at=validation_started_at,
+            completed_at=validation_completed_at,
+            model=selected_model,
+            citation_check=citation_check,
+            usage_summary=usage_summary,
+            scan_exit_code=scan_exit_code,
+            investigation_exit_code=investigation_exit_code,
+            phoenix=enable_phoenix,
+            langsmith=enable_langsmith,
+        )
         write_run_metrics(
             artifact_dir / RUN_METRICS_FILE,
-            build_live_validation_metrics(
-                context=context,
-                target_path=target_path,
-                status=validation_payload["status"],
-                started_at=validation_started_at,
-                completed_at=validation_completed_at,
-                model=selected_model,
-                citation_check=citation_check,
-                usage_summary=usage_summary,
-                scan_exit_code=scan_exit_code,
-                investigation_exit_code=investigation_exit_code,
-                phoenix=enable_phoenix,
-                langsmith=enable_langsmith,
+            run_metrics,
+        )
+        event_path = analytics_events_path(target_path)
+        append_analytics_event(
+            event_path,
+            event_from_metrics(
+                "investigation_completed",
+                run_metrics,
+                status="passed" if investigation_exit_code == 0 else "failed",
+                payload={"investigation_exit_code": investigation_exit_code},
             ),
+        )
+        append_analytics_event(
+            event_path,
+            event_from_metrics(
+                (
+                    "citation_check_passed"
+                    if citation_check["supported"] is True
+                    else "citation_check_failed"
+                ),
+                run_metrics,
+                status=str(citation_check["status"]),
+                payload={
+                    "aggregate_mismatches": len(
+                        citation_check.get("aggregate_mismatches") or []
+                    ),
+                    "unsupported_citations": len(
+                        citation_check.get("unsupported_citations") or []
+                    ),
+                },
+            ),
+        )
+        append_analytics_event(
+            event_path,
+            event_from_metrics("live_validation_completed", run_metrics),
         )
     except OSError as exc:
         print(f"error: failed to write live validation: {exc}", file=stderr)
@@ -1162,6 +1255,7 @@ def run_live_validate(
         print(f"OpenRouter usage: {usage_path}", file=stdout)
     print(f"Validation: {validation_path}", file=stdout)
     print(f"Metrics: {artifact_dir / RUN_METRICS_FILE}", file=stdout)
+    print(f"Events: {analytics_events_path(target_path)}", file=stdout)
     return 0 if passed else (investigation_exit_code or 1)
 
 
@@ -1219,6 +1313,10 @@ def run_eval(
         f"Phoenix dataset rows: {eval_run.output_dir / PHOENIX_DATASET_ROWS_FILE}",
         file=stdout,
     )
+    trend_dir = eval_trends_dir_for_output(eval_run.output_dir, eval_run.eval_run_id)
+    print(f"Eval trends: {trend_dir / EVAL_TRENDS_JSON_FILE}", file=stdout)
+    print(f"Eval trend report: {trend_dir / EVAL_TRENDS_MARKDOWN_FILE}", file=stdout)
+    print(f"Events: {analytics_events_path_for_output(eval_run.output_dir)}", file=stdout)
     if phoenix_upload_result is not None:
         print("Phoenix upload: complete", file=stdout)
         print(f"Phoenix base URL: {phoenix_upload_result.base_url}", file=stdout)
@@ -1230,6 +1328,39 @@ def run_eval(
         if phoenix_upload_result.dataset_id:
             print(f"Phoenix dataset ID: {phoenix_upload_result.dataset_id}", file=stdout)
     return 0 if eval_run.passed else 1
+
+
+def run_analytics_summarize(
+    path: Path,
+    *,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if path.name == ANALYTICS_EVENTS_FILE:
+        event_path = path
+    else:
+        event_path = analytics_events_path(path)
+    if not event_path.is_file():
+        print(f"error: analytics event stream not found: {event_path}", file=stderr)
+        return 2
+    try:
+        summary = build_analytics_summary(event_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"error: failed to summarize analytics events: {exc}", file=stderr)
+        return 1
+
+    print("Agent Permit Office", file=stdout)
+    print("Status: analytics_summary_complete", file=stdout)
+    print(f"Events: {summary['events_path']}", file=stdout)
+    print(f"Total events: {summary['total_events']}", file=stdout)
+    print("Event counts:", file=stdout)
+    for event_name, count in summary["event_counts"].items():
+        print(f"- {event_name}: {count}", file=stdout)
+    latest_event = summary.get("latest_event")
+    if latest_event:
+        print(f"Latest event: {latest_event['event_name']}", file=stdout)
+        print(f"Latest run: {latest_event.get('run_id') or 'none'}", file=stdout)
+    return 0
 
 
 def run_real_eval(

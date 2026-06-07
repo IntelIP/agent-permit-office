@@ -158,6 +158,17 @@ jobs:
     assert run_metrics["citation_check_status"] == "not_applicable"
     assert run_metrics["model"] is None
     assert run_metrics["model_calls"] == 0
+    events_path = tmp_path / ".agent-permit" / "analytics-events.jsonl"
+    events_text = events_path.read_text()
+    events = [json.loads(line) for line in events_text.splitlines()]
+    assert [event["event_name"] for event in events] == [
+        "scan_started",
+        "scan_completed",
+        "permit_decided",
+    ]
+    assert events[1]["target_hash"] == run_metrics["target_hash"]
+    assert events[2]["permit_status"] == "blocked"
+    assert str(tmp_path) not in events_text
     assert f"Artifacts: {artifact_dir}" in stdout.getvalue()
     assert "Files indexed: 4" in stdout.getvalue()
     assert "High signal files: 4" in stdout.getvalue()
@@ -173,6 +184,20 @@ jobs:
     assert "Permit status: blocked" in stdout.getvalue()
     assert f"Summary: {artifact_dir / 'summary.md'}" in stdout.getvalue()
     assert f"Metrics: {artifact_dir / 'run-metrics.json'}" in stdout.getvalue()
+
+    summary_stdout = StringIO()
+    summary_stderr = StringIO()
+    summary_exit = main(
+        ["analytics", "summarize", str(tmp_path)],
+        stdout=summary_stdout,
+        stderr=summary_stderr,
+    )
+
+    assert summary_exit == 0
+    assert summary_stderr.getvalue() == ""
+    assert "Status: analytics_summary_complete" in summary_stdout.getvalue()
+    assert "Total events: 3" in summary_stdout.getvalue()
+    assert "- scan_completed: 1" in summary_stdout.getvalue()
 
 
 def test_live_validate_scans_and_writes_validation_summary(tmp_path, monkeypatch) -> None:
@@ -276,6 +301,22 @@ jobs:
     assert run_metrics["scan_exit_code"] == 0
     assert run_metrics["investigation_exit_code"] == 0
     assert run_metrics["phoenix"] is True
+    events = [
+        json.loads(line)
+        for line in (tmp_path / ".agent-permit" / "analytics-events.jsonl")
+        .read_text()
+        .splitlines()
+    ]
+    assert [event["event_name"] for event in events] == [
+        "scan_started",
+        "scan_completed",
+        "permit_decided",
+        "investigation_completed",
+        "citation_check_passed",
+        "live_validation_completed",
+    ]
+    assert events[-1]["status"] == "passed"
+    assert events[-1]["target_hash"] == run_metrics["target_hash"]
     assert "Status: live_validation_complete" in stdout.getvalue()
     assert f"Validation: {output_path}" in stdout.getvalue()
     assert f"Metrics: {artifact_dir / 'run-metrics.json'}" in stdout.getvalue()

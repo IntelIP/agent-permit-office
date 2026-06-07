@@ -9,6 +9,12 @@ import shutil
 import time
 from typing import Any
 
+from agent_permit.analytics import (
+    analytics_events_path_for_output,
+    append_analytics_event,
+    build_analytics_event,
+    write_eval_trends,
+)
 from agent_permit.artifacts import ARTIFACT_ROOT
 from agent_permit.evidence_context import EvidenceContext
 from agent_permit.investigation import (
@@ -697,6 +703,33 @@ def _write_eval_artifacts(eval_run: FixtureEvalRun) -> None:
         )
         + "\n",
         encoding="utf-8",
+    )
+    write_eval_trends(eval_run.output_dir, eval_run.eval_run_id)
+    append_analytics_event(
+        analytics_events_path_for_output(eval_run.output_dir),
+        build_analytics_event(
+            "eval_completed",
+            run_id=eval_run.eval_run_id,
+            run_type="fixture_eval",
+            status="passed" if eval_run.passed else "failed",
+            payload={
+                "total_cases": len(eval_run.results),
+                "passed_cases": sum(1 for result in eval_run.results if result.passed),
+                "failed_cases": sum(
+                    1 for result in eval_run.results if not result.passed
+                ),
+                "citation_failures": sum(
+                    1
+                    for result in eval_run.results
+                    if not result.citation_check_passed
+                ),
+                "secret_leak_failures": sum(
+                    1
+                    for result in eval_run.results
+                    if not result.secret_leak_check_passed
+                ),
+            },
+        ),
     )
 
 

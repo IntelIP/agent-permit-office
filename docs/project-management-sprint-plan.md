@@ -681,6 +681,24 @@ Backlog:
 | Regression tests | Metrics shape is covered. | Done: CLI tests assert scan and live-validation metric payloads. |
 | Docs sync | Product analytics plan reflects shipped foundation. | Done: README and analytics roadmap mention `run-metrics.json`. |
 
+## Sprint 30: Event Stream And Eval Trends
+
+Goal:
+
+- make local analytics trendable across scans, live validations, and eval runs
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Analytics event model | Product-style events have a stable JSONL shape. | Done: added `AnalyticsEvent` and append/read helpers for `analytics-events.jsonl`. |
+| Scan events | Deterministic scans append lifecycle events. | Done: scan writes `scan_started`, `scan_completed`, and `permit_decided`. |
+| Live validation events | Deep Agent validation appends outcome events. | Done: live validation writes investigation, citation, and live-validation completion events. |
+| Eval events | Fixture evals append local eval completion events. | Done: fixture eval writes `eval_completed` with case/failure counts. |
+| Eval trends | Fixture evals produce trend artifacts. | Done: writes `eval-trends.json` and `eval-trends.md`. |
+| Analytics summary CLI | Operator can inspect local event history. | Done: added `agent-permit analytics summarize`. |
+| Regression tests | Event stream and trend artifacts are covered. | Done: CLI/eval tests assert JSONL events, trends, and summary output. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:
