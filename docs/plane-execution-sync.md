@@ -246,6 +246,10 @@ Sprint 31 dashboard architecture and stack decision items:
 
 - `APO-69`: Define dashboard architecture and stack decision - done
 
+Sprint 32 local dashboard shell items:
+
+- `APO-70`: Scaffold local dashboard shell - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

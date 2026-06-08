@@ -184,3 +184,11 @@ Current work:
 - [End-to-End System Diagram](docs/system-diagram-end-to-end.md)
 - [Project Management and Sprint Plan](docs/project-management-sprint-plan.md)
 - [Plane Execution Sync](docs/plane-execution-sync.md)
+
+Local dashboard shell:
+
+```bash
+cd dashboard
+bun install
+bun dev
+```

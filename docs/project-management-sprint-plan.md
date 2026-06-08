@@ -751,10 +751,31 @@ Notion page later:
 - `Agent Permit Office Product Brief`
 - include problem, buyer, architecture diagram, roadmap, demo story, and market map
 
+## Sprint 32: Local Dashboard Shell
+
+Goal:
+
+- create a bare local dashboard app before design work
+- run Vite through Bun on localhost
+- prove the dashboard package boundary works
+
+Work item:
+
+- `APO-70`: Scaffold local dashboard shell
+
+Scope:
+
+- `dashboard/` Vite React TypeScript app
+- starter Vite branding removed
+- local scripts: `bun dev`, `bun run build`, `bun run lint`
+- no product UI design yet
+- no Clerk, Neon, R2, PostHog, or Worker integration yet
+
 ## Immediate Next Step
 
-Run Sprint 24 demo command:
+Run Sprint 32 local dashboard:
 
 ```text
-agent-permit open-source-demo docs/evals/open-source-live-repos.json
+cd dashboard
+bun dev
 ```
