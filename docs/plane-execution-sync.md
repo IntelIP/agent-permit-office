@@ -242,6 +242,10 @@ Sprint 30 event stream and eval trends items:
 
 - `APO-68`: Add analytics event stream and eval trends - done
 
+Sprint 31 dashboard architecture and stack decision items:
+
+- `APO-69`: Define dashboard architecture and stack decision - done
+
 ## Operating Rule
 
 Plane is now the execution tracker.

@@ -173,6 +173,7 @@ Current work:
 - [Open Core Business Plan](docs/open-core-business-plan.md)
 - [Product Scope and Market Review](docs/product-scope-market-review.md)
 - [Product Analytics and Evals Roadmap](docs/product-analytics-evals-roadmap.md)
+- [Dashboard Stack Architecture](docs/dashboard-stack-architecture.md)
 - [Sanitized Demo Artifacts](docs/sanitized-demo-artifacts.md)
 - [Demo](docs/demo.md)
 - [Deep Agent Investigator](docs/deep-agent-investigator.md)

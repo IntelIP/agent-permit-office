@@ -699,6 +699,22 @@ Backlog:
 | Analytics summary CLI | Operator can inspect local event history. | Done: added `agent-permit analytics summarize`. |
 | Regression tests | Event stream and trend artifacts are covered. | Done: CLI/eval tests assert JSONL events, trends, and summary output. |
 
+## Sprint 31: Dashboard Architecture And Stack Decision
+
+Goal:
+
+- define the dashboard architecture and standalone product UI stack before building the visual dashboard
+
+Backlog:
+
+| Item | Outcome | Acceptance criteria |
+| --- | --- | --- |
+| Stack Picker framing | Stack choices are captured as explicit layers. | Done: architecture doc uses Stack Picker as layer checklist, not a gated dependency. |
+| Required stack map | User standards are mapped to product responsibilities. | Done: shadcn/ui, Bun, Cloudflare Workers, Neon, Clerk, R2, PostHog, Phosphor, and Coolors are documented. |
+| Hosted architecture | Open-core control-plane path is clear. | Done: doc explains Worker API, Clerk auth, Neon persistence, R2 artifacts, PostHog analytics, and local OSS mode. |
+| Tradeoff analysis | Implementation risks are explicit. | Done: doc records Worker runtime constraints, Hyperdrive pooling, R2 metadata split, Clerk vendor dependency, and opt-in telemetry boundary. |
+| Dashboard build plan | Next sprints can execute without stack ambiguity. | Done: Sprint 32-34 build path is defined. |
+
 ## Release Criteria For MVP
 
 MVP is ready when:

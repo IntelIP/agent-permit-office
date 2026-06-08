@@ -185,3 +185,6 @@ local dashboard over run-metrics.json + analytics-events.jsonl + eval trends
 ```
 
 Hosted product analytics comes later with the open-core control plane.
+
+The hosted/open-core architecture standard is captured in
+`docs/dashboard-stack-architecture.md`.
