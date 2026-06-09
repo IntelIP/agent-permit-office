@@ -333,8 +333,8 @@ GET  /api/analytics/summary
 
 - scaffold dashboard app with Bun, React, Vite, Tailwind, shadcn/ui
 - add Phosphor icons
-- add Recharts/shadcn chart primitives
 - render from local exported JSON
+- defer Recharts/shadcn chart primitives until queue and detail rail are usable
 - no hosted services yet
 
 ### Sprint 33

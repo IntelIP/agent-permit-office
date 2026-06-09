@@ -779,6 +779,9 @@ Design research:
 - `APO-72`: Add Mobbin dashboard design references
 - Mobbin update: first implemented screen should be `Permit Review Queue`
 - visual-system update: muted semantic color stack, spacing scale, typography scale, and Phosphor icon rules are captured in `docs/dashboard-visual-system.md`
+- `APO-73`: Lock dashboard visual system and implementation tokens
+- `APO-74`: Install dashboard UI foundation stack
+- stack update: Tailwind v4, shadcn/ui source components, Phosphor icons, Geist typography, and alias plumbing are installed in `dashboard/`
 
 ## Immediate Next Step
 

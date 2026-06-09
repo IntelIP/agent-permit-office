@@ -55,7 +55,7 @@ Usage rules:
 Default stack:
 
 ```css
-font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
 ```
 
 Rules:
@@ -128,15 +128,19 @@ Initial icon map:
 
 ## Tech Stack Readiness
 
-Current dashboard shell:
+Installed dashboard shell:
 
 - Bun
 - Vite
 - React 19
 - TypeScript
 - ESLint
+- Tailwind CSS v4 with `@tailwindcss/vite`
+- shadcn/ui source components
+- Phosphor Icons
+- Geist variable font
 
-Next implementation dependencies:
+Installed implementation dependencies:
 
 ```text
 bun add @phosphor-icons/react
@@ -161,12 +165,10 @@ bun add recharts
 
 Implementation order:
 
-1. Add Tailwind v4 and shadcn CSS variables.
-2. Add Phosphor and icon map.
-3. Create semantic token file or CSS section for `apo-*` tokens.
-4. Build static `Permit Review Queue` shell with local mock artifact data.
-5. Replace mock data with local artifact reader/export contract.
-6. Add charts only after review queue and detail rail work.
+1. Build static `Permit Review Queue` shell with local mock artifact data.
+2. Replace mock data with local artifact reader/export contract.
+3. Add TanStack Table only if native table composition becomes too brittle.
+4. Add charts only after review queue and detail rail work.
 
 Gotchas:
 

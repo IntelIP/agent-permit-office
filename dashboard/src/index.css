@@ -1,22 +1,188 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
-  color-scheme: light dark;
-  color: #111827;
-  background: #ffffff;
+  color: #172033;
+  background: #f7f8fa;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --apo-bg: #f7f8fa;
+  --apo-surface: #ffffff;
+  --apo-surface-muted: #f2f4f7;
+  --apo-border: #dde2ea;
+  --apo-border-strong: #c8d0dc;
+  --apo-text: #172033;
+  --apo-text-muted: #667085;
+  --apo-text-faint: #98a2b3;
+  --apo-primary: #2e6f73;
+  --apo-primary-soft: #e7f3f4;
+  --apo-primary-border: #b9dadc;
+  --apo-approved: #2f7d5a;
+  --apo-approved-soft: #eaf6ef;
+  --apo-approved-border: #bbddcb;
+  --apo-review: #8a6414;
+  --apo-review-soft: #fff7e0;
+  --apo-review-border: #e7d6a4;
+  --apo-blocked: #974a43;
+  --apo-blocked-soft: #fbedea;
+  --apo-blocked-border: #e3b9b4;
+  --apo-critical: #8d3d55;
+  --apo-critical-soft: #f9eaf0;
+  --apo-critical-border: #e4b5c5;
+  --apo-agent: #5e5a9e;
+  --apo-agent-soft: #f0eff8;
+  --apo-agent-border: #cac7e8;
+  --apo-artifact: #277c83;
+  --apo-artifact-soft: #e8f5f6;
+  --apo-artifact-border: #b7dde1;
+  --apo-muted: #596579;
+  --apo-muted-soft: #eef1f5;
+  --apo-muted-border: #d4dae4;
+
+  --background: var(--apo-bg);
+  --foreground: var(--apo-text);
+  --card: var(--apo-surface);
+  --card-foreground: var(--apo-text);
+  --popover: var(--apo-surface);
+  --popover-foreground: var(--apo-text);
+  --primary: var(--apo-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--apo-surface-muted);
+  --secondary-foreground: var(--apo-text);
+  --muted: var(--apo-surface-muted);
+  --muted-foreground: var(--apo-text-muted);
+  --accent: var(--apo-primary-soft);
+  --accent-foreground: var(--apo-text);
+  --destructive: var(--apo-blocked);
+  --border: var(--apo-border);
+  --input: var(--apo-border);
+  --ring: var(--apo-primary);
+  --chart-1: var(--apo-review);
+  --chart-2: var(--apo-blocked);
+  --chart-3: var(--apo-approved);
+  --chart-4: var(--apo-agent);
+  --chart-5: var(--apo-artifact);
+  --radius: 0.5rem;
+  --sidebar: var(--apo-surface);
+  --sidebar-foreground: var(--apo-text);
+  --sidebar-primary: var(--apo-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--apo-primary-soft);
+  --sidebar-accent-foreground: var(--apo-text);
+  --sidebar-border: var(--apo-border);
+  --sidebar-ring: var(--apo-primary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f9fafb;
-    background: #111827;
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-apo-approved: var(--apo-approved);
+  --color-apo-approved-soft: var(--apo-approved-soft);
+  --color-apo-approved-border: var(--apo-approved-border);
+  --color-apo-review: var(--apo-review);
+  --color-apo-review-soft: var(--apo-review-soft);
+  --color-apo-review-border: var(--apo-review-border);
+  --color-apo-blocked: var(--apo-blocked);
+  --color-apo-blocked-soft: var(--apo-blocked-soft);
+  --color-apo-blocked-border: var(--apo-blocked-border);
+  --color-apo-critical: var(--apo-critical);
+  --color-apo-critical-soft: var(--apo-critical-soft);
+  --color-apo-critical-border: var(--apo-critical-border);
+  --color-apo-agent: var(--apo-agent);
+  --color-apo-agent-soft: var(--apo-agent-soft);
+  --color-apo-agent-border: var(--apo-agent-border);
+  --color-apo-artifact: var(--apo-artifact);
+  --color-apo-artifact-soft: var(--apo-artifact-soft);
+  --color-apo-artifact-border: var(--apo-artifact-border);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+  --background: #111827;
+  --foreground: #f9fafb;
+  --card: #172033;
+  --card-foreground: #f9fafb;
+  --popover: #172033;
+  --popover-foreground: #f9fafb;
+  --primary: #9acfd2;
+  --primary-foreground: #172033;
+  --secondary: #202b3f;
+  --secondary-foreground: #f9fafb;
+  --muted: #202b3f;
+  --muted-foreground: #c8d0dc;
+  --accent: #1e3d42;
+  --accent-foreground: #f9fafb;
+  --destructive: #e3b9b4;
+  --border: #344054;
+  --input: #344054;
+  --ring: #9acfd2;
+  --sidebar: #172033;
+  --sidebar-foreground: #f9fafb;
+  --sidebar-primary: #9acfd2;
+  --sidebar-primary-foreground: #172033;
+  --sidebar-accent: #202b3f;
+  --sidebar-accent-foreground: #f9fafb;
+  --sidebar-border: #344054;
+  --sidebar-ring: #9acfd2;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
 
-body {
-  margin: 0;
+  body {
+    margin: 0;
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    @apply font-sans;
+  }
 }
