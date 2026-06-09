@@ -776,6 +776,8 @@ Design research:
 - `APO-71`: Research dashboard design directions
 - recommended direction: `Permit Triage Console`
 - fallback direction: `Agent Trace War Room`
+- `APO-72`: Add Mobbin dashboard design references
+- Mobbin update: first implemented screen should be `Permit Review Queue`
 
 ## Immediate Next Step
 

@@ -15,6 +15,37 @@ This note defines the visual direction for the Agent Permit Office dashboard bef
 | Wiz Security Graph | Security teams benefit from seeing relationships across code, identity, cloud, runtime, secrets, and sensitive data. | Relationship map as a secondary investigation tab for capability chains and blast radius. | Making graph visualization the primary MVP surface before it has enough data quality. |
 | shadcn/ui dashboard blocks | Strong app shell pattern: sidebar, header, section cards, dominant chart, data table, responsive composition. | Sidebar shell, section cards, data table, chart primitives, sheet/detail patterns. | The default sales/revenue dashboard content model. |
 
+## Mobbin Reference Pass
+
+Mobbin MCP was used through a fresh Codex exec because the current thread did not hot-load the refreshed Mobbin tool catalog. The fresh exec used `mobbin/search_screens` and `mobbin/search_flows`.
+
+| Mobbin reference | Screen or flow | What to borrow |
+| --- | --- | --- |
+| Cloudflare | [Security insights flow](https://mobbin.com/flows/3f3198f5-c7dc-4718-996e-e7045fa2baf7) | persistent left navigation, compact security sections, investigation-first content hierarchy |
+| Vanta | [Tests flow](https://mobbin.com/flows/8b1507e0-075c-4deb-9cd2-78944c19fb83) | compliance test rows, pass/fail language, evidence and ownership metadata |
+| incident.io | [Inspect an alert flow](https://mobbin.com/flows/083b2900-7398-4ebd-bbfe-c5914c98435e) | alert detail drilldown, timeline/context sections, action placement |
+| Cloudflare | [security triage screen](https://mobbin.com/screens/1a4f30cf-11fa-443e-9cfe-378b9a158c15) | dense triage list, severity/status scan order, selected-item context |
+| Vanta | [compliance/security screen](https://mobbin.com/screens/6e3596e8-0f6a-4a38-ad5b-bbc17fae0fe1) | test status surfaces, remediation metadata, muted neutral framing |
+| Sentry | [observability screen](https://mobbin.com/screens/03ec235b-0e50-4698-9b80-2994c5f312b7) | event/trace density, issue grouping, evidence-first rows |
+| Sentry | [trace/error detail screen](https://mobbin.com/screens/c45026fc-927c-415e-a638-907945edebc5) | span/timeline detail, duration/error metadata, selected trace inspection |
+| Cloudflare | [analytics/dashboard screen](https://mobbin.com/screens/7ec1f61d-bfbe-4481-9ced-eafac4916bbc) | analytics as supporting view, not primary review surface |
+
+Mobbin-derived rules:
+
+- use persistent left navigation and a compact top header
+- put saved views and filters above the table
+- make the primary surface a review queue plus selected run detail
+- use row click for in-place drilldown instead of first-step page jumps
+- make the detail panel scrollable and fixed-width
+- pin the main decision/action area in the detail rail
+- expose copyable IDs, file paths, rule IDs, run IDs, and artifact paths
+- show summary first, then evidence, trace, policy/remediation, artifacts, and metadata
+- use dense rows with sticky headers, sortable columns, selected-row state, and visible status badges
+- use 12-14px table text, 40-48px rows, compact cards, and 16-24px gutters
+- pair every color state with text and icon affordances
+- keep analytics secondary and decision-tied
+- avoid graph-first, chat-first, or KPI-wall-first layouts
+
 ## Direction A: Permit Triage Console
 
 Recommended for MVP.
@@ -30,15 +61,19 @@ Core layout:
 
 - left sidebar for `Runs`, `Repositories`, `Findings`, `Agent Trace`, `Evals`, `Settings`
 - top header with repository, branch, run ID, scanner mode, date, and export action
-- status strip with `Permit`, `Critical/High`, `Agent Risk`, `Cost`, `Eval Drift`
+- saved views for `Needs Review`, `Blocked`, `New Findings`, `Policy Exceptions`, and `Eval Drift`
+- filter row for status, severity, repo, branch, rule, scanner, owner, date, and new-since-baseline
 - primary content grid:
   - left: findings table with severity, rule, path, line, capability, confidence, and status
-  - right: selected run summary, policy gates, agent timeline, and artifacts
-- detail sheet:
+  - right: selected run detail rail with decision, evidence, agent trace, policy, artifacts, and history
+- detail rail or sheet:
+  - pinned decision summary
   - code evidence
   - deterministic scanner source
   - Deep Agent investigation summary
+  - trace/tool-call metadata
   - remediation hints
+  - artifact links
   - suppression/approval note
 
 Components:
@@ -111,16 +146,16 @@ Reasons:
 
 ## First Designed Screen
 
-Name: `Run Review`
+Name: `Permit Review Queue`
 
 Above the fold:
 
 - sidebar navigation
-- run header with repo and branch
-- permit status strip
-- severity and cost cards
-- findings table
-- selected run summary panel
+- compact header with repo, branch, run ID, scanner mode, date, and export action
+- saved views and filter row
+- findings/review queue table
+- selected run detail rail
+- small decision metrics tied to the selected view
 
 Secondary tabs:
 
