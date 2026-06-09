@@ -175,6 +175,7 @@ Current work:
 - [Product Analytics and Evals Roadmap](docs/product-analytics-evals-roadmap.md)
 - [Dashboard Stack Architecture](docs/dashboard-stack-architecture.md)
 - [Dashboard Design Research](docs/dashboard-design-research.md)
+- [Dashboard Visual System](docs/dashboard-visual-system.md)
 - [Sanitized Demo Artifacts](docs/sanitized-demo-artifacts.md)
 - [Demo](docs/demo.md)
 - [Deep Agent Investigator](docs/deep-agent-investigator.md)

@@ -251,6 +251,7 @@ Sprint 32 local dashboard shell items:
 - `APO-70`: Scaffold local dashboard shell - done
 - `APO-71`: Research dashboard design directions - done
 - `APO-72`: Add Mobbin dashboard design references - done
+- `APO-73`: Lock dashboard visual system and implementation tokens - done
 
 ## Operating Rule
 

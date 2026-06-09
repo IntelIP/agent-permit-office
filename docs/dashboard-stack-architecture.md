@@ -100,8 +100,10 @@ Gotcha: shadcn is not a hosted library. Components live in repo. Need enforce co
 
 Use Phosphor as visual identity layer:
 
-- `Shield`, `Warning`, `Lock`, `Key`, `Database`, `Cloud`, `ChartLine`, `GitBranch`, `Robot`, `FileSearch`
-- consistent weight, likely `regular` or `duotone`
+- `ShieldCheck`, `WarningDiamond`, `LockKey`, `Database`, `Cloud`, `ChartLine`, `GitBranch`, `Robot`, `FileSearch`
+- consistent weight: `regular` by default, `duotone` only for larger state or empty-state icons
+- size scale: `16px` for nav/table/badges, `18px` for controls, `20px` for section headers/metrics
+- color defaults to `currentColor` and follows semantic text/status tokens
 - no mixed Lucide/Phosphor unless unavoidable
 
 Gotcha: shadcn examples often use Lucide. Replace with Phosphor during implementation.
@@ -110,10 +112,11 @@ Gotcha: shadcn examples often use Lucide. Replace with Phosphor during implement
 
 Use Coolors before coding:
 
-- one neutral background family
-- one primary signal color
-- semantic colors for approved, review, blocked, critical, high, medium, info
+- one cool-neutral background family
+- one muted primary signal color
+- low-saturation semantic colors for approved, review, blocked, critical, agent trace, artifact/data, and muted/resolved
 - accessible contrast checked in UI
+- implementation tokens live in `docs/dashboard-visual-system.md`
 
 Gotcha: do not let color become generic dark-blue security SaaS. Dashboard needs its own Agent Permit Office identity.
 

@@ -778,6 +778,7 @@ Design research:
 - fallback direction: `Agent Trace War Room`
 - `APO-72`: Add Mobbin dashboard design references
 - Mobbin update: first implemented screen should be `Permit Review Queue`
+- visual-system update: muted semantic color stack, spacing scale, typography scale, and Phosphor icon rules are captured in `docs/dashboard-visual-system.md`
 
 ## Immediate Next Step
 

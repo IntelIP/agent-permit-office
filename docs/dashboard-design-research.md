@@ -84,13 +84,15 @@ Components:
 
 Palette:
 
-- neutral base: white/off-white surface, near-black text, low-contrast borders
+- neutral base: white/cool-gray surface, near-black text, low-contrast borders
 - semantic status:
-  - approved: emerald
-  - warning: amber
-  - blocked: red
-  - AI/agent trace: indigo
-  - data/storage: teal
+  - approved: muted emerald
+  - needs review: muted amber
+  - blocked: muted brick red
+  - critical: muted berry red
+  - AI/agent trace: muted indigo
+  - data/storage: muted teal
+- use `docs/dashboard-visual-system.md` as the implementation token source
 - use Coolors during implementation to validate contrast and tune semantic token pairs
 
 Chart grammar:
@@ -175,6 +177,7 @@ First empty state:
 ## Implementation Rules
 
 - keep UI dense but readable
+- use muted status fills and strong text/icons instead of intense color blocks
 - no hero section
 - no nested cards
 - no one-hue palette
