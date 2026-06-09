@@ -771,6 +771,12 @@ Scope:
 - no product UI design yet
 - no Clerk, Neon, R2, PostHog, or Worker integration yet
 
+Design research:
+
+- `APO-71`: Research dashboard design directions
+- recommended direction: `Permit Triage Console`
+- fallback direction: `Agent Trace War Room`
+
 ## Immediate Next Step
 
 Run Sprint 32 local dashboard:

@@ -249,6 +249,7 @@ Sprint 31 dashboard architecture and stack decision items:
 Sprint 32 local dashboard shell items:
 
 - `APO-70`: Scaffold local dashboard shell - done
+- `APO-71`: Research dashboard design directions - done
 
 ## Operating Rule
 
