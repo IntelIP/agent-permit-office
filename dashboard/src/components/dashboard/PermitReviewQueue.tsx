@@ -162,14 +162,6 @@ function AppSidebar() {
           </button>
         ))}
       </nav>
-
-      <div className="apo-sidebar-footer">
-        <div className="apo-mini-label">Local run</div>
-        <div className="apo-local-run">
-          <span className="apo-run-dot" />
-          Phoenix traces off
-        </div>
-      </div>
     </aside>
   )
 }
@@ -205,6 +197,26 @@ function DashboardHeader() {
         </Button>
       </div>
     </header>
+  )
+}
+
+function SectionIntro({
+  description,
+  label,
+  title,
+}: {
+  description: string
+  label: string
+  title: string
+}) {
+  return (
+    <div className="apo-section-intro">
+      <div className="apo-section-label">{label}</div>
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+    </div>
   )
 }
 
@@ -303,38 +315,49 @@ function SummaryTiles({ rows }: { rows: QueueFinding[] }) {
   const evals = 4
 
   return (
-    <section className="apo-summary-grid" aria-label="Queue summary">
+    <div className="apo-summary-grid" aria-label="Queue summary">
       <MetricTile
         icon={WarningDiamondIcon}
         label="Needs review"
+        note="Manual decision"
         tone="review"
         value={review.toString()}
       />
       <MetricTile
         icon={XCircleIcon}
         label="Blocked permits"
+        note="Must fix first"
         tone="blocked"
         value={blocked.toString()}
       />
       <MetricTile
         icon={RobotIcon}
         label="Citation coverage"
+        note="Deep Agent grounded"
         tone="agent"
         value={`${cited}%`}
       />
-      <MetricTile icon={PulseIcon} label="Eval drifts" tone="artifact" value={evals.toString()} />
-    </section>
+      <MetricTile
+        icon={PulseIcon}
+        label="Eval drifts"
+        note="Model quality watch"
+        tone="artifact"
+        value={evals.toString()}
+      />
+    </div>
   )
 }
 
 function MetricTile({
   icon: Icon,
   label,
+  note,
   tone,
   value,
 }: {
   icon: typeof WarningDiamondIcon
   label: string
+  note: string
   tone: string
   value: string
 }) {
@@ -346,6 +369,7 @@ function MetricTile({
       <div>
         <div className="apo-metric-value">{value}</div>
         <div className="apo-metric-label">{label}</div>
+        <div className="apo-metric-note">{note}</div>
       </div>
     </div>
   )
@@ -364,8 +388,10 @@ function FindingsTable({
     <Card className="apo-table-panel">
       <CardHeader className="apo-panel-header">
         <div>
-          <CardTitle>Review queue</CardTitle>
-          <div className="apo-panel-subtitle">{rows.length} findings in current view</div>
+          <CardTitle>Findings spreadsheet</CardTitle>
+          <div className="apo-panel-subtitle">
+            {rows.length} deterministic scanner findings. Select a row to inspect evidence.
+          </div>
         </div>
         <Button variant="ghost" size="sm">
           Sort by risk
@@ -433,7 +459,7 @@ function DetailRail({ finding }: { finding: QueueFinding }) {
   return (
     <aside className="apo-detail-rail" aria-label="Selected finding detail">
       <div className="apo-detail-pinned">
-        <div className="apo-detail-kicker">Decision</div>
+        <div className="apo-detail-kicker">Selected finding evidence</div>
         <div className="apo-detail-title-row">
           <h2>{finding.id}</h2>
           <StatusBadge status={finding.status} />
@@ -612,18 +638,34 @@ export function PermitReviewQueue() {
         <DashboardHeader />
         <div className="apo-workspace">
           <section className="apo-dashboard-stack" aria-label="Permit findings">
-            <SummaryTiles rows={filteredRows} />
-            <div className="apo-queue-controls">
-              <SavedViews activeView={activeView} onChange={setActiveView} />
-              <FilterBar
-                onSearchChange={setSearch}
-                onSeverityChange={setSeverity}
-                onStatusChange={setStatus}
-                search={search}
-                severity={severity}
-                status={status}
+            <div className="apo-section-group">
+              <SectionIntro
+                description="These four widgets summarize the current scan before any filtering."
+                label="Run overview"
+                title="Decision snapshot"
               />
+              <SummaryTiles rows={filteredRows} />
             </div>
+
+            <div className="apo-section-group">
+              <SectionIntro
+                description="Saved views choose the work queue. Filters narrow the spreadsheet rows."
+                label="Queue setup"
+                title="Choose what to review"
+              />
+              <div className="apo-queue-controls">
+                <SavedViews activeView={activeView} onChange={setActiveView} />
+                <FilterBar
+                  onSearchChange={setSearch}
+                  onSeverityChange={setSeverity}
+                  onStatusChange={setStatus}
+                  search={search}
+                  severity={severity}
+                  status={status}
+                />
+              </div>
+            </div>
+
             {filteredRows.length > 0 ? (
               <FindingsTable
                 onSelect={setSelectedId}

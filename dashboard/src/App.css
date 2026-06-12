@@ -7,13 +7,18 @@
 }
 
 .apo-sidebar {
-  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding: 16px 12px;
   border-right: 1px solid var(--apo-border);
   background: var(--apo-surface);
+  overflow-y: auto;
 }
 
 .apo-brand {
@@ -107,37 +112,6 @@
   color: var(--apo-primary);
 }
 
-.apo-sidebar-footer {
-  margin-top: auto;
-  padding: 12px 8px;
-  border: 1px solid var(--apo-border);
-  border-radius: 8px;
-  background: var(--apo-surface-muted);
-}
-
-.apo-mini-label {
-  font-size: 11px;
-  line-height: 16px;
-  font-weight: 650;
-  color: var(--apo-text-muted);
-}
-
-.apo-local-run {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 6px;
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.apo-run-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--apo-review);
-}
-
 .apo-main {
   min-width: 0;
   display: flex;
@@ -145,12 +119,12 @@
 }
 
 .apo-header {
-  min-height: 56px;
+  min-height: 86px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 16px;
+  padding: 24px 16px 12px;
   border-bottom: 1px solid var(--apo-border);
   background: color-mix(in srgb, var(--apo-surface) 92%, transparent);
 }
@@ -161,8 +135,8 @@
 
 .apo-header h1 {
   margin: 0;
-  font-size: 18px;
-  line-height: 24px;
+  font-size: 24px;
+  line-height: 30px;
   font-weight: 650;
 }
 
@@ -194,6 +168,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  padding-bottom: 2px;
 }
 
 .apo-workspace {
@@ -208,7 +183,44 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 14px;
+}
+
+.apo-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.apo-section-intro {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
   gap: 12px;
+  align-items: start;
+  padding: 0 2px;
+}
+
+.apo-section-label {
+  color: var(--apo-primary);
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.apo-section-intro h2 {
+  margin: 0;
+  color: var(--apo-text);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+}
+
+.apo-section-intro p {
+  margin: 2px 0 0;
+  color: var(--apo-text-muted);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .apo-queue-controls {
@@ -355,6 +367,13 @@
   color: var(--apo-text-muted);
 }
 
+.apo-metric-note {
+  margin-top: 1px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--apo-text-faint);
+}
+
 .apo-table-panel,
 .apo-empty-panel {
   min-width: 0;
@@ -386,8 +405,8 @@
 }
 
 .apo-table-scroll {
-  height: calc(100vh - 346px);
-  min-height: 360px;
+  height: calc(100vh - 430px);
+  min-height: 320px;
   max-width: 100%;
   overflow: auto;
 }
@@ -832,6 +851,8 @@
   }
 
   .apo-sidebar {
+    position: static;
+    height: auto;
     min-height: auto;
     min-width: 0;
     overflow: hidden;
@@ -847,10 +868,6 @@
 
   .apo-nav-item {
     min-width: 150px;
-  }
-
-  .apo-sidebar-footer {
-    display: none;
   }
 
   .apo-summary-grid {
@@ -879,6 +896,11 @@
 
   .apo-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .apo-section-intro {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 
   .apo-workspace {
