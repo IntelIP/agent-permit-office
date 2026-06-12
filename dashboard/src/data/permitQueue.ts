@@ -41,6 +41,15 @@ export type QueueSummary = {
   totalTokens: number
 }
 
+export type ArtifactPreview = {
+  content: string
+  kind: "json" | "markdown" | "text"
+  label: string
+  path: string
+  sizeBytes: number
+  truncated: boolean
+}
+
 export type QueueFinding = {
   id: string
   repo: string
@@ -104,6 +113,7 @@ type DashboardSnapshot = {
   summary: QueueSummary
   savedViews: SavedView[]
   findings: QueueFinding[]
+  artifactPreviews: Record<string, ArtifactPreview>
   traceSteps: AgentTraceStep[]
   policyControls: PolicyControl[]
   source: Record<string, string | null>
@@ -117,5 +127,6 @@ export const runMeta = snapshot.runMeta
 export const queueSummary = snapshot.summary
 export const savedViews = snapshot.savedViews
 export const queueFindings = snapshot.findings
+export const artifactPreviews = snapshot.artifactPreviews
 export const agentTraceSteps = snapshot.traceSteps
 export const policyControls = snapshot.policyControls

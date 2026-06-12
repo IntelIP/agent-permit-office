@@ -68,6 +68,7 @@ def main() -> None:
             {"id": "approved", "label": "Approved", "count": summary["approvedRepos"]},
         ],
         "findings": rows,
+        "artifactPreviews": build_artifact_previews(validation_path),
         "traceSteps": build_trace_steps(summary),
         "policyControls": build_policy_controls(summary),
     }
@@ -251,6 +252,36 @@ def build_policy_controls(summary: dict[str, Any]) -> list[dict[str, str]]:
             "note": f"Latest eval pass rate is {percent(summary.get('evalPassRate'))}.",
         },
     ]
+
+
+def build_artifact_previews(validation_path: Path | None) -> dict[str, dict[str, Any]]:
+    previews: dict[str, dict[str, Any]] = {}
+    if validation_path is None:
+        return previews
+
+    candidate_paths = [validation_path, validation_path.with_name("live-repo-validation-report.md")]
+    for path in candidate_paths:
+        if not path.exists():
+            continue
+        artifact_path = relative_path(path)
+        suffix = path.suffix.lower()
+        content = path.read_text(encoding="utf-8")
+        if suffix == ".json":
+            content = json.dumps(json.loads(content), indent=2, sort_keys=True)
+            kind = "json"
+        elif suffix == ".md":
+            kind = "markdown"
+        else:
+            kind = "text"
+        previews[artifact_path] = {
+            "kind": kind,
+            "label": path.name,
+            "path": artifact_path,
+            "sizeBytes": path.stat().st_size,
+            "content": content[:12000],
+            "truncated": len(content) > 12000,
+        }
+    return previews
 
 
 def normalize_status(status: str | None) -> str:

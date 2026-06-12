@@ -24,6 +24,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -44,12 +51,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import {
   agentTraceSteps,
+  artifactPreviews,
   policyControls,
   queueFindings,
   queueSummary,
   runMeta,
   savedViews,
   type AgentTraceStep,
+  type ArtifactPreview,
   type PermitStatus,
   type QueueSummary,
   type QueueFinding,
@@ -92,6 +101,20 @@ function formatCompact(value: number) {
 
 function evidenceLocation(finding: QueueFinding) {
   return finding.line > 0 ? `${finding.path}:${finding.line}` : finding.path
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+  return `${Math.round(bytes / 1024)} KB`
+}
+
+function artifactLabel(artifact: string) {
+  if (artifact.startsWith("http")) {
+    return "External source"
+  }
+  return artifact.split("/").at(-1) ?? artifact
 }
 
 function StatusBadge({ status }: { status: PermitStatus }) {
@@ -441,7 +464,13 @@ function FindingsTable({
   )
 }
 
-function DetailRail({ finding }: { finding: QueueFinding }) {
+function DetailRail({
+  finding,
+  onArtifactOpen,
+}: {
+  finding: QueueFinding
+  onArtifactOpen: (artifact: string) => void
+}) {
   const relatedTraceSteps = agentTraceSteps.filter((step) =>
     finding.traceIds.includes(step.id),
   )
@@ -472,7 +501,7 @@ function DetailRail({ finding }: { finding: QueueFinding }) {
 
         <ScrollArea className="apo-detail-scroll">
           <TabsContent value="evidence">
-            <EvidenceTab finding={finding} />
+            <EvidenceTab finding={finding} onArtifactOpen={onArtifactOpen} />
           </TabsContent>
           <TabsContent value="trace">
             <TraceTab steps={relatedTraceSteps} />
@@ -486,7 +515,13 @@ function DetailRail({ finding }: { finding: QueueFinding }) {
   )
 }
 
-function EvidenceTab({ finding }: { finding: QueueFinding }) {
+function EvidenceTab({
+  finding,
+  onArtifactOpen,
+}: {
+  finding: QueueFinding
+  onArtifactOpen: (artifact: string) => void
+}) {
   return (
     <div className="apo-detail-section-stack">
       <section className="apo-detail-section">
@@ -520,7 +555,14 @@ function EvidenceTab({ finding }: { finding: QueueFinding }) {
         </div>
         <div className="apo-artifact-list">
           {finding.artifacts.map((artifact) => (
-            <button className="apo-artifact-row" key={artifact} type="button">
+            <button
+              className="apo-artifact-row"
+              data-artifact={artifact}
+              data-testid="artifact-row"
+              key={artifact}
+              onClick={() => onArtifactOpen(artifact)}
+              type="button"
+            >
               <DatabaseIcon />
               <span>{artifact}</span>
               <ArrowSquareOutIcon />
@@ -594,9 +636,83 @@ function EmptyState() {
   )
 }
 
+function ArtifactDrawer({
+  artifact,
+  preview,
+  onOpenChange,
+}: {
+  artifact: string | null
+  preview: ArtifactPreview | undefined
+  onOpenChange: (open: boolean) => void
+}) {
+  const isExternal = artifact?.startsWith("http") ?? false
+
+  return (
+    <Sheet open={artifact !== null} onOpenChange={onOpenChange}>
+      <SheetContent className="apo-artifact-drawer">
+        <SheetHeader className="apo-artifact-drawer-header">
+          <div className="apo-detail-kicker">Artifact preview</div>
+          <SheetTitle>{artifact ? artifactLabel(artifact) : "Artifact"}</SheetTitle>
+          <SheetDescription>
+            {preview
+              ? "Repo-local artifact captured in the dashboard snapshot."
+              : "External artifact reference from the validation row."}
+          </SheetDescription>
+        </SheetHeader>
+
+        {artifact ? (
+          <div className="apo-artifact-drawer-body">
+            <div className="apo-artifact-meta-grid">
+              <div>
+                <span>Path</span>
+                <strong>{artifact}</strong>
+              </div>
+              <div>
+                <span>Kind</span>
+                <strong>{preview?.kind ?? (isExternal ? "url" : "unknown")}</strong>
+              </div>
+              <div>
+                <span>Size</span>
+                <strong>{preview ? formatBytes(preview.sizeBytes) : "not local"}</strong>
+              </div>
+            </div>
+
+            {preview ? (
+              <ScrollArea className="apo-artifact-preview-scroll">
+                <pre className="apo-artifact-preview">{preview.content}</pre>
+                {preview.truncated ? (
+                  <p className="apo-artifact-preview-note">Preview truncated at 12 KB.</p>
+                ) : null}
+              </ScrollArea>
+            ) : (
+              <div className="apo-artifact-empty-preview">
+                <DatabaseIcon />
+                <div>
+                  <h3>No local preview</h3>
+                  <p>
+                    {isExternal
+                      ? "This row points to the source repository."
+                      : "This artifact was not generated into the dashboard snapshot."}
+                  </p>
+                  {isExternal ? (
+                    <a href={artifact} rel="noreferrer" target="_blank">
+                      Open source
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 export function PermitReviewQueue() {
   const [activeView, setActiveView] = useState(savedViews[0]?.id ?? "all")
   const [selectedId, setSelectedId] = useState(queueFindings[0].id)
+  const [selectedArtifact, setSelectedArtifact] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [severity, setSeverity] = useState("all")
   const [theme, setTheme] = useState<"light" | "dark">("light")
@@ -666,10 +782,19 @@ export function PermitReviewQueue() {
             ) : (
               <EmptyState />
             )}
-            <DetailRail finding={selectedFinding} />
+            <DetailRail finding={selectedFinding} onArtifactOpen={setSelectedArtifact} />
           </section>
         </div>
       </main>
+      <ArtifactDrawer
+        artifact={selectedArtifact}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedArtifact(null)
+          }
+        }}
+        preview={selectedArtifact ? artifactPreviews[selectedArtifact] : undefined}
+      />
       <Separator className="apo-mobile-separator" />
     </div>
   )
