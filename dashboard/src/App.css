@@ -120,6 +120,9 @@
 }
 
 .apo-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   min-height: 86px;
   display: flex;
   align-items: flex-end;
@@ -127,7 +130,8 @@
   gap: 16px;
   padding: 24px 16px 12px;
   border-bottom: 1px solid var(--apo-border);
-  background: color-mix(in srgb, var(--apo-surface) 92%, transparent);
+  background: color-mix(in srgb, var(--apo-surface) 86%, var(--apo-primary-soft));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--apo-border-strong) 22%, transparent);
 }
 
 .apo-header-title {
