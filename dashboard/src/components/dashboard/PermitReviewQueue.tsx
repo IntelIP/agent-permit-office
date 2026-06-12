@@ -10,7 +10,6 @@ import {
   LockKeyIcon,
   MagnifyingGlassIcon,
   MoonIcon,
-  PulseIcon,
   RobotIcon,
   ShieldCheckIcon,
   SunIcon,
@@ -329,26 +328,6 @@ function DashboardHeader({
   )
 }
 
-function SectionIntro({
-  description,
-  label,
-  title,
-}: {
-  description: string
-  label: string
-  title: string
-}) {
-  return (
-    <div className="apo-section-intro">
-      <div className="apo-section-label">{label}</div>
-      <div>
-        <h2>{title}</h2>
-        <p>{description}</p>
-      </div>
-    </div>
-  )
-}
-
 function SavedViews({
   activeView,
   onChange,
@@ -415,42 +394,7 @@ function FilterBar({
   )
 }
 
-function SummaryTiles({ summary }: { summary: QueueSummary }) {
-  return (
-    <div className="apo-summary-grid" aria-label="Queue summary">
-      <MetricTile
-        icon={WarningDiamondIcon}
-        label="Findings"
-        note={`${summary.repos} repos scanned`}
-        tone="review"
-        value={summary.findings.toString()}
-      />
-      <MetricTile
-        icon={XCircleIcon}
-        label="Blocked repos"
-        note="Must fix first"
-        tone="blocked"
-        value={summary.blockedRepos.toString()}
-      />
-      <MetricTile
-        icon={RobotIcon}
-        label="Citation coverage"
-        note="Deep Agent grounded"
-        tone="agent"
-        value={formatPercent(summary.citationCoverage)}
-      />
-      <MetricTile
-        icon={PulseIcon}
-        label="Cache hit"
-        note={`${formatCompact(summary.cachedTokens)} cached tokens`}
-        tone="artifact"
-        value={formatPercent(summary.cacheHitRatio)}
-      />
-    </div>
-  )
-}
-
-function RunVerdict({ summary }: { summary: QueueSummary }) {
+function RunStatusStrip({ summary }: { summary: QueueSummary }) {
   const verdict = verdictCopy(summary)
   const Icon =
     verdict.tone === "blocked"
@@ -458,70 +402,100 @@ function RunVerdict({ summary }: { summary: QueueSummary }) {
       : verdict.tone === "review"
         ? WarningDiamondIcon
         : CheckCircleIcon
+  const metrics = [
+    {
+      label: "Findings",
+      value: summary.findings.toString(),
+      note: `${summary.repos} repos`,
+    },
+    {
+      label: "Blocked",
+      value: summary.blockedRepos.toString(),
+      note: "must fix",
+    },
+    {
+      label: "Citations",
+      value: formatPercent(summary.citationCoverage),
+      note: "grounded",
+    },
+    {
+      label: "Cache",
+      value: formatPercent(summary.cacheHitRatio),
+      note: `${formatCompact(summary.cachedTokens)} saved`,
+    },
+  ]
 
   return (
-    <section className={cn("apo-run-verdict", `is-${verdict.tone}`)}>
-      <div className="apo-run-verdict-icon">
-        <Icon weight="fill" />
+    <section className={cn("apo-status-strip", `is-${verdict.tone}`)} aria-label="Run status">
+      <div className="apo-status-verdict">
+        <div className="apo-status-icon">
+          <Icon weight="fill" />
+        </div>
+        <div>
+          <div className="apo-status-label">{verdict.status}</div>
+          <p>{verdict.action}</p>
+        </div>
       </div>
-      <div className="apo-run-verdict-copy">
-        <div className="apo-run-verdict-kicker">{verdict.label}</div>
-        <h2>{verdict.status}</h2>
-        <p>{verdict.body}</p>
-      </div>
-      <div className="apo-run-verdict-action">
-        <span>Next action</span>
-        <strong>{verdict.action}</strong>
+
+      <div className="apo-status-divider" />
+
+      <div className="apo-status-metrics" aria-label="Run metrics">
+        {metrics.map((metric) => (
+          <div className="apo-status-metric" key={metric.label}>
+            <strong>{metric.value}</strong>
+            <span>{metric.label}</span>
+            <em>{metric.note}</em>
+          </div>
+        ))}
       </div>
     </section>
   )
 }
 
-function MetricTile({
-  icon: Icon,
-  label,
-  note,
-  tone,
-  value,
-}: {
-  icon: typeof WarningDiamondIcon
-  label: string
-  note: string
-  tone: string
-  value: string
-}) {
-  return (
-    <div className={cn("apo-metric-tile", `is-${tone}`)}>
-      <div className="apo-metric-icon">
-        <Icon weight="duotone" />
-      </div>
-      <div>
-        <div className="apo-metric-value">{value}</div>
-        <div className="apo-metric-label">{label}</div>
-        <div className="apo-metric-note">{note}</div>
-      </div>
-    </div>
-  )
-}
-
 function FindingsTable({
+  activeView,
+  onSearchChange,
   rows,
+  search,
   selectedId,
+  severity,
+  onSeverityChange,
   onSelect,
+  onViewChange,
 }: {
+  activeView: string
+  onSearchChange: (value: string) => void
   rows: QueueFinding[]
+  search: string
   selectedId: string
+  severity: string
+  onSeverityChange: (value: string) => void
   onSelect: (id: string) => void
+  onViewChange: (view: string) => void
 }) {
   return (
     <Card className="apo-table-panel">
       <div className="apo-table-pinned">
-        <div className="apo-detail-kicker">Findings spreadsheet</div>
-        <div className="apo-detail-title-row">
-          <h2>Review queue</h2>
+        <div className="apo-table-heading-row">
+          <div>
+            <div className="apo-detail-kicker">Findings spreadsheet</div>
+            <h2>Review queue</h2>
+            <p>
+              {rows.length} validation {rows.length === 1 ? "row" : "rows"}. Select a row to
+              inspect evidence.
+            </p>
+          </div>
           <span className="apo-sort-label">Sorted by risk</span>
         </div>
-        <p>{rows.length} validation rows. Select a row to inspect evidence.</p>
+        <div className="apo-table-controls">
+          <SavedViews activeView={activeView} onChange={onViewChange} />
+          <FilterBar
+            onSearchChange={onSearchChange}
+            onSeverityChange={onSeverityChange}
+            search={search}
+            severity={severity}
+          />
+        </div>
       </div>
       <CardContent className="apo-table-content">
         <div className="apo-table-scroll">
@@ -539,36 +513,48 @@ function FindingsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row) => (
-                <TableRow
-                  className="apo-finding-row"
-                  data-state={row.id === selectedId ? "selected" : undefined}
-                  data-testid={`finding-row-${row.id}`}
-                  key={row.id}
-                  onClick={() => onSelect(row.id)}
-                  tabIndex={0}
-                >
-                  <TableCell className="apo-finding-main-cell">
-                    <div className="apo-finding-title">{row.title}</div>
-                    <div className="apo-finding-meta">
-                      <span>{row.id}</span>
-                      <span>{row.repo}</span>
-                      <span className="apo-row-action">Inspect</span>
+              {rows.length > 0 ? (
+                rows.map((row) => (
+                  <TableRow
+                    className="apo-finding-row"
+                    data-state={row.id === selectedId ? "selected" : undefined}
+                    data-testid={`finding-row-${row.id}`}
+                    key={row.id}
+                    onClick={() => onSelect(row.id)}
+                    tabIndex={0}
+                  >
+                    <TableCell className="apo-finding-main-cell">
+                      <div className="apo-finding-title">{row.title}</div>
+                      <div className="apo-finding-meta">
+                        <span>{row.id}</span>
+                        <span>{row.repo}</span>
+                        <span className="apo-row-action">Inspect</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={row.status} />
+                    </TableCell>
+                    <TableCell>
+                      <SeverityBadge severity={row.severity} />
+                    </TableCell>
+                    <TableCell className="apo-rule-cell">{row.rule}</TableCell>
+                    <TableCell className="apo-path-cell">{evidenceLocation(row)}</TableCell>
+                    <TableCell>{row.capability}</TableCell>
+                    <TableCell>{row.owner}</TableCell>
+                    <TableCell className="apo-age-cell">{row.age}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="apo-empty-row" colSpan={8}>
+                    <ShieldCheckIcon weight="duotone" />
+                    <div>
+                      <h3>No findings match filters</h3>
+                      <p>Widen severity or search filters to restore queue rows.</p>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <StatusBadge status={row.status} />
-                  </TableCell>
-                  <TableCell>
-                    <SeverityBadge severity={row.severity} />
-                  </TableCell>
-                  <TableCell className="apo-rule-cell">{row.rule}</TableCell>
-                  <TableCell className="apo-path-cell">{evidenceLocation(row)}</TableCell>
-                  <TableCell>{row.capability}</TableCell>
-                  <TableCell>{row.owner}</TableCell>
-                  <TableCell className="apo-age-cell">{row.age}</TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>
@@ -735,20 +721,6 @@ function PolicyTab() {
   )
 }
 
-function EmptyState() {
-  return (
-    <Card className="apo-empty-panel">
-      <CardContent className="apo-empty-content">
-        <ShieldCheckIcon weight="duotone" />
-        <div>
-          <h2>No findings match filters</h2>
-          <p>Widen severity or search filters to restore queue rows.</p>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 function ArtifactDrawer({
   artifact,
   finding,
@@ -878,43 +850,22 @@ export function PermitReviewQueue() {
         />
         <div className="apo-workspace">
           <section className="apo-dashboard-stack" aria-label="Permit findings">
-            <div className="apo-section-group">
-              <SectionIntro
-                description="Live validation, Deep Agent grounding, and cost controls from local artifacts."
-                label="Run overview"
-                title="Decision snapshot"
-              />
-              <RunVerdict summary={queueSummary} />
-              <SummaryTiles summary={queueSummary} />
-            </div>
+            <RunStatusStrip summary={queueSummary} />
 
-            <div className="apo-section-group">
-              <SectionIntro
-                description="Saved views filter the work queue. Search narrows repo, rule, evidence, and owner."
-                label="Queue setup"
-                title="Choose what to review"
-              />
-              <div className="apo-queue-controls">
-                <SavedViews activeView={activeView} onChange={setActiveView} />
-                <FilterBar
-                  onSearchChange={setSearch}
-                  onSeverityChange={setSeverity}
-                  search={search}
-                  severity={severity}
-                />
-              </div>
-            </div>
-
+            <FindingsTable
+              activeView={activeView}
+              onSearchChange={setSearch}
+              onSeverityChange={setSeverity}
+              onSelect={setSelectedId}
+              onViewChange={setActiveView}
+              rows={filteredRows}
+              search={search}
+              selectedId={selectedFinding.id}
+              severity={severity}
+            />
             {filteredRows.length > 0 ? (
-              <FindingsTable
-                onSelect={setSelectedId}
-                rows={filteredRows}
-                selectedId={selectedFinding.id}
-              />
-            ) : (
-              <EmptyState />
-            )}
-            <DetailRail finding={selectedFinding} onArtifactOpen={setSelectedArtifact} />
+              <DetailRail finding={selectedFinding} onArtifactOpen={setSelectedArtifact} />
+            ) : null}
           </section>
         </div>
       </main>
