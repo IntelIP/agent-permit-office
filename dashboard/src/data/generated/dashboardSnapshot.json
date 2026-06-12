@@ -1,0 +1,367 @@
+{
+  "findings": [
+    {
+      "age": "Jun 7",
+      "artifacts": [
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-report.md",
+        "https://github.com/langchain-ai/open-swe"
+      ],
+      "branch": "recent commit",
+      "capability": "ci trust boundary",
+      "commit": {
+        "date": "2026-06-07T05:17:09Z",
+        "hash": "d2268871eb0f90899e3aebd1068baedd8518a656",
+        "message": "feat: surface dashboard UI link on PR reviews [INF-0000] (#1440)"
+      },
+      "confidence": 96,
+      "evidence": "Rules present: ci-secret-reference, ci-write-permission. Findings=2, paths=2, controls=4.",
+      "id": "APO-LIVE-0001",
+      "line": 0,
+      "metrics": {
+        "cacheHitRatio": 0.6958,
+        "cachedTokens": 26933,
+        "citationCheckPassed": true,
+        "controls": 4,
+        "durationSeconds": 35.5493,
+        "expectationCheckPassed": true,
+        "findings": 2,
+        "graphPaths": 2,
+        "modelCalls": 4,
+        "totalTokens": 40461
+      },
+      "owner": "DevEx",
+      "path": ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+      "remediation": "Review workflow secrets and use least-privilege permissions before allowing agent automation.",
+      "repo": "open-swe",
+      "rule": "ci-secret-reference",
+      "runId": "sprint23-open-source-live-open-swe",
+      "scanner": "live-validation + bounded deep agent",
+      "severity": "high",
+      "source": "https://github.com/langchain-ai/open-swe",
+      "status": "needs-review",
+      "summary": "open-swe finished with permit status needs review. 2 findings, 2 graph paths, and 4 controls were checked.",
+      "title": "open-swe needs review: ci-secret-reference, ci-write-permission",
+      "traceIds": [
+        "trace-artifacts",
+        "trace-citations",
+        "trace-paths",
+        "trace-cost"
+      ]
+    },
+    {
+      "age": "Jun 5",
+      "artifacts": [
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-report.md",
+        "https://github.com/github/github-mcp-server"
+      ],
+      "branch": "recent commit",
+      "capability": "ci trust boundary",
+      "commit": {
+        "date": "2026-06-05T15:04:22+01:00",
+        "hash": "457f59932ac041c9276e03e634b0e0c30f19ba3e",
+        "message": "Add confidence parameter to issue mutation MCP tools (#2605)"
+      },
+      "confidence": 96,
+      "evidence": "Rules present: ci-secret-reference, ci-write-permission. Findings=22, paths=9, controls=31.",
+      "id": "APO-LIVE-0002",
+      "line": 0,
+      "metrics": {
+        "cacheHitRatio": 0.6565,
+        "cachedTokens": 29337,
+        "citationCheckPassed": true,
+        "controls": 31,
+        "durationSeconds": 45.9355,
+        "expectationCheckPassed": true,
+        "findings": 22,
+        "graphPaths": 9,
+        "modelCalls": 4,
+        "totalTokens": 47018
+      },
+      "owner": "DevEx",
+      "path": ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+      "remediation": "Review workflow secrets and use least-privilege permissions before allowing agent automation.",
+      "repo": "github-mcp-server",
+      "rule": "ci-secret-reference",
+      "runId": "sprint23-open-source-live-github-mcp-server",
+      "scanner": "live-validation + bounded deep agent",
+      "severity": "high",
+      "source": "https://github.com/github/github-mcp-server",
+      "status": "needs-review",
+      "summary": "github-mcp-server finished with permit status needs review. 22 findings, 9 graph paths, and 31 controls were checked.",
+      "title": "github-mcp-server needs review: ci-secret-reference, ci-write-permission",
+      "traceIds": [
+        "trace-artifacts",
+        "trace-citations",
+        "trace-paths",
+        "trace-cost"
+      ]
+    },
+    {
+      "age": "Jun 5",
+      "artifacts": [
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-report.md",
+        "https://github.com/mcp-use/mcp-use"
+      ],
+      "branch": "recent commit",
+      "capability": "ci trust boundary",
+      "commit": {
+        "date": "2026-06-05T09:51:24-07:00",
+        "hash": "d7f44dd31a1ecccd03b02d3100b7cef09a6816d7",
+        "message": "chore: update context7 claim (#1666)"
+      },
+      "confidence": 96,
+      "evidence": "Rules present: ci-pr-target-write-token, ci-pull-request-target, ci-secret-reference, ci-write-permission. Findings=84, paths=22, controls=105.",
+      "id": "APO-LIVE-0003",
+      "line": 0,
+      "metrics": {
+        "cacheHitRatio": 0.6591,
+        "cachedTokens": 42582,
+        "citationCheckPassed": true,
+        "controls": 105,
+        "durationSeconds": 51.0393,
+        "expectationCheckPassed": true,
+        "findings": 84,
+        "graphPaths": 22,
+        "modelCalls": 4,
+        "totalTokens": 67062
+      },
+      "owner": "AppSec",
+      "path": ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+      "remediation": "Split trusted CI from untrusted pull request handling and downgrade token permissions before agent execution.",
+      "repo": "mcp-use",
+      "rule": "ci-pr-target-write-token",
+      "runId": "sprint23-open-source-live-mcp-use",
+      "scanner": "live-validation + bounded deep agent",
+      "severity": "critical",
+      "source": "https://github.com/mcp-use/mcp-use",
+      "status": "blocked",
+      "summary": "mcp-use finished with permit status blocked. 84 findings, 22 graph paths, and 105 controls were checked.",
+      "title": "mcp-use blocked: ci-pr-target-write-token, ci-pull-request-target",
+      "traceIds": [
+        "trace-artifacts",
+        "trace-citations",
+        "trace-paths",
+        "trace-cost"
+      ]
+    },
+    {
+      "age": "Jun 5",
+      "artifacts": [
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-report.md",
+        "https://github.com/wanxingai/LightAgent"
+      ],
+      "branch": "recent commit",
+      "capability": "clean permit",
+      "commit": {
+        "date": "2026-06-05T23:00:09+08:00",
+        "hash": "220e8530180a6eec25c5d23f08308707ead0ae91",
+        "message": "Merge pull request #56 from Oxygen56/fix/tracetools-and-litellm-docs"
+      },
+      "confidence": 96,
+      "evidence": "No expected risk rules present. Findings=0, paths=0, controls=0.",
+      "id": "APO-LIVE-0004",
+      "line": 0,
+      "metrics": {
+        "cacheHitRatio": 0.7119,
+        "cachedTokens": 25496,
+        "citationCheckPassed": true,
+        "controls": 0,
+        "durationSeconds": 24.8137,
+        "expectationCheckPassed": true,
+        "findings": 0,
+        "graphPaths": 0,
+        "modelCalls": 4,
+        "totalTokens": 36930
+      },
+      "owner": "Platform",
+      "path": ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+      "remediation": "Keep scanner and Deep Agent citation checks in CI to preserve this approval state.",
+      "repo": "lightagent",
+      "rule": "clean-run",
+      "runId": "sprint23-open-source-live-lightagent",
+      "scanner": "live-validation + bounded deep agent",
+      "severity": "low",
+      "source": "https://github.com/wanxingai/LightAgent",
+      "status": "approved",
+      "summary": "lightagent finished with permit status approved. 0 findings, 0 graph paths, and 0 controls were checked.",
+      "title": "lightagent passed without deterministic findings",
+      "traceIds": [
+        "trace-artifacts",
+        "trace-citations",
+        "trace-cost"
+      ]
+    },
+    {
+      "age": "Jun 4",
+      "artifacts": [
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+        ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-report.md",
+        "https://github.com/CopilotKit/open-multi-agent-canvas"
+      ],
+      "branch": "recent commit",
+      "capability": "clean permit",
+      "commit": {
+        "date": "2026-06-04T21:59:57-05:00",
+        "hash": "25f20b22e7afe3277b6c350c14ef4d54f7147e49",
+        "message": "fix: point Copilot Cloud links at the Intelligence dashboard"
+      },
+      "confidence": 96,
+      "evidence": "No expected risk rules present. Findings=0, paths=0, controls=0.",
+      "id": "APO-LIVE-0005",
+      "line": 0,
+      "metrics": {
+        "cacheHitRatio": 0.6405,
+        "cachedTokens": 16622,
+        "citationCheckPassed": true,
+        "controls": 0,
+        "durationSeconds": 21.3177,
+        "expectationCheckPassed": true,
+        "findings": 0,
+        "graphPaths": 0,
+        "modelCalls": 3,
+        "totalTokens": 26930
+      },
+      "owner": "Platform",
+      "path": ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+      "remediation": "Keep scanner and Deep Agent citation checks in CI to preserve this approval state.",
+      "repo": "open-multi-agent-canvas",
+      "rule": "clean-run",
+      "runId": "sprint23-open-source-live-open-multi-agent-canvas",
+      "scanner": "live-validation + bounded deep agent",
+      "severity": "low",
+      "source": "https://github.com/CopilotKit/open-multi-agent-canvas",
+      "status": "approved",
+      "summary": "open-multi-agent-canvas finished with permit status approved. 0 findings, 0 graph paths, and 0 controls were checked.",
+      "title": "open-multi-agent-canvas passed without deterministic findings",
+      "traceIds": [
+        "trace-artifacts",
+        "trace-citations",
+        "trace-cost"
+      ]
+    }
+  ],
+  "generatedAt": "2026-06-12T18:21:09.990077+00:00",
+  "policyControls": [
+    {
+      "id": "CTRL-CITATION",
+      "label": "Deep Agent claims cite scanner evidence",
+      "note": "Citation coverage is 100% across the validation set.",
+      "state": "passed"
+    },
+    {
+      "id": "CTRL-CI",
+      "label": "Privileged CI paths block permit approval",
+      "note": "1 repositories have blocked permit decisions.",
+      "state": "blocked"
+    },
+    {
+      "id": "CTRL-CACHE",
+      "label": "Prompt caching lowers repeated-run cost",
+      "note": "Cache hit ratio is 67%.",
+      "state": "passed"
+    },
+    {
+      "id": "CTRL-EVAL",
+      "label": "Fixture eval suite protects scanner regressions",
+      "note": "Latest eval pass rate is 100%.",
+      "state": "passed"
+    }
+  ],
+  "runMeta": {
+    "branch": "recent commits",
+    "completedAt": "2026-06-07T04:30:32.144335+00:00",
+    "repo": "open-source validation suite",
+    "runId": "sprint23-open-source-live",
+    "title": "Permit Review Queue"
+  },
+  "savedViews": [
+    {
+      "count": 5,
+      "id": "all",
+      "label": "All Repos"
+    },
+    {
+      "count": 1,
+      "id": "blocked",
+      "label": "Blocked"
+    },
+    {
+      "count": 2,
+      "id": "needs-review",
+      "label": "Needs Review"
+    },
+    {
+      "count": 2,
+      "id": "approved",
+      "label": "Approved"
+    }
+  ],
+  "source": {
+    "demoPath": ".agent-permit/open-source-demos/action-open-source-demo-smoke/open-source-demo-results.json",
+    "demoRunId": "action-open-source-demo-smoke",
+    "evalPath": ".agent-permit/eval-trends/sprint30-eval/eval-trends.json",
+    "evalRunId": "sprint30-eval",
+    "latestScanPath": ".agent-permit/runs/sprint31-architecture-self-scan/run-metrics.json",
+    "latestScanRunId": "sprint31-architecture-self-scan",
+    "validationPath": ".agent-permit/live-repo-validations/sprint23-open-source-live/live-repo-validation-results.json",
+    "validationRunId": "sprint23-open-source-live"
+  },
+  "summary": {
+    "approvedRepos": 2,
+    "blockedRepos": 1,
+    "cacheHitRatio": 0.6721,
+    "cachedTokens": 140970,
+    "citationCoverage": 1.0,
+    "controls": 140,
+    "evalPassRate": 1.0,
+    "findings": 108,
+    "graphPaths": 33,
+    "inputTokens": 209761,
+    "latestScanFilesIndexed": 99,
+    "latestScanFindings": 0,
+    "latestScanStatus": "approved",
+    "modelCalls": 19,
+    "needsReviewRepos": 2,
+    "passedRepos": 5,
+    "repos": 5,
+    "totalTokens": 218401
+  },
+  "traceSteps": [
+    {
+      "duration": "static",
+      "id": "trace-artifacts",
+      "label": "Load validation artifacts",
+      "output": "5 repo validation rows loaded from durable .agent-permit output.",
+      "state": "passed",
+      "tool": "artifact.read"
+    },
+    {
+      "duration": "aggregate",
+      "id": "trace-citations",
+      "label": "Check citation coverage",
+      "output": "100% of live repo validations passed citation checks.",
+      "state": "passed",
+      "tool": "citation_critic.verify"
+    },
+    {
+      "duration": "aggregate",
+      "id": "trace-paths",
+      "label": "Trace capability paths",
+      "output": "33 graph paths and 140 controls found across live repos.",
+      "state": "blocked",
+      "tool": "graph.paths"
+    },
+    {
+      "duration": "aggregate",
+      "id": "trace-cost",
+      "label": "Measure model cost controls",
+      "output": "140970 cached tokens across 19 model calls.",
+      "state": "passed",
+      "tool": "openrouter.usage"
+    }
+  ]
+}

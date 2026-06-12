@@ -46,9 +46,12 @@ import {
   agentTraceSteps,
   policyControls,
   queueFindings,
+  queueSummary,
+  runMeta,
   savedViews,
   type AgentTraceStep,
   type PermitStatus,
+  type QueueSummary,
   type QueueFinding,
   type Severity,
   type TraceState,
@@ -71,6 +74,24 @@ const traceLabels: Record<TraceState, string> = {
   passed: "Passed",
   review: "Review",
   blocked: "Blocked",
+}
+
+function formatPercent(value: number | null) {
+  if (value === null) {
+    return "n/a"
+  }
+  return `${Math.round(value * 100)}%`
+}
+
+function formatCompact(value: number) {
+  return new Intl.NumberFormat("en", {
+    maximumFractionDigits: 1,
+    notation: "compact",
+  }).format(value)
+}
+
+function evidenceLocation(finding: QueueFinding) {
+  return finding.line > 0 ? `${finding.path}:${finding.line}` : finding.path
 }
 
 function StatusBadge({ status }: { status: PermitStatus }) {
@@ -117,7 +138,7 @@ function TraceBadge({ state }: { state: TraceState }) {
   )
 }
 
-function AppSidebar() {
+function AppSidebar({ summary }: { summary: QueueSummary }) {
   return (
     <aside className="apo-sidebar" aria-label="Dashboard navigation">
       <div className="apo-brand">
@@ -136,10 +157,10 @@ function AppSidebar() {
           <FileSearchIcon weight="fill" />
           <span>Findings queue</span>
         </div>
-        <p>Review scanner findings, agent evidence, and permit decisions for one run.</p>
+        <p>Review live validation findings, Deep Agent evidence, and permit decisions.</p>
         <div className="apo-sidebar-stats">
-          <span>36 findings</span>
-          <span>14 trace steps</span>
+          <span>{summary.findings} findings</span>
+          <span>{summary.repos} repos</span>
         </div>
       </div>
     </aside>
@@ -157,6 +178,7 @@ function ThemeToggle({
     <Button
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       className="apo-theme-toggle"
+      data-testid="theme-toggle"
       onClick={onChange}
       size="icon-sm"
       variant="outline"
@@ -176,11 +198,11 @@ function DashboardHeader({
   return (
     <header className="apo-header">
       <div className="apo-header-title">
-        <h1>Permit Review Queue</h1>
+        <h1>{runMeta.title}</h1>
         <div className="apo-header-meta">
-          <span>t3-oss/create-t3-app</span>
-          <span>main</span>
-          <span>run_2026_06_11_1842</span>
+          <span>{runMeta.repo}</span>
+          <span>{runMeta.branch}</span>
+          <span>{runMeta.runId}</span>
         </div>
       </div>
 
@@ -231,6 +253,7 @@ function SavedViews({
       {savedViews.map((view) => (
         <button
           className={cn("apo-saved-view", activeView === view.id && "is-active")}
+          data-testid={`saved-view-${view.id}`}
           key={view.id}
           onClick={() => onChange(view.id)}
           type="button"
@@ -284,41 +307,36 @@ function FilterBar({
   )
 }
 
-function SummaryTiles({ rows }: { rows: QueueFinding[] }) {
-  const blocked = rows.filter((row) => row.status === "blocked").length
-  const review = rows.filter((row) => row.status === "needs-review").length
-  const cited = 98
-  const evals = 4
-
+function SummaryTiles({ summary }: { summary: QueueSummary }) {
   return (
     <div className="apo-summary-grid" aria-label="Queue summary">
       <MetricTile
         icon={WarningDiamondIcon}
-        label="Needs review"
-        note="Manual decision"
+        label="Findings"
+        note={`${summary.repos} repos scanned`}
         tone="review"
-        value={review.toString()}
+        value={summary.findings.toString()}
       />
       <MetricTile
         icon={XCircleIcon}
-        label="Blocked permits"
+        label="Blocked repos"
         note="Must fix first"
         tone="blocked"
-        value={blocked.toString()}
+        value={summary.blockedRepos.toString()}
       />
       <MetricTile
         icon={RobotIcon}
         label="Citation coverage"
         note="Deep Agent grounded"
         tone="agent"
-        value={`${cited}%`}
+        value={formatPercent(summary.citationCoverage)}
       />
       <MetricTile
         icon={PulseIcon}
-        label="Eval drifts"
-        note="Model quality watch"
+        label="Cache hit"
+        note={`${formatCompact(summary.cachedTokens)} cached tokens`}
         tone="artifact"
-        value={evals.toString()}
+        value={formatPercent(summary.cacheHitRatio)}
       />
     </div>
   )
@@ -368,9 +386,7 @@ function FindingsTable({
           <h2>Review queue</h2>
           <span className="apo-sort-label">Sorted by risk</span>
         </div>
-        <p>
-          {rows.length} deterministic scanner findings. Select a row to inspect evidence.
-        </p>
+        <p>{rows.length} validation rows. Select a row to inspect evidence.</p>
       </div>
       <CardContent className="apo-table-content">
         <div className="apo-table-scroll">
@@ -384,7 +400,7 @@ function FindingsTable({
                 <TableHead>Evidence</TableHead>
                 <TableHead>Capability</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead>Age</TableHead>
+                <TableHead>Commit</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -392,6 +408,7 @@ function FindingsTable({
                 <TableRow
                   className="apo-finding-row"
                   data-state={row.id === selectedId ? "selected" : undefined}
+                  data-testid={`finding-row-${row.id}`}
                   key={row.id}
                   onClick={() => onSelect(row.id)}
                   tabIndex={0}
@@ -410,9 +427,7 @@ function FindingsTable({
                     <SeverityBadge severity={row.severity} />
                   </TableCell>
                   <TableCell className="apo-rule-cell">{row.rule}</TableCell>
-                  <TableCell className="apo-path-cell">
-                    {row.path}:{row.line}
-                  </TableCell>
+                  <TableCell className="apo-path-cell">{evidenceLocation(row)}</TableCell>
                   <TableCell>{row.capability}</TableCell>
                   <TableCell>{row.owner}</TableCell>
                   <TableCell className="apo-age-cell">{row.age}</TableCell>
@@ -482,7 +497,7 @@ function EvidenceTab({ finding }: { finding: QueueFinding }) {
         <p>{finding.evidence}</p>
         <div className="apo-code-line">
           <span>{finding.path}</span>
-          <span>line {finding.line}</span>
+          <span>{finding.line > 0 ? `line ${finding.line}` : "artifact"}</span>
         </div>
       </section>
 
@@ -580,7 +595,7 @@ function EmptyState() {
 }
 
 export function PermitReviewQueue() {
-  const [activeView, setActiveView] = useState("needs-review")
+  const [activeView, setActiveView] = useState(savedViews[0]?.id ?? "all")
   const [selectedId, setSelectedId] = useState(queueFindings[0].id)
   const [search, setSearch] = useState("")
   const [severity, setSeverity] = useState("all")
@@ -590,24 +605,25 @@ export function PermitReviewQueue() {
     const normalizedSearch = search.trim().toLowerCase()
 
     return queueFindings.filter((row) => {
+      const matchesView = activeView === "all" || row.status === activeView
       const matchesSeverity = severity === "all" || row.severity === severity
       const matchesSearch =
         normalizedSearch.length === 0 ||
-        [row.title, row.rule, row.path, row.capability, row.owner]
+        [row.title, row.rule, row.path, row.capability, row.owner, row.repo, row.source]
           .join(" ")
           .toLowerCase()
           .includes(normalizedSearch)
 
-      return matchesSeverity && matchesSearch
+      return matchesView && matchesSeverity && matchesSearch
     })
-  }, [search, severity])
+  }, [activeView, search, severity])
 
   const selectedFinding =
     filteredRows.find((row) => row.id === selectedId) ?? filteredRows[0] ?? queueFindings[0]
 
   return (
     <div className={cn("apo-dashboard", theme === "dark" && "dark")}>
-      <AppSidebar />
+      <AppSidebar summary={queueSummary} />
       <main className="apo-main">
         <DashboardHeader
           onThemeChange={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
@@ -617,16 +633,16 @@ export function PermitReviewQueue() {
           <section className="apo-dashboard-stack" aria-label="Permit findings">
             <div className="apo-section-group">
               <SectionIntro
-                description="These four widgets summarize the current scan before any filtering."
+                description="Live validation, Deep Agent grounding, and cost controls from local artifacts."
                 label="Run overview"
                 title="Decision snapshot"
               />
-              <SummaryTiles rows={filteredRows} />
+              <SummaryTiles summary={queueSummary} />
             </div>
 
             <div className="apo-section-group">
               <SectionIntro
-                description="Saved views choose the work queue. Filters narrow the spreadsheet rows."
+                description="Saved views filter the work queue. Search narrows repo, rule, evidence, and owner."
                 label="Queue setup"
                 title="Choose what to review"
               />
