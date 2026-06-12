@@ -183,7 +183,6 @@ function DashboardHeader() {
           <span>t3-oss/create-t3-app</span>
           <span>main</span>
           <span>run_2026_06_11_1842</span>
-          <span>deterministic + deep agent</span>
         </div>
       </div>
 
@@ -373,7 +372,7 @@ function FindingsTable({
         </Button>
       </CardHeader>
       <CardContent className="apo-table-content">
-        <ScrollArea className="apo-table-scroll">
+        <div className="apo-table-scroll">
           <Table>
             <TableHeader>
               <TableRow>
@@ -420,7 +419,7 @@ function FindingsTable({
               ))}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   )
@@ -612,8 +611,9 @@ export function PermitReviewQueue() {
       <main className="apo-main">
         <DashboardHeader />
         <div className="apo-workspace">
-          <div className="apo-content-grid">
-            <section className="apo-left-flow" aria-label="Permit findings">
+          <section className="apo-dashboard-stack" aria-label="Permit findings">
+            <SummaryTiles rows={filteredRows} />
+            <div className="apo-queue-controls">
               <SavedViews activeView={activeView} onChange={setActiveView} />
               <FilterBar
                 onSearchChange={setSearch}
@@ -623,19 +623,18 @@ export function PermitReviewQueue() {
                 severity={severity}
                 status={status}
               />
-              <SummaryTiles rows={filteredRows} />
-              {filteredRows.length > 0 ? (
-                <FindingsTable
-                  onSelect={setSelectedId}
-                  rows={filteredRows}
-                  selectedId={selectedFinding.id}
-                />
-              ) : (
-                <EmptyState />
-              )}
-            </section>
+            </div>
+            {filteredRows.length > 0 ? (
+              <FindingsTable
+                onSelect={setSelectedId}
+                rows={filteredRows}
+                selectedId={selectedFinding.id}
+              />
+            ) : (
+              <EmptyState />
+            )}
             <DetailRail finding={selectedFinding} />
-          </div>
+          </section>
         </div>
       </main>
       <Separator className="apo-mobile-separator" />
