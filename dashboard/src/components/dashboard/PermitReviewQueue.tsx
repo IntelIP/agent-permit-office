@@ -246,6 +246,8 @@ function TraceBadge({ state }: { state: TraceState }) {
 }
 
 function AppSidebar({ summary }: { summary: QueueSummary }) {
+  const verdict = verdictCopy(summary)
+
   return (
     <aside className="apo-sidebar" aria-label="Dashboard navigation">
       <div className="apo-brand">
@@ -258,17 +260,55 @@ function AppSidebar({ summary }: { summary: QueueSummary }) {
         </div>
       </div>
 
-      <div className="apo-sidebar-panel" aria-label="Current dashboard context">
-        <div className="apo-sidebar-kicker">Current surface</div>
-        <div className="apo-sidebar-title">
-          <FileSearchIcon weight="fill" />
-          <span>Findings queue</span>
+      <div className="apo-sidebar-panel" aria-label="Current run decision">
+        <div className="apo-sidebar-kicker">Current run</div>
+        <div className="apo-sidebar-decision">
+          <span className={cn("apo-sidebar-decision-icon", `is-${verdict.tone}`)}>
+            {verdict.tone === "blocked" ? (
+              <XCircleIcon weight="fill" />
+            ) : verdict.tone === "review" ? (
+              <WarningDiamondIcon weight="fill" />
+            ) : (
+              <CheckCircleIcon weight="fill" />
+            )}
+          </span>
+          <div>
+            <div className="apo-sidebar-title">{verdict.status}</div>
+            <p>{verdict.action}</p>
+          </div>
         </div>
-        <p>Review live validation findings, Deep Agent evidence, and permit decisions.</p>
         <div className="apo-sidebar-stats">
-          <span>{summary.findings} findings</span>
           <span>{summary.repos} repos</span>
+          <span>{summary.findings} findings</span>
+          <span>{summary.graphPaths} paths</span>
         </div>
+      </div>
+
+      <div className="apo-sidebar-workflow" aria-label="Review workflow">
+        <div className="apo-sidebar-kicker">Review flow</div>
+        <ol>
+          <li>
+            <span>1</span>
+            <div>
+              <strong>Find risky rows</strong>
+              <p>Start with blocked and high severity findings.</p>
+            </div>
+          </li>
+          <li>
+            <span>2</span>
+            <div>
+              <strong>Inspect evidence</strong>
+              <p>Check scanner evidence, trace, policy, and artifacts.</p>
+            </div>
+          </li>
+          <li>
+            <span>3</span>
+            <div>
+              <strong>Decide permit</strong>
+              <p>Request changes or approve a documented exception.</p>
+            </div>
+          </li>
+        </ol>
       </div>
     </aside>
   )

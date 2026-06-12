@@ -59,38 +59,66 @@
 .apo-sidebar-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  border: 1px solid var(--apo-primary-border);
+  gap: 10px;
+  border: 1px solid var(--apo-border);
   border-radius: 8px;
   padding: 12px;
-  background: color-mix(in srgb, var(--apo-primary-soft) 64%, var(--apo-surface));
+  background: var(--apo-surface);
 }
 
 .apo-sidebar-kicker {
-  color: var(--apo-primary);
+  color: var(--apo-text-muted);
   font-size: 11px;
   line-height: 16px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
-.apo-sidebar-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--apo-text);
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 650;
+.apo-sidebar-decision {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
 }
 
-.apo-sidebar-title svg {
+.apo-sidebar-decision-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--apo-surface-muted);
+}
+
+.apo-sidebar-decision-icon svg {
   width: 17px;
   height: 17px;
-  color: var(--apo-primary);
 }
 
-.apo-sidebar-panel p {
+.apo-sidebar-decision-icon.is-blocked {
+  background: var(--apo-blocked-soft);
+  color: var(--apo-blocked);
+}
+
+.apo-sidebar-decision-icon.is-review {
+  background: var(--apo-review-soft);
+  color: var(--apo-review);
+}
+
+.apo-sidebar-decision-icon.is-approved {
+  background: var(--apo-approved-soft);
+  color: var(--apo-approved);
+}
+
+.apo-sidebar-title {
+  color: var(--apo-text);
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+}
+
+.apo-sidebar-panel p,
+.apo-sidebar-workflow p {
   margin: 0;
   color: var(--apo-text-muted);
   font-size: 12px;
@@ -111,6 +139,51 @@
   color: var(--apo-text-muted);
   font-size: 11px;
   line-height: 16px;
+}
+
+.apo-sidebar-workflow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.apo-sidebar-workflow ol {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apo-sidebar-workflow li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.apo-sidebar-workflow li > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--apo-border);
+  border-radius: 999px;
+  background: var(--apo-surface-muted);
+  color: var(--apo-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.apo-sidebar-workflow strong {
+  display: block;
+  color: var(--apo-text);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 700;
 }
 
 .apo-main {
@@ -1089,13 +1162,45 @@
     height: auto;
     min-height: auto;
     min-width: 0;
+    display: grid;
+    grid-template-areas:
+      "brand panel"
+      "flow flow";
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
     overflow: hidden;
     border-right: 0;
     border-bottom: 1px solid var(--apo-border);
   }
 
+  .apo-brand {
+    grid-area: brand;
+    padding: 0;
+  }
+
   .apo-sidebar-panel {
+    grid-area: panel;
     max-width: 420px;
+  }
+
+  .apo-sidebar-workflow {
+    grid-area: flow;
+    padding: 0;
+  }
+
+  .apo-sidebar-workflow ol {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .apo-sidebar-workflow li {
+    gap: 7px;
+  }
+
+  .apo-sidebar-workflow p {
+    display: none;
   }
 
   .apo-status-strip {
@@ -1109,6 +1214,20 @@
 
   .apo-table-controls {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .apo-sidebar {
+    grid-template-areas:
+      "brand"
+      "panel"
+      "flow";
+    grid-template-columns: 1fr;
+  }
+
+  .apo-sidebar-panel {
+    max-width: none;
   }
 }
 
@@ -1155,6 +1274,10 @@
 }
 
 @media (max-width: 520px) {
+  .apo-sidebar-workflow ol {
+    grid-template-columns: 1fr;
+  }
+
   .apo-status-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
