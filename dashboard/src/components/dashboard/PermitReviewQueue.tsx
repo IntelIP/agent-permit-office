@@ -117,6 +117,91 @@ function artifactLabel(artifact: string) {
   return artifact.split("/").at(-1) ?? artifact
 }
 
+function verdictCopy(summary: QueueSummary) {
+  if (summary.blockedRepos > 0) {
+    return {
+      action: "Fix blocked CI trust paths first",
+      body: `${summary.blockedRepos} repo is blocked. ${summary.findings} findings and ${summary.graphPaths} graph paths need review before this validation set should pass unattended.`,
+      label: "Run verdict",
+      status: "Blocked",
+      tone: "blocked",
+    }
+  }
+  if (summary.needsReviewRepos > 0) {
+    return {
+      action: "Review permit exceptions",
+      body: `${summary.needsReviewRepos} repos need human review. Citation checks passed, but owner approval is still required.`,
+      label: "Run verdict",
+      status: "Needs review",
+      tone: "review",
+    }
+  }
+  return {
+    action: "Keep monitoring drift",
+    body: `${summary.repos} repos passed validation with ${formatPercent(summary.citationCoverage)} citation coverage.`,
+    label: "Run verdict",
+    status: "Approved",
+    tone: "approved",
+  }
+}
+
+function artifactInsight(
+  artifact: string,
+  finding: QueueFinding | null,
+  preview: ArtifactPreview | undefined,
+) {
+  if (artifact.startsWith("http")) {
+    return {
+      heading: "Source repository",
+      body: finding
+        ? `${finding.repo} source reference. Use this to inspect the upstream repo context behind the validation row.`
+        : "External source reference for this validation row.",
+      facts: ["External URL", "Not embedded in local snapshot"],
+    }
+  }
+
+  if (!preview) {
+    return {
+      heading: "Artifact not embedded",
+      body: "This artifact path exists on the row, but no preview was generated into the local dashboard snapshot.",
+      facts: ["No local preview", "Regenerate snapshot after producing artifact"],
+    }
+  }
+
+  if (preview.path.endsWith("live-repo-validation-results.json")) {
+    return {
+      heading: "Aggregate validation evidence",
+      body: finding
+        ? `${finding.repo} is backed by the live validation aggregate. It records permit status, expected rule checks, citation pass state, token use, and artifact paths.`
+        : "Live validation aggregate with repo-level permit status, rule checks, citation pass state, and token use.",
+      facts: [
+        `${queueSummary.repos} repos validated`,
+        `${queueSummary.findings} findings`,
+        `${queueSummary.graphPaths} graph paths`,
+        `${formatPercent(queueSummary.cacheHitRatio)} cache hit`,
+      ],
+    }
+  }
+
+  if (preview.path.endsWith("live-repo-validation-report.md")) {
+    return {
+      heading: "Reviewer summary report",
+      body: "Human-readable validation report summarizing repo outcomes, findings, controls, citation checks, and cached-token savings.",
+      facts: [
+        `${queueSummary.passedRepos}/${queueSummary.repos} repos passed expectations`,
+        `${formatPercent(queueSummary.citationCoverage)} citation coverage`,
+        `${formatCompact(queueSummary.cachedTokens)} cached tokens`,
+      ],
+    }
+  }
+
+  return {
+    heading: "Local artifact preview",
+    body: "Repo-local artifact captured in the dashboard snapshot.",
+    facts: [preview.kind, formatBytes(preview.sizeBytes)],
+  }
+}
+
 function StatusBadge({ status }: { status: PermitStatus }) {
   return (
     <Badge
@@ -365,6 +450,33 @@ function SummaryTiles({ summary }: { summary: QueueSummary }) {
   )
 }
 
+function RunVerdict({ summary }: { summary: QueueSummary }) {
+  const verdict = verdictCopy(summary)
+  const Icon =
+    verdict.tone === "blocked"
+      ? XCircleIcon
+      : verdict.tone === "review"
+        ? WarningDiamondIcon
+        : CheckCircleIcon
+
+  return (
+    <section className={cn("apo-run-verdict", `is-${verdict.tone}`)}>
+      <div className="apo-run-verdict-icon">
+        <Icon weight="fill" />
+      </div>
+      <div className="apo-run-verdict-copy">
+        <div className="apo-run-verdict-kicker">{verdict.label}</div>
+        <h2>{verdict.status}</h2>
+        <p>{verdict.body}</p>
+      </div>
+      <div className="apo-run-verdict-action">
+        <span>Next action</span>
+        <strong>{verdict.action}</strong>
+      </div>
+    </section>
+  )
+}
+
 function MetricTile({
   icon: Icon,
   label,
@@ -441,6 +553,7 @@ function FindingsTable({
                     <div className="apo-finding-meta">
                       <span>{row.id}</span>
                       <span>{row.repo}</span>
+                      <span className="apo-row-action">Inspect</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -638,14 +751,17 @@ function EmptyState() {
 
 function ArtifactDrawer({
   artifact,
+  finding,
   preview,
   onOpenChange,
 }: {
   artifact: string | null
+  finding: QueueFinding | null
   preview: ArtifactPreview | undefined
   onOpenChange: (open: boolean) => void
 }) {
   const isExternal = artifact?.startsWith("http") ?? false
+  const insight = artifact ? artifactInsight(artifact, finding, preview) : null
 
   return (
     <Sheet open={artifact !== null} onOpenChange={onOpenChange}>
@@ -655,13 +771,28 @@ function ArtifactDrawer({
           <SheetTitle>{artifact ? artifactLabel(artifact) : "Artifact"}</SheetTitle>
           <SheetDescription>
             {preview
-              ? "Repo-local artifact captured in the dashboard snapshot."
+              ? "Artifact interpreted first, raw preview below."
               : "External artifact reference from the validation row."}
           </SheetDescription>
         </SheetHeader>
 
         {artifact ? (
           <div className="apo-artifact-drawer-body">
+            {insight ? (
+              <section className="apo-artifact-insight">
+                <div className="apo-section-heading">
+                  <RobotIcon />
+                  {insight.heading}
+                </div>
+                <p>{insight.body}</p>
+                <div className="apo-artifact-insight-facts">
+                  {insight.facts.map((fact) => (
+                    <span key={fact}>{fact}</span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             <div className="apo-artifact-meta-grid">
               <div>
                 <span>Path</span>
@@ -753,6 +884,7 @@ export function PermitReviewQueue() {
                 label="Run overview"
                 title="Decision snapshot"
               />
+              <RunVerdict summary={queueSummary} />
               <SummaryTiles summary={queueSummary} />
             </div>
 
@@ -788,6 +920,7 @@ export function PermitReviewQueue() {
       </main>
       <ArtifactDrawer
         artifact={selectedArtifact}
+        finding={selectedFinding}
         onOpenChange={(open) => {
           if (!open) {
             setSelectedArtifact(null)
