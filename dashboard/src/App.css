@@ -21,6 +21,10 @@
   overflow-y: auto;
 }
 
+.dark .apo-sidebar {
+  background: var(--apo-bg);
+}
+
 .apo-brand {
   display: flex;
   align-items: center;

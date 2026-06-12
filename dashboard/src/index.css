@@ -145,10 +145,10 @@
 
 .dark {
   color: #e6edf3;
-  background: #0b1117;
-  --apo-bg: #0b1117;
-  --apo-surface: #111a24;
-  --apo-surface-muted: #172231;
+  background: #101419;
+  --apo-bg: #101419;
+  --apo-surface: #151b22;
+  --apo-surface-muted: #1b242e;
   --apo-border: #253243;
   --apo-border-strong: #334458;
   --apo-text: #e6edf3;
@@ -186,7 +186,7 @@
   --popover: var(--apo-surface);
   --popover-foreground: var(--apo-text);
   --primary: var(--apo-primary);
-  --primary-foreground: #0b1117;
+  --primary-foreground: #101419;
   --secondary: var(--apo-surface-muted);
   --secondary-foreground: var(--apo-text);
   --muted: var(--apo-surface-muted);
@@ -200,7 +200,7 @@
   --sidebar: var(--apo-surface);
   --sidebar-foreground: var(--apo-text);
   --sidebar-primary: var(--apo-primary);
-  --sidebar-primary-foreground: #0b1117;
+  --sidebar-primary-foreground: #101419;
   --sidebar-accent: var(--apo-surface-muted);
   --sidebar-accent-foreground: var(--apo-text);
   --sidebar-border: var(--apo-border);
