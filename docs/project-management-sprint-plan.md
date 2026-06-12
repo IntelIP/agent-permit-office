@@ -782,6 +782,8 @@ Design research:
 - `APO-73`: Lock dashboard visual system and implementation tokens
 - `APO-74`: Install dashboard UI foundation stack
 - stack update: Tailwind v4, shadcn/ui source components, Phosphor icons, Geist typography, and alias plumbing are installed in `dashboard/`
+- `APO-75`: Build Permit Review Queue dashboard screen
+- design update: first usable dashboard screen now includes sidebar/header, saved views, filters, metrics, findings table, selected-detail rail, responsive layout, and local mock artifact data.
 
 ## Immediate Next Step
 

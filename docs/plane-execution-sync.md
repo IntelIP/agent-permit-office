@@ -253,6 +253,7 @@ Sprint 32 local dashboard shell items:
 - `APO-72`: Add Mobbin dashboard design references - done
 - `APO-73`: Lock dashboard visual system and implementation tokens - done
 - `APO-74`: Install dashboard UI foundation stack - done
+- `APO-75`: Build Permit Review Queue dashboard screen - done
 
 ## Operating Rule
 

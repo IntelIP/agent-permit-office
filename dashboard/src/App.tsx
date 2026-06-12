@@ -1,12 +1,9 @@
-import './App.css'
+import { PermitReviewQueue } from "@/components/dashboard/PermitReviewQueue"
+
+import "./App.css"
 
 function App() {
-  return (
-    <main>
-      <h1>Agent Permit Office Dashboard</h1>
-      <p>Vite is running through Bun.</p>
-    </main>
-  )
+  return <PermitReviewQueue />
 }
 
 export default App
