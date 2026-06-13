@@ -211,6 +211,7 @@ Deep Agent and observability:
 - [LangChain Deep Agents Architecture Research](docs/research/langchain-deep-agents-architecture.md)
 - [Deep Agent Investigator](docs/deep-agent-investigator.md)
 - [Live Deep Agent Validation](docs/live-deep-agent-validation.md)
+- [Live Proof Rerun Plan](docs/live-proof-rerun-plan.md)
 - [OpenRouter Model Decision](docs/openrouter-model-decision.md)
 - [Phoenix Observability and Evaluation](docs/phoenix-observability-evaluation.md)
 - [Product Analytics and Evals Roadmap](docs/product-analytics-evals-roadmap.md)
