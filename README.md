@@ -186,6 +186,7 @@ Product and business:
 
 - [Product Scope and Market Review](docs/product-scope-market-review.md)
 - [Open Core Business Plan](docs/open-core-business-plan.md)
+- [Customer Discovery Kit](docs/customer-discovery-kit.md)
 - [Open Source Release Readiness](docs/open-source-release-readiness.md)
 - [Project Management and Sprint Plan](docs/project-management-sprint-plan.md)
 
