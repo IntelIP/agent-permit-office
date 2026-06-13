@@ -40,6 +40,19 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_permit"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.agent-permit",
+  "/.fallow",
+  "/.venv",
+  "/dist",
+  "/dashboard/.fallow",
+  "/dashboard/dist",
+  "/dashboard/node_modules",
+  "**/__pycache__",
+  "**/.pytest_cache",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

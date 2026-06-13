@@ -48,6 +48,58 @@ Recent proof:
 - Sprint 24 demo smoke: repo prep 5/5, live validation skipped, JSON/Markdown/HTML demo report generated.
 - Local tests at Sprint 24: 117 passed.
 
+## Sprint 34 Readiness Note
+
+Date: 2026-06-13
+
+Local release hygiene pass:
+
+| Check | Result |
+| --- | --- |
+| Git object size | 4.83 MiB loose objects |
+| Tracked files | 157 |
+| Tracked Markdown files | 54 |
+| Tracked test/spec-like files | 41 |
+| Markdown links | all tracked Markdown links resolve locally |
+| Python package wheel | 34 files; Python package only |
+| Python sdist | 157 files after excludes |
+| Generated/vendor sdist leak | fixed; sdist no longer includes `dashboard/node_modules`, `dashboard/.fallow`, `dashboard/dist`, `.agent-permit`, root `dist`, `__pycache__`, or `.pytest_cache` |
+| Tracked generated artifacts | no tracked `.agent-permit`, root `dist`, `dashboard/dist`, cache, or private env files |
+| Tracked env files | only `.env.example` |
+
+Commands run:
+
+```bash
+uv run pytest
+uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
+cd dashboard && bun run lint
+cd dashboard && bun run build
+uv build
+```
+
+Results:
+
+- `uv run pytest`: 119 passed.
+- self-scan: approved, 0 findings, 0 graph paths, 0 controls.
+- dashboard lint: passed.
+- dashboard build: passed.
+- `uv build`: passed after sdist excludes were added.
+- secret-pattern scan produced only redaction/test literals, not live keys.
+
+Cleanup completed:
+
+- deleted unreachable `dashboard/src/components/ui/skeleton.tsx`
+- removed unused direct `@radix-ui/react-slot` dependency from `dashboard/package.json`
+- added Hatch sdist excludes for generated dashboard/vendor/cache artifacts
+
+Residual risks:
+
+- Fallow still reports unused shadcn exports/types. Keep for now because they are source-owned component API surface, not release leakage.
+- Fallow complexity still reports high CRAP on `PermitReviewQueue.tsx` because dashboard has no component tests or runtime coverage. Treat as post-MVP refactor/test debt.
+- public sanitized sample artifact still missing; do not publish generated `.agent-permit/` runs without scrub.
+- current proof pack can be partial when based on old Sprint 23 temp repo paths; rerun live validation after OpenRouter credits/API access are restored.
+- final public release still needs legal review for license, trademark, CLA/DCO, and commercial boundary.
+
 ## Public Release Gate
 
 Do not publish until these are true:
