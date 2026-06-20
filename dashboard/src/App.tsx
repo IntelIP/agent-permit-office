@@ -1,9 +1,7 @@
-import { PermitReviewQueue } from "@/components/dashboard/PermitReviewQueue"
-
-import "./App.css"
+import { ProofPackViewer } from "@/components/proof-pack-viewer/ProofPackViewer"
 
 function App() {
-  return <PermitReviewQueue />
+  return <ProofPackViewer />
 }
 
 export default App

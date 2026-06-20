@@ -1,12 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/dm-sans";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: "DM Sans Variable", "DM Sans", Inter, ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   color: #172033;
   background: #f7f8fa;
@@ -38,9 +38,9 @@
   --apo-critical: #8d3d55;
   --apo-critical-soft: #f9eaf0;
   --apo-critical-border: #e4b5c5;
-  --apo-agent: #5e5a9e;
-  --apo-agent-soft: #f0eff8;
-  --apo-agent-border: #cac7e8;
+  --apo-agent: #3b6f86;
+  --apo-agent-soft: #e8f3f7;
+  --apo-agent-border: #b7d4df;
   --apo-artifact: #277c83;
   --apo-artifact-soft: #e8f5f6;
   --apo-artifact-border: #b7dde1;
@@ -84,7 +84,7 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans Variable", "DM Sans", Inter, ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -144,40 +144,40 @@
 }
 
 .dark {
-  color: #e6edf3;
-  background: #101419;
-  --apo-bg: #101419;
-  --apo-surface: #101419;
-  --apo-surface-muted: #101419;
-  --apo-border: #253243;
-  --apo-border-strong: #334458;
-  --apo-text: #e6edf3;
-  --apo-text-muted: #9aa7b6;
-  --apo-text-faint: #738196;
+  color: #f2f4f7;
+  background: #000000;
+  --apo-bg: #000000;
+  --apo-surface: #000000;
+  --apo-surface-muted: #080808;
+  --apo-border: #222222;
+  --apo-border-strong: #333333;
+  --apo-text: #f2f4f7;
+  --apo-text-muted: #9ca3af;
+  --apo-text-faint: #6b7280;
   --apo-primary: #7bcace;
-  --apo-primary-soft: #102b31;
-  --apo-primary-border: #22515b;
+  --apo-primary-soft: #061a1c;
+  --apo-primary-border: #1f4f55;
   --apo-approved: #73d6a3;
-  --apo-approved-soft: #10291d;
+  --apo-approved-soft: #06180f;
   --apo-approved-border: #245c3f;
   --apo-review: #f6c96b;
-  --apo-review-soft: #30250c;
+  --apo-review-soft: #1d1605;
   --apo-review-border: #725a1f;
   --apo-blocked: #f09a93;
-  --apo-blocked-soft: #321918;
+  --apo-blocked-soft: #1f0b0a;
   --apo-blocked-border: #713d39;
   --apo-critical: #f39abd;
-  --apo-critical-soft: #331823;
+  --apo-critical-soft: #210911;
   --apo-critical-border: #73384f;
-  --apo-agent: #a5a3ff;
-  --apo-agent-soft: #1e1f3c;
-  --apo-agent-border: #4d4c82;
+  --apo-agent: #86c5ff;
+  --apo-agent-soft: #06111b;
+  --apo-agent-border: #2a5874;
   --apo-artifact: #7bd5df;
-  --apo-artifact-soft: #102b31;
+  --apo-artifact-soft: #061a1c;
   --apo-artifact-border: #245b64;
-  --apo-muted: #a6b0c1;
-  --apo-muted-soft: #1a2533;
-  --apo-muted-border: #394759;
+  --apo-muted: #a8b0bd;
+  --apo-muted-soft: #101010;
+  --apo-muted-border: #2d2d2d;
 
   --background: var(--apo-bg);
   --foreground: var(--apo-text);
@@ -186,7 +186,7 @@
   --popover: var(--apo-surface);
   --popover-foreground: var(--apo-text);
   --primary: var(--apo-primary);
-  --primary-foreground: #101419;
+  --primary-foreground: #000000;
   --secondary: var(--apo-surface-muted);
   --secondary-foreground: var(--apo-text);
   --muted: var(--apo-surface-muted);
@@ -200,7 +200,7 @@
   --sidebar: var(--apo-surface);
   --sidebar-foreground: var(--apo-text);
   --sidebar-primary: var(--apo-primary);
-  --sidebar-primary-foreground: #101419;
+  --sidebar-primary-foreground: #000000;
   --sidebar-accent: var(--apo-surface-muted);
   --sidebar-accent-foreground: var(--apo-text);
   --sidebar-border: var(--apo-border);
@@ -219,5 +219,10 @@
 
   html {
     @apply font-sans;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }

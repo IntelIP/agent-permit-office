@@ -28,6 +28,7 @@ SENSITIVE_KEY_PARTS = (
 SENSITIVE_ASSIGNMENT_RE = re.compile(
     r"(?i)((?:api[_-]?key|authorization|password|private[_-]?key|secret|token)\b[^:=\n]{0,40}[:=]\s*)([^\s,]+)"
 )
+VALIDATION_WORKDIR_RE = re.compile(r"/(?:private/)?tmp/agent-permit-open-source-validation-[A-Za-z0-9._-]+")
 
 
 def main() -> None:
@@ -367,9 +368,9 @@ def build_decision_log(summary: dict[str, Any]) -> list[dict[str, str]]:
         },
         {
             "id": "decision-graph",
-            "label": "Capability graph traced",
+            "label": "Policy map checked",
             "state": "blocked" if summary["blockedRepos"] else "passed",
-            "detail": f"{summary['graphPaths']} paths and {summary['controls']} controls evaluated.",
+            "detail": f"{summary['controls']} controls evaluated across {summary['repos']} repositories.",
         },
         {
             "id": "decision-permit",
@@ -388,9 +389,9 @@ def build_decision_log(summary: dict[str, Any]) -> list[dict[str, str]]:
         },
         {
             "id": "decision-cost",
-            "label": "Cost controls measured",
+            "label": "Agent review completed",
             "state": "passed" if (summary.get("cacheHitRatio") or 0) > 0.5 else "review",
-            "detail": f"{summary['cachedTokens']} cached tokens from {summary['totalTokens']} total tokens.",
+            "detail": f"{summary['modelCalls']} model calls reviewed scanner artifacts.",
         },
     ]
 
@@ -490,19 +491,19 @@ def build_trace_steps(summary: dict[str, Any]) -> list[dict[str, str]]:
         },
         {
             "id": "trace-paths",
-            "label": "Trace capability paths",
+            "label": "Check policy paths",
             "state": "blocked" if summary["blockedRepos"] else "passed",
             "duration": "aggregate",
             "tool": "graph.paths",
-            "output": f"{summary['graphPaths']} graph paths and {summary['controls']} controls found across live repos.",
+            "output": f"{summary['controls']} controls checked across live repositories.",
         },
         {
             "id": "trace-cost",
-            "label": "Measure model cost controls",
+            "label": "Run agent review",
             "state": "passed" if (summary.get("cacheHitRatio") or 0) > 0.5 else "review",
             "duration": "aggregate",
-            "tool": "openrouter.usage",
-            "output": f"{summary['cachedTokens']} cached tokens across {summary['modelCalls']} model calls.",
+            "tool": "deep_agent.review",
+            "output": f"{summary['modelCalls']} model calls reviewed scanner artifacts.",
         },
     ]
 
@@ -523,9 +524,9 @@ def build_policy_controls(summary: dict[str, Any]) -> list[dict[str, str]]:
         },
         {
             "id": "CTRL-CACHE",
-            "label": "Prompt caching lowers repeated-run cost",
+            "label": "Repeated-run cost controls are available",
             "state": "passed" if (summary.get("cacheHitRatio") or 0) > 0.5 else "review",
-            "note": f"Cache hit ratio is {percent(summary.get('cacheHitRatio'))}.",
+            "note": f"Cache reuse is {percent(summary.get('cacheHitRatio'))}.",
         },
         {
             "id": "CTRL-EVAL",
@@ -564,6 +565,7 @@ def build_artifact_previews(
             kind = "markdown"
         else:
             kind = "text"
+        content = sanitize_local_paths(content)
         previews[artifact_path] = {
             "kind": kind,
             "label": path.name,
@@ -697,9 +699,8 @@ def build_proof_pack_report(
         "## What This Proves",
         "",
         "- Scanner and Deep Agent evidence were generated from local `.agent-permit` artifacts.",
-        f"- {summary.get('repos', 0)} repositories, {summary.get('findings', 0)} findings, and {summary.get('graphPaths', 0)} graph paths were reviewed.",
+        f"- {summary.get('repos', 0)} repositories, {summary.get('findings', 0)} findings, and {summary.get('controls', 0)} controls were reviewed.",
         f"- Citation coverage: {percent(summary.get('citationCoverage'))}.",
-        f"- Cached tokens: {summary.get('cachedTokens', 0)}.",
         "",
         "## Included Evidence",
         "",
@@ -761,7 +762,13 @@ def redact_json(value: Any, key: str | None = None) -> Any:
 
 
 def redact_text(text: str) -> str:
-    return SENSITIVE_ASSIGNMENT_RE.sub(r"\1[redacted]", text)
+    return sanitize_local_paths(SENSITIVE_ASSIGNMENT_RE.sub(r"\1[redacted]", text))
+
+
+def sanitize_local_paths(text: str) -> str:
+    sanitized = text.replace(str(REPO_ROOT), "<repo>")
+    sanitized = sanitized.replace(str(Path.home()), "<home>")
+    return VALIDATION_WORKDIR_RE.sub("<validation-workdir>", sanitized)
 
 
 def is_sensitive_key(key: str) -> bool:
@@ -858,10 +865,14 @@ def age_label(commit_date: str | None) -> str:
 
 
 def summary_for(result: dict[str, Any], repo_id: str, status: str) -> str:
+    findings = result.get("findings_count", 0)
+    controls = result.get("controls_count", 0)
+    if status == "approved":
+        return f"{repo_id} passed this scan. {controls} controls were checked."
+    outcome = "is blocked" if status == "blocked" else "needs review"
     return (
-        f"{repo_id} finished with permit status {status.replace('-', ' ')}. "
-        f"{result.get('findings_count', 0)} findings, {result.get('graph_paths_count', 0)} graph paths, "
-        f"and {result.get('controls_count', 0)} controls were checked."
+        f"{repo_id} {outcome}. "
+        f"{findings} findings and {controls} controls were checked."
     )
 
 
@@ -872,8 +883,11 @@ def evidence_for(
     controls: int,
 ) -> str:
     if rules:
-        return f"Rules present: {', '.join(rules)}. Findings={findings_count}, paths={graph_paths}, controls={controls}."
-    return f"No expected risk rules present. Findings={findings_count}, paths={graph_paths}, controls={controls}."
+        return (
+            f"Scanner matched {len(rules)} configured policy check"
+            f"{'' if len(rules) == 1 else 's'} across {findings_count} findings and {controls} controls."
+        )
+    return f"Scanner did not match configured risk policies across {controls} controls."
 
 
 def remediation_for(status: str, rules: list[str]) -> str:
@@ -942,7 +956,7 @@ def relative_path(path: Path | None) -> str:
     try:
         return str(path.resolve().relative_to(REPO_ROOT))
     except ValueError:
-        return str(path)
+        return sanitize_local_paths(str(path))
 
 
 def _artifact_path_from_ref(reference: str) -> Path | None:
