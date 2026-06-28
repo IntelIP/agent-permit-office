@@ -359,6 +359,19 @@ class PostgresStore:
                     (_redacted_error(error), job_id),
                 )
 
+    def fail_scan_run(self, run_id: str) -> None:
+        with self._connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE scan_runs
+                    SET status = 'failed',
+                        completed_at = now()
+                    WHERE id = %s OR run_id = %s
+                    """,
+                    (run_id, run_id),
+                )
+
     def _connect(self) -> Any:
         try:
             import psycopg
@@ -639,6 +652,8 @@ def _parse_datetime(value: Any) -> datetime | None:
         return None
     if isinstance(value, datetime):
         return value
+    if isinstance(value, bytes):
+        value = value.decode()
     if isinstance(value, str):
         normalized = value.replace("Z", "+00:00")
         return datetime.fromisoformat(normalized)
@@ -673,24 +688,30 @@ def _float_or_none(value: Any) -> float | None:
 def _string_or_none(value: Any) -> str | None:
     if value is None:
         return None
+    return _text(value)
+
+
+def _text(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.decode()
     return str(value)
 
 
 def _repository_from_row(row: Sequence[Any]) -> RepositoryRecord:
     return RepositoryRecord(
-        id=str(row[0]),
-        label=str(row[1]),
-        local_path=str(row[2]),
+        id=_text(row[0]),
+        label=_text(row[1]),
+        local_path=_text(row[2]),
         branch=_string_or_none(row[3]),
     )
 
 
 def _scan_job_from_row(row: Sequence[Any]) -> ScanJobRecord:
     return ScanJobRecord(
-        id=str(row[0]),
-        repository_id=str(row[1]),
-        mode=str(row[2]),
-        status=str(row[3]),
+        id=_text(row[0]),
+        repository_id=_text(row[1]),
+        mode=_text(row[2]),
+        status=_text(row[3]),
         requested_at=_parse_datetime(row[4]) or datetime.now(timezone.utc),
         claimed_at=_parse_datetime(row[5]),
         completed_at=_parse_datetime(row[6]),
@@ -735,8 +756,8 @@ def _upsert_scan_job(cursor: Any, record: ScanJobRecord) -> None:
           repository_id = EXCLUDED.repository_id,
           mode = EXCLUDED.mode,
           status = EXCLUDED.status,
-          claimed_at = EXCLUDED.claimed_at,
-          completed_at = EXCLUDED.completed_at,
+          claimed_at = COALESCE(EXCLUDED.claimed_at, scan_jobs.claimed_at),
+          completed_at = COALESCE(EXCLUDED.completed_at, scan_jobs.completed_at),
           error = EXCLUDED.error
         """,
         (

@@ -2,6 +2,29 @@ import type { Env, SqlClient, SqlRow, SqlValue } from "./db";
 import { ApiError, createSqlClient } from "./db";
 
 type JsonObject = Record<string, unknown>;
+type RouteHandler = (
+  request: Request,
+  context: {
+    db: SqlClient;
+    url: URL;
+  },
+) => Promise<Response>;
+
+const apiRoutes: Record<string, RouteHandler> = {
+  "GET /api/events": async (_request, { db, url }) => streamEvents(url, db),
+  "GET /api/findings": async (_request, { db }) =>
+    json({ findings: await listFindings(db) }),
+  "GET /api/job": async (_request, { db, url }) =>
+    json({ job: await getJob(db, requiredSearchParam(url, "id")) }),
+  "GET /api/jobs": async (_request, { db, url }) =>
+    json({ jobs: await listJobs(db, url.searchParams.get("status")) }),
+  "GET /api/repos": async (_request, { db }) =>
+    json({ repositories: await listRepositories(db) }),
+  "GET /api/runs": async (_request, { db }) => json({ runs: await listRuns(db) }),
+  "GET /api/snapshot": async (_request, { db }) => json(await buildSnapshot(db)),
+  "POST /api/jobs": async (request, { db }) =>
+    json(await createJob(request, db), { status: 201 }),
+};
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -27,32 +50,13 @@ export async function handleRequest(
     if (request.method === "GET" && url.pathname === "/api/health") {
       return json({ status: "ok" });
     }
+
+    const route = apiRoutes[`${request.method} ${url.pathname}`];
+    if (!route) {
+      return json({ error: "not_found" }, { status: 404 });
+    }
     const db = sql ?? createSqlClient(env);
-    if (request.method === "GET" && url.pathname === "/api/repos") {
-      return json({ repositories: await listRepositories(db) });
-    }
-    if (request.method === "GET" && url.pathname === "/api/runs") {
-      return json({ runs: await listRuns(db) });
-    }
-    if (request.method === "GET" && url.pathname === "/api/findings") {
-      return json({ findings: await listFindings(db) });
-    }
-    if (request.method === "GET" && url.pathname === "/api/snapshot") {
-      return json(await buildSnapshot(db));
-    }
-    if (request.method === "GET" && url.pathname === "/api/jobs") {
-      return json({ jobs: await listJobs(db, url.searchParams.get("status")) });
-    }
-    if (request.method === "GET" && url.pathname === "/api/job") {
-      return json({ job: await getJob(db, requiredSearchParam(url, "id")) });
-    }
-    if (request.method === "POST" && url.pathname === "/api/jobs") {
-      return json(await createJob(request, db), { status: 201 });
-    }
-    if (request.method === "GET" && url.pathname === "/api/events") {
-      return streamEvents(url, db);
-    }
-    return json({ error: "not_found" }, { status: 404 });
+    return route(request, { db, url });
   } catch (error) {
     if (error instanceof ApiError) {
       return json({ error: error.message }, { status: error.status });
@@ -80,11 +84,16 @@ async function listRuns(sql: SqlClient): Promise<SqlRow[]> {
            scan_runs.findings_count, scan_runs.graph_paths_count,
            scan_runs.controls_count, scan_runs.completed_at,
            scan_runs.files_indexed, scan_runs.artifact_dir,
+           model_usage.model, model_usage.model_calls,
+           model_usage.input_tokens, model_usage.output_tokens,
+           model_usage.total_tokens, model_usage.cached_tokens,
+           model_usage.cache_hit_ratio,
            repositories.label AS repository_label,
            repositories.local_path,
            repositories.branch
     FROM scan_runs
     JOIN repositories ON repositories.id = scan_runs.repository_id
+    LEFT JOIN model_usage ON model_usage.scan_run_id = scan_runs.id
     ORDER BY scan_runs.completed_at DESC NULLS LAST
     LIMIT 50
     `,
@@ -106,10 +115,15 @@ async function listFindings(sql: SqlClient): Promise<SqlRow[]> {
            scan_runs.findings_count,
            scan_runs.graph_paths_count,
            scan_runs.controls_count,
-           scan_runs.artifact_dir
+           scan_runs.artifact_dir,
+           model_usage.model, model_usage.model_calls,
+           model_usage.input_tokens, model_usage.output_tokens,
+           model_usage.total_tokens, model_usage.cached_tokens,
+           model_usage.cache_hit_ratio
     FROM findings
     JOIN scan_runs ON scan_runs.id = findings.scan_run_id
     JOIN repositories ON repositories.id = scan_runs.repository_id
+    LEFT JOIN model_usage ON model_usage.scan_run_id = scan_runs.id
     ORDER BY scan_runs.completed_at DESC NULLS LAST, findings.severity ASC
     LIMIT 100
     `,
@@ -239,10 +253,13 @@ async function createJob(request: Request, sql: SqlClient): Promise<JsonObject> 
   );
   return {
     job: {
+      branch,
       id: jobId,
-      repositoryId,
-      status: "queued",
+      local_path: localPath,
       mode,
+      repository_id: repositoryId,
+      repository_label: label,
+      status: "queued",
     },
   };
 }

@@ -2,7 +2,13 @@ from io import StringIO
 
 import agent_permit.cli as cli
 from agent_permit.cli import main
-from agent_permit.db import MIGRATION_SQL, load_ingest_records, repository_record_from_path
+from agent_permit.db import (
+    MIGRATION_SQL,
+    _repository_from_row,
+    _scan_job_from_row,
+    load_ingest_records,
+    repository_record_from_path,
+)
 
 
 def test_migration_schema_has_expected_tables_without_secret_columns() -> None:
@@ -118,6 +124,31 @@ def test_repository_record_from_path_uses_stable_local_path_id(tmp_path) -> None
     assert first.label == "demo"
     assert first.branch == "main"
     assert first.local_path == str(tmp_path.resolve())
+
+
+def test_database_row_readers_decode_byte_strings() -> None:
+    repository = _repository_from_row(
+        [b"repo_1", b"demo", b"/tmp/demo", b"main"]
+    )
+    job = _scan_job_from_row(
+        [
+            b"job_1",
+            b"repo_1",
+            b"scan",
+            b"queued",
+            "2026-06-27T12:00:00Z",
+            None,
+            None,
+            None,
+        ]
+    )
+
+    assert repository.id == "repo_1"
+    assert repository.local_path == "/tmp/demo"
+    assert repository.branch == "main"
+    assert job.id == "job_1"
+    assert job.repository_id == "repo_1"
+    assert job.status == "queued"
 
 
 def test_db_migrate_requires_database_url(monkeypatch) -> None:

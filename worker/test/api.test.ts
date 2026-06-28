@@ -30,7 +30,14 @@ describe("worker api", () => {
         return [{ id: "repo_1", label: "demo" }];
       }
       if (query.includes("FROM scan_runs")) {
-        return [{ run_id: "run_1", permit_status: "approved" }];
+        return [
+          {
+            model_calls: 3,
+            run_id: "run_1",
+            permit_status: "approved",
+            total_tokens: 120,
+          },
+        ];
       }
       if (query.includes("FROM findings")) {
         return [{ finding_id: "finding_1", title: "Review CI permissions" }];
@@ -53,6 +60,7 @@ describe("worker api", () => {
         queuedJobs: number;
       };
       jobs: Array<{ id: string; status: string }>;
+      runs: Array<{ model_calls: number; total_tokens: number }>;
     };
 
     expect(response.status).toBe(200);
@@ -63,6 +71,10 @@ describe("worker api", () => {
       queuedJobs: 2,
     });
     expect(payload.jobs).toEqual([{ id: "job_1", status: "queued" }]);
+    expect(payload.runs[0]).toMatchObject({
+      model_calls: 3,
+      total_tokens: 120,
+    });
     expect(calls).toHaveLength(5);
   });
 
@@ -86,14 +98,20 @@ describe("worker api", () => {
     );
     const payload = (await response.json()) as {
       job: {
+        branch: string;
+        local_path: string;
         status: string;
         mode: string;
+        repository_label: string;
       };
     };
 
     expect(response.status).toBe(201);
+    expect(payload.job.branch).toBe("main");
+    expect(payload.job.local_path).toBe("/tmp/demo");
     expect(payload.job.status).toBe("queued");
     expect(payload.job.mode).toBe("scan");
+    expect(payload.job.repository_label).toBe("demo");
     expect(calls).toHaveLength(2);
     expect(calls[0]?.params?.[1]).toBe("demo");
     expect(calls[1]?.params?.[2]).toBe("scan");

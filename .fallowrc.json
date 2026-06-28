@@ -1,0 +1,3 @@
+{
+  "ignorePatterns": ["worker/worker-configuration.d.ts"]
+}

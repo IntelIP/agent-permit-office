@@ -20,6 +20,7 @@ export function ProofPackHeader({
       <div className="flex shrink-0 items-center gap-2">
         <Button
           aria-label="Stage a repository scan"
+          data-testid="queue-scan-open"
           onClick={onAddRepository}
           title="Open a form to stage a repository scan"
           variant="outline"

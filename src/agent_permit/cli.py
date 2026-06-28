@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from datetime import datetime, timezone
+import importlib.util
 from io import StringIO
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any, TextIO
@@ -81,7 +83,7 @@ from agent_permit.investigation import (
     build_investigation_markdown,
     critique_investigation_report,
 )
-from agent_permit.model_provider import OPENROUTER_DEFAULT_MODEL
+from agent_permit.model_provider import OPENROUTER_API_KEY_ENV, OPENROUTER_DEFAULT_MODEL
 from agent_permit.models import ScanRunStatus
 from agent_permit.path_finder import CapabilityPathFinder
 from agent_permit.permit_engine import PermitEngine
@@ -480,6 +482,41 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="claim at most one queued job and exit",
     )
+    runner_parser.add_argument(
+        "--deep-agent",
+        choices=("auto", "required", "off"),
+        default=os.getenv("AGENT_PERMIT_RUNNER_DEEP_AGENT", "auto"),
+        help=(
+            "post-scan Deep Agent behavior: auto runs when OpenRouter is configured, "
+            "required fails without it, off runs scanners only"
+        ),
+    )
+    runner_parser.add_argument(
+        "--model",
+        help=(
+            "Deep Agents model string; defaults to "
+            f"{DEFAULT_DEEP_AGENT_MODEL}"
+        ),
+    )
+    runner_parser.add_argument(
+        "--agent-recursion-limit",
+        type=int,
+        default=DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+        help=(
+            "max LangGraph recursion steps for runner Deep Agent runs; default "
+            f"{DEFAULT_DEEP_AGENT_RECURSION_LIMIT}"
+        ),
+    )
+    runner_parser.add_argument(
+        "--phoenix",
+        action="store_true",
+        help="request Phoenix tracing for runner Deep Agent runs",
+    )
+    runner_parser.add_argument(
+        "--langsmith",
+        action="store_true",
+        help="request LangSmith tracing for runner Deep Agent runs",
+    )
     open_source_demo_parser = subparsers.add_parser(
         "open-source-demo",
         help="prepare recent open-source repos and run the live validation demo",
@@ -740,7 +777,16 @@ def main(
             stderr=stderr,
         )
     if args.command == "runner":
-        return run_runner(once=args.once, stdout=stdout, stderr=stderr)
+        return run_runner(
+            once=args.once,
+            deep_agent=args.deep_agent,
+            model=args.model,
+            agent_recursion_limit=args.agent_recursion_limit,
+            enable_phoenix=args.phoenix,
+            enable_langsmith=args.langsmith,
+            stdout=stdout,
+            stderr=stderr,
+        )
     if args.command == "baseline":
         return run_baseline(
             args.artifact_dir,
@@ -1578,11 +1624,19 @@ def run_ingest(
 def run_runner(
     *,
     once: bool,
+    deep_agent: str = "auto",
+    model: str | None = None,
+    agent_recursion_limit: int = DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+    enable_phoenix: bool = False,
+    enable_langsmith: bool = False,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
     if not once:
         print("error: runner currently requires --once", file=stderr)
+        return 2
+    if deep_agent not in {"auto", "required", "off"}:
+        print("error: --deep-agent must be auto, required, or off", file=stderr)
         return 2
     try:
         store = store_from_env()
@@ -1633,6 +1687,205 @@ def run_runner(
         print(error, file=stderr)
         return scan_exit
 
+    artifact_dir = target_path / ARTIFACT_ROOT / RUNS_DIR / claimed.job.id
+    selected_model = model or DEFAULT_DEEP_AGENT_MODEL
+    investigation_status = "skipped"
+    investigation_detail = ""
+    if deep_agent != "off":
+        api_key_configured = bool(os.getenv(OPENROUTER_API_KEY_ENV))
+        if deep_agent == "required" and not api_key_configured:
+            error = (
+                "Deep Agent investigation requires "
+                f"{OPENROUTER_API_KEY_ENV} for runner --deep-agent required"
+            )
+            try:
+                _fail_runner_job(store, claimed.job.id, error, scan_run_created=True)
+            except Exception as exc:
+                print(f"error: failed to mark job failed: {exc}", file=stderr)
+                return 1
+            print(f"error: {error}", file=stderr)
+            return 2
+        runtime_available = _deep_agent_runtime_available()
+        if api_key_configured and not runtime_available:
+            investigation_detail = "deep-agent extra missing"
+            if deep_agent == "required":
+                error = (
+                    "Deep Agent investigation requires optional dependencies: "
+                    "uv sync --extra deep-agent"
+                )
+                try:
+                    _fail_runner_job(
+                        store,
+                        claimed.job.id,
+                        error,
+                        scan_run_created=True,
+                    )
+                except Exception as exc:
+                    print(f"error: failed to mark job failed: {exc}", file=stderr)
+                    return 1
+                print(f"error: {error}", file=stderr)
+                return 2
+        elif api_key_configured:
+            investigation_started_at = datetime.now(timezone.utc)
+            investigation_stdout = StringIO()
+            investigation_stderr = StringIO()
+            investigation_exit = run_investigate(
+                artifact_dir,
+                output_path=None,
+                model=selected_model,
+                deterministic_only=False,
+                agent_recursion_limit=agent_recursion_limit,
+                enable_langsmith=enable_langsmith,
+                enable_phoenix=enable_phoenix,
+                stdout=investigation_stdout,
+                stderr=investigation_stderr,
+            )
+            if investigation_exit != 0:
+                error = (
+                    investigation_stderr.getvalue().strip()
+                    or f"Deep Agent investigation exited {investigation_exit}"
+                )
+                try:
+                    _fail_runner_job(
+                        store,
+                        claimed.job.id,
+                        error,
+                        scan_run_created=True,
+                    )
+                except Exception as exc:
+                    print(f"error: failed to mark job failed: {exc}", file=stderr)
+                    return 1
+                _write_prefixed_output(investigation_stdout.getvalue(), stdout)
+                _write_prefixed_output(investigation_stderr.getvalue(), stderr)
+                return investigation_exit
+
+            investigation_completed_at = datetime.now(timezone.utc)
+            try:
+                context = EvidenceContext.load(artifact_dir)
+                report_path = artifact_dir / "agent-investigation.md"
+                usage_path = artifact_dir / "openrouter-usage.json"
+                validation_path = artifact_dir / LIVE_VALIDATION_FILE
+                usage_summary = _read_json_file_if_exists(usage_path)
+                if report_path.is_file():
+                    critic_result = critique_investigation_report(
+                        context,
+                        report_path.read_text(encoding="utf-8"),
+                    )
+                    citation_check = {
+                        "supported": critic_result.supported,
+                        "unsupported_citations": list(
+                            critic_result.unsupported_citations
+                        ),
+                        "unsupported_rule_ids": list(
+                            critic_result.unsupported_rule_ids
+                        ),
+                        "missing_citation_rule_ids": list(
+                            critic_result.missing_citation_rule_ids
+                        ),
+                        "aggregate_mismatches": list(
+                            critic_result.aggregate_mismatches
+                        ),
+                        "status": "passed" if critic_result.supported else "failed",
+                    }
+                else:
+                    citation_check = {
+                        "supported": False,
+                        "unsupported_citations": [],
+                        "unsupported_rule_ids": [],
+                        "missing_citation_rule_ids": [],
+                        "aggregate_mismatches": [],
+                        "status": "not_run",
+                    }
+                passed = citation_check["supported"] is True
+                validation_payload = {
+                    "status": "passed" if passed else "failed",
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "run_id": claimed.job.id,
+                    "target": str(target_path.resolve()),
+                    "artifact_dir": str(artifact_dir),
+                    "report_path": str(report_path) if report_path.is_file() else None,
+                    "usage_path": str(usage_path) if usage_path.is_file() else None,
+                    "validation_path": str(validation_path),
+                    "scan_exit_code": scan_exit,
+                    "investigation_exit_code": investigation_exit,
+                    "permit_status": context.permit_status,
+                    "findings": len(context.findings),
+                    "graph_paths": len(context.graph_paths.paths),
+                    "controls": len(context.controls.controls),
+                    "model": selected_model,
+                    "agent_recursion_limit": agent_recursion_limit,
+                    "phoenix": enable_phoenix,
+                    "langsmith": enable_langsmith,
+                    "citation_check": citation_check,
+                    "usage_summary": usage_summary,
+                }
+                validation_path.write_text(
+                    json.dumps(validation_payload, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                run_metrics = build_live_validation_metrics(
+                    context=context,
+                    target_path=target_path,
+                    status=validation_payload["status"],
+                    started_at=investigation_started_at,
+                    completed_at=investigation_completed_at,
+                    model=selected_model,
+                    citation_check=citation_check,
+                    usage_summary=usage_summary,
+                    scan_exit_code=scan_exit,
+                    investigation_exit_code=investigation_exit,
+                    phoenix=enable_phoenix,
+                    langsmith=enable_langsmith,
+                )
+                write_run_metrics(artifact_dir / RUN_METRICS_FILE, run_metrics)
+                event_path = analytics_events_path(target_path)
+                append_analytics_event(
+                    event_path,
+                    event_from_metrics(
+                        "investigation_completed",
+                        run_metrics,
+                        status="passed",
+                        payload={"investigation_exit_code": investigation_exit},
+                    ),
+                )
+                append_analytics_event(
+                    event_path,
+                    event_from_metrics(
+                        "citation_check_passed",
+                        run_metrics,
+                        status=str(citation_check["status"]),
+                    ),
+                )
+                store.write_ingest_records(
+                    load_ingest_records(
+                        artifact_dir,
+                        repository_label=claimed.repository.label,
+                        local_path=Path(claimed.repository.local_path),
+                        branch=claimed.repository.branch,
+                        mode=claimed.job.mode,
+                        job_id=claimed.job.id,
+                    )
+                )
+            except (OSError, RuntimeError, ValueError) as exc:
+                error = f"failed to store Deep Agent investigation: {exc}"
+                try:
+                    _fail_runner_job(
+                        store,
+                        claimed.job.id,
+                        error,
+                        scan_run_created=True,
+                    )
+                except Exception as mark_exc:
+                    print(f"error: failed to mark job failed: {mark_exc}", file=stderr)
+                    return 1
+                print(f"error: {error}", file=stderr)
+                return 1
+
+            investigation_status = "completed"
+            investigation_detail = str(report_path)
+        else:
+            investigation_detail = f"{OPENROUTER_API_KEY_ENV} missing"
+
     try:
         store.complete_scan_job(claimed.job.id)
     except Exception as exc:
@@ -1644,7 +1897,35 @@ def run_runner(
     print(f"Job ID: {claimed.job.id}", file=stdout)
     print(f"Repository: {claimed.repository.label}", file=stdout)
     print(f"Target: {claimed.repository.local_path}", file=stdout)
+    if investigation_status == "completed":
+        print(f"Deep Agent: completed ({selected_model})", file=stdout)
+        print(f"Deep Agent report: {investigation_detail}", file=stdout)
+    elif deep_agent == "off":
+        print("Deep Agent: off", file=stdout)
+    else:
+        print(f"Deep Agent: skipped ({investigation_detail})", file=stdout)
     return 0
+
+
+def _fail_runner_job(
+    store: Any,
+    job_id: str,
+    error: str,
+    *,
+    scan_run_created: bool = False,
+) -> None:
+    store.fail_scan_job(job_id, error)
+    if scan_run_created:
+        fail_scan_run = getattr(store, "fail_scan_run", None)
+        if fail_scan_run is not None:
+            fail_scan_run(job_id)
+
+
+def _deep_agent_runtime_available() -> bool:
+    return (
+        importlib.util.find_spec("deepagents") is not None
+        and importlib.util.find_spec("langchain_openai") is not None
+    )
 
 
 def run_real_eval(

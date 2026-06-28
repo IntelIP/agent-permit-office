@@ -1,9 +1,13 @@
 .DS_Store
 .agent-permit/
+.codex/
 .coverage
+.entire/
 .env
 .env.*
 !.env.example
+.fallow/
+.playwright-cli/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
@@ -11,6 +15,7 @@
 __pycache__/
 dist/
 htmlcov/
+output/
 *.egg-info/
 worker/.wrangler/
 worker/dist/

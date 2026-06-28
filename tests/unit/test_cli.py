@@ -26,6 +26,7 @@ def test_cli_parser_has_expected_program_name() -> None:
 def test_runner_once_reports_idle(monkeypatch) -> None:
     stdout = StringIO()
     stderr = StringIO()
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
     class FakeStore:
         def claim_next_scan_job(self):
@@ -45,6 +46,7 @@ def test_runner_once_claims_and_completes_job(tmp_path, monkeypatch) -> None:
     stderr = StringIO()
     completed = []
     failed = []
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     (tmp_path / "AGENTS.md").write_text("# Safe agent\n", encoding="utf-8")
     claimed = ClaimedScanJob(
         job=ScanJobRecord(
@@ -81,7 +83,280 @@ def test_runner_once_claims_and_completes_job(tmp_path, monkeypatch) -> None:
     assert completed == ["job_test_runner"]
     assert failed == []
     assert "Status: runner_job_complete" in stdout.getvalue()
+    assert "Deep Agent: skipped (OPENROUTER_API_KEY missing)" in stdout.getvalue()
     assert (tmp_path / ".agent-permit" / "runs" / "job_test_runner").is_dir()
+
+
+def test_runner_required_deep_agent_marks_job_and_run_failed(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    completed = []
+    failed_jobs = []
+    failed_runs = []
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    (tmp_path / "AGENTS.md").write_text("# Safe agent\n", encoding="utf-8")
+    claimed = ClaimedScanJob(
+        job=ScanJobRecord(
+            id="job_missing_deep_agent_key",
+            repository_id="repo_test",
+            mode="scan",
+            status="running",
+            requested_at=datetime.now(timezone.utc),
+        ),
+        repository=RepositoryRecord(
+            id="repo_test",
+            label="safe-agent",
+            local_path=str(tmp_path),
+        ),
+    )
+
+    class FakeStore:
+        def claim_next_scan_job(self):
+            return claimed
+
+        def complete_scan_job(self, job_id):
+            completed.append(job_id)
+
+        def fail_scan_job(self, job_id, error):
+            failed_jobs.append((job_id, error))
+
+        def fail_scan_run(self, run_id):
+            failed_runs.append(run_id)
+
+    monkeypatch.setattr(cli, "store_from_env", lambda: FakeStore())
+    monkeypatch.setattr(cli, "optional_store_from_env", lambda: None)
+
+    exit_code = main(
+        ["runner", "--once", "--deep-agent", "required"],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert exit_code == 2
+    assert stdout.getvalue() == ""
+    assert completed == []
+    assert failed_jobs == [
+        (
+            "job_missing_deep_agent_key",
+            "Deep Agent investigation requires OPENROUTER_API_KEY "
+            "for runner --deep-agent required",
+        )
+    ]
+    assert failed_runs == ["job_missing_deep_agent_key"]
+    assert "OPENROUTER_API_KEY" in stderr.getvalue()
+
+
+def test_runner_auto_skips_deep_agent_when_runtime_missing(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    completed = []
+    failed = []
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    (tmp_path / "AGENTS.md").write_text("# Safe agent\n", encoding="utf-8")
+    claimed = ClaimedScanJob(
+        job=ScanJobRecord(
+            id="job_missing_deep_agent_runtime",
+            repository_id="repo_test",
+            mode="scan",
+            status="running",
+            requested_at=datetime.now(timezone.utc),
+        ),
+        repository=RepositoryRecord(
+            id="repo_test",
+            label="safe-agent",
+            local_path=str(tmp_path),
+        ),
+    )
+
+    class FakeStore:
+        def claim_next_scan_job(self):
+            return claimed
+
+        def complete_scan_job(self, job_id):
+            completed.append(job_id)
+
+        def fail_scan_job(self, job_id, error):
+            failed.append((job_id, error))
+
+    def fail_if_called(*_args, **_kwargs) -> int:
+        raise AssertionError("run_investigate should not run in auto mode")
+
+    monkeypatch.setattr(cli, "store_from_env", lambda: FakeStore())
+    monkeypatch.setattr(cli, "optional_store_from_env", lambda: None)
+    monkeypatch.setattr(cli, "_deep_agent_runtime_available", lambda: False)
+    monkeypatch.setattr(cli, "run_investigate", fail_if_called)
+
+    exit_code = main(["runner", "--once"], stdout=stdout, stderr=stderr)
+
+    assert exit_code == 0
+    assert stderr.getvalue() == ""
+    assert completed == ["job_missing_deep_agent_runtime"]
+    assert failed == []
+    assert "Deep Agent: skipped (deep-agent extra missing)" in stdout.getvalue()
+
+
+def test_runner_required_deep_agent_fails_when_runtime_missing(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    completed = []
+    failed_jobs = []
+    failed_runs = []
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    (tmp_path / "AGENTS.md").write_text("# Safe agent\n", encoding="utf-8")
+    claimed = ClaimedScanJob(
+        job=ScanJobRecord(
+            id="job_required_missing_runtime",
+            repository_id="repo_test",
+            mode="scan",
+            status="running",
+            requested_at=datetime.now(timezone.utc),
+        ),
+        repository=RepositoryRecord(
+            id="repo_test",
+            label="safe-agent",
+            local_path=str(tmp_path),
+        ),
+    )
+
+    class FakeStore:
+        def claim_next_scan_job(self):
+            return claimed
+
+        def complete_scan_job(self, job_id):
+            completed.append(job_id)
+
+        def fail_scan_job(self, job_id, error):
+            failed_jobs.append((job_id, error))
+
+        def fail_scan_run(self, run_id):
+            failed_runs.append(run_id)
+
+    monkeypatch.setattr(cli, "store_from_env", lambda: FakeStore())
+    monkeypatch.setattr(cli, "optional_store_from_env", lambda: None)
+    monkeypatch.setattr(cli, "_deep_agent_runtime_available", lambda: False)
+
+    exit_code = main(
+        ["runner", "--once", "--deep-agent", "required"],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert exit_code == 2
+    assert stdout.getvalue() == ""
+    assert completed == []
+    assert failed_jobs == [
+        (
+            "job_required_missing_runtime",
+            "Deep Agent investigation requires optional dependencies: "
+            "uv sync --extra deep-agent",
+        )
+    ]
+    assert failed_runs == ["job_required_missing_runtime"]
+    assert "uv sync --extra deep-agent" in stderr.getvalue()
+
+
+def test_runner_once_runs_required_deep_agent_and_reingests_usage(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    completed = []
+    failed = []
+    ingested = []
+    captured = {}
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    (tmp_path / "AGENTS.md").write_text("# Safe agent\n", encoding="utf-8")
+    claimed = ClaimedScanJob(
+        job=ScanJobRecord(
+            id="job_test_runner_deep",
+            repository_id="repo_test",
+            mode="scan",
+            status="running",
+            requested_at=datetime.now(timezone.utc),
+        ),
+        repository=RepositoryRecord(
+            id="repo_test",
+            label="safe-agent",
+            local_path=str(tmp_path),
+            branch="main",
+        ),
+    )
+
+    class FakeStore:
+        def claim_next_scan_job(self):
+            return claimed
+
+        def complete_scan_job(self, job_id):
+            completed.append(job_id)
+
+        def fail_scan_job(self, job_id, error):
+            failed.append((job_id, error))
+
+        def write_ingest_records(self, records):
+            ingested.append(records)
+
+    def fake_run_investigate(artifact_dir, **kwargs) -> int:
+        captured["artifact_dir"] = artifact_dir
+        captured["model"] = kwargs["model"]
+        context = EvidenceContext.load(artifact_dir)
+        (artifact_dir / "agent-investigation.md").write_text(
+            build_investigation_markdown(context),
+            encoding="utf-8",
+        )
+        (artifact_dir / "openrouter-usage.json").write_text(
+            json.dumps(
+                {
+                    "cache_hit_ratio": 0.5,
+                    "cached_tokens": 10,
+                    "model_calls": 1,
+                    "total_tokens": 20,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        print("Status: investigation_complete", file=kwargs["stdout"])
+        return 0
+
+    monkeypatch.setattr(cli, "store_from_env", lambda: FakeStore())
+    monkeypatch.setattr(cli, "optional_store_from_env", lambda: None)
+    monkeypatch.setattr(cli, "_deep_agent_runtime_available", lambda: True)
+    monkeypatch.setattr(cli, "run_investigate", fake_run_investigate)
+
+    exit_code = main(
+        [
+            "runner",
+            "--once",
+            "--deep-agent",
+            "required",
+            "--model",
+            "openrouter:test/model",
+        ],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert exit_code == 0
+    assert stderr.getvalue() == ""
+    assert completed == ["job_test_runner_deep"]
+    assert failed == []
+    assert captured["model"] == "openrouter:test/model"
+    assert len(ingested) == 1
+    assert ingested[0].model_usage is not None
+    assert ingested[0].model_usage.model == "openrouter:test/model"
+    assert ingested[0].model_usage.model_calls == 1
+    assert ingested[0].model_usage.cached_tokens == 10
+    assert "Deep Agent: completed (openrouter:test/model)" in stdout.getvalue()
 
 
 def test_scan_command_creates_run_artifacts(tmp_path) -> None:
