@@ -4,6 +4,7 @@ import {
   artifactNames,
   decisionSummary,
   displayEvidenceLocation,
+  recommendedResponse,
   requiredControls,
   riskPathNodes,
   statusHelpText,
@@ -65,6 +66,7 @@ describe("proof pack content helpers", () => {
     expect(displayFindingTitle(finding)).toBe("open-swe passed this scan")
     expect(decisionSummary(finding)).toContain("passed the configured permit checks")
     expect(statusHelpText(finding)).toContain("passed")
+    expect(recommendedResponse(finding)).toContain("Approve from this scanner")
     expect(requiredControls(finding)).toEqual([
       {
         detail: "No configured risky policy path matched in this scan.",
@@ -120,5 +122,17 @@ describe("proof pack content helpers", () => {
         search: "write permissions",
       }).map((finding) => finding.repo),
     ).toEqual(["open-swe"])
+  })
+
+  it("puts blocked findings into a direct recommended response", () => {
+    const finding = makeFinding({
+      rule: "ci-pr-target-write-token",
+      status: "blocked",
+      title: "pull request target workflow keeps write token",
+    })
+
+    expect(recommendedResponse(finding)).toBe(
+      "Block unattended access. Require remediation or an explicit security exception before approval.",
+    )
   })
 })

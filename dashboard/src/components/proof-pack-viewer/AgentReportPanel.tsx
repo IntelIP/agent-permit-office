@@ -14,6 +14,7 @@ import {
   artifactNames,
   decisionSummary,
   displayEvidenceLocation,
+  recommendedResponse,
   requiredControls,
   riskPathNodes,
   statusHelpText,
@@ -92,7 +93,7 @@ export function AgentReportPanel({
 
       <div className="min-w-0 flex-1 px-5 py-6 md:px-7">
         <main className="mx-auto max-w-[1180px] space-y-5">
-          <section className="grid gap-5 border-b border-border pb-6 xl:grid-cols-[minmax(0,1fr)_230px]">
+          <section className="grid gap-5 border-b border-border pb-6 xl:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
             <div className="min-w-0">
               <div className="text-xs font-semibold uppercase tracking-[0.1em] text-apo-review">
                 Review before approving
@@ -108,16 +109,18 @@ export function AgentReportPanel({
               </p>
             </div>
 
-            <aside className="h-fit rounded-2xl border border-apo-review-border bg-apo-review-soft p-4 text-apo-review">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.1em]">
-                Permit status
-              </div>
-              <div className="mt-2 text-2xl font-semibold">
-                {statusLabels[finding.status]}
-              </div>
-              <p className="mt-2 text-sm leading-5 text-current/80">
-                {statusHelpText(finding)}
-              </p>
+            <aside className="grid h-fit gap-3">
+              <DecisionCard
+                label="Permit status"
+                value={statusLabels[finding.status]}
+                detail={statusHelpText(finding)}
+                tone="review"
+              />
+              <DecisionCard
+                label="Recommended response"
+                value={recommendedResponse(finding)}
+                dataTestId="recommended-response"
+              />
             </aside>
           </section>
 
@@ -239,6 +242,38 @@ export function AgentReportPanel({
         </main>
       </div>
     </section>
+  )
+}
+
+function DecisionCard({
+  dataTestId,
+  detail,
+  label,
+  tone,
+  value,
+}: {
+  dataTestId?: string
+  detail?: string
+  label: string
+  tone?: "review"
+  value: string
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-border bg-card p-4",
+        tone === "review" && "border-apo-review-border bg-apo-review-soft text-apo-review",
+      )}
+      data-testid={dataTestId}
+    >
+      <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-current/70">
+        {label}
+      </div>
+      <div className="mt-2 text-lg font-semibold leading-6">{value}</div>
+      {detail ? (
+        <p className="mt-2 text-sm leading-5 text-current/80">{detail}</p>
+      ) : null}
+    </div>
   )
 }
 

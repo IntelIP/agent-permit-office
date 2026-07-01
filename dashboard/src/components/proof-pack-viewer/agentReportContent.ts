@@ -57,6 +57,18 @@ export function statusHelpText(finding: QueueFinding) {
   return "Reviewer must confirm evidence and controls before approval."
 }
 
+export function recommendedResponse(finding: QueueFinding) {
+  if (finding.status === "approved" || finding.rule === "clean-run") {
+    return "Approve from this scanner. Keep the scan evidence attached and continue monitoring future changes."
+  }
+
+  if (finding.status === "blocked") {
+    return "Block unattended access. Require remediation or an explicit security exception before approval."
+  }
+
+  return "Review before approving. Confirm the evidence path is trusted and the repository access is least-privilege."
+}
+
 export function displayEvidenceLocation(evidence: string) {
   const trimmedEvidence = evidence.trim()
   if (trimmedEvidence.length === 0) return "Evidence unavailable"

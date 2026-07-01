@@ -25,6 +25,7 @@ test("queue screen supports scan form, search, drilldown, back, and theme cycle"
   await expect(page).toHaveURL(/\?finding=/)
   await expect(page.getByRole("heading", { name: "Permit review brief" })).toBeVisible()
   await expect(page.getByTestId("reviewer-question")).toBeVisible()
+  await expect(page.getByTestId("recommended-response")).toBeVisible()
 
   await page.getByTestId("finding-back").click()
   await expect(page.getByRole("heading", { name: "Repository findings" })).toBeVisible()
