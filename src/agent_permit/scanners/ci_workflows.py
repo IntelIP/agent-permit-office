@@ -99,8 +99,10 @@ def _scan_workflow_text(rel_path: str, text: str) -> list[Finding]:
         findings.append(_pull_request_target_finding(rel_path, signals, lines))
     if signals.write_all is not None:
         findings.append(_write_all_finding(rel_path, signals, lines))
-    for permission in signals.write_permissions:
-        findings.append(_write_permission_finding(rel_path, signals, permission, lines))
+    for permission_group in _group_write_permissions(signals.write_permissions):
+        findings.append(
+            _write_permission_finding(rel_path, signals, permission_group, lines)
+        )
     for secret_ref in signals.secret_refs:
         findings.append(_secret_ref_finding(rel_path, signals, secret_ref, lines))
     if (
@@ -265,32 +267,40 @@ def _write_all_finding(
 def _write_permission_finding(
     rel_path: str,
     signals: WorkflowSignals,
-    permission: PermissionSignal,
+    permissions: tuple[PermissionSignal, ...],
     lines: list[str],
 ) -> Finding:
-    context_note = _context_note(rel_path, permission.job_name, signals)
+    permission = permissions[0]
+    scopes = tuple(permission.scope for permission in permissions)
+    context_note = _context_note(
+        rel_path,
+        permission.job_name,
+        signals,
+        permission_scopes=scopes,
+    )
     return Finding(
         id=(
             f"finding:ci-write-permission:{rel_path}:"
-            f"{permission.line_number}:{permission.scope}"
+            f"{permission.line_number}:{'-'.join(scopes)}"
         ),
         rule_id="ci-write-permission",
-        title="Workflow grants write permission",
+        title="Workflow grants write permissions",
         severity=Severity.MEDIUM,
         category=FindingCategory.RUNTIME_POLICY,
         evidence=[
             _evidence(
                 rel_path,
-                permission.line_number,
+                permission_signal.line_number,
                 lines,
                 workflow_event=_event_context(signals),
-                workflow_job=permission.job_name,
-                permission_scope=permission.scope,
+                workflow_job=permission_signal.job_name,
+                permission_scope=permission_signal.scope,
                 context_note=context_note,
             )
+            for permission_signal in permissions
         ],
         risk=(
-            f"The workflow grants {permission.scope}: write"
+            f"The workflow grants {_scope_write_list(scopes)}"
             f"{_job_phrase(permission.job_name)}, enabling repository mutation."
         ),
         recommendation=(
@@ -459,6 +469,21 @@ def _inline_events(stripped_line: str) -> set[str]:
     return {value} if value else set()
 
 
+def _group_write_permissions(
+    permissions: tuple[PermissionSignal, ...],
+) -> tuple[tuple[PermissionSignal, ...], ...]:
+    groups: dict[str | None, list[PermissionSignal]] = {}
+    for permission in permissions:
+        groups.setdefault(permission.job_name, []).append(permission)
+    return tuple(
+        tuple(sorted(group, key=lambda item: (item.line_number, item.scope)))
+        for _job_name, group in sorted(
+            groups.items(),
+            key=lambda item: ((item[0] or ""), item[1][0].line_number),
+        )
+    )
+
+
 def _event_context(signals: WorkflowSignals) -> str | None:
     if not signals.events:
         return None
@@ -473,6 +498,8 @@ def _context_note(
     rel_path: str,
     job_name: str | None,
     signals: WorkflowSignals,
+    *,
+    permission_scopes: tuple[str, ...] = (),
 ) -> str | None:
     parts: list[str] = []
     event_context = _event_context(signals)
@@ -480,6 +507,9 @@ def _context_note(
         parts.append(f"events={event_context}")
     if job_name:
         parts.append(f"job={job_name}")
+    if permission_scopes:
+        group = job_name or "workflow"
+        parts.append(f"permission_group={group}; scopes={','.join(permission_scopes)}")
     if _is_maintenance_context(rel_path, job_name):
         parts.append("maintenance-workflow heuristic")
     return "; ".join(parts) or None
@@ -494,3 +524,9 @@ def _confidence_for_context(context_note: str | None) -> Confidence:
     if context_note and "maintenance-workflow heuristic" in context_note:
         return Confidence.MEDIUM
     return Confidence.HIGH
+
+
+def _scope_write_list(scopes: tuple[str, ...]) -> str:
+    if len(scopes) == 1:
+        return f"{scopes[0]}: write"
+    return ", ".join(f"{scope}: write" for scope in scopes)

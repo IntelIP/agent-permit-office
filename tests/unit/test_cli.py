@@ -449,6 +449,9 @@ jobs:
     assert "sk-live-placeholder" not in permit_text
     assert "Status: blocked" in risk_report_text
     assert "Status: blocked" in summary_text
+    assert "## CI Workflow Groups" in summary_text
+    assert "`.github/workflows/agent.yml` / `workflow`" in summary_text
+    assert "Rules: ci-pr-target-write-token" in summary_text
     assert "raw-findings.json" in summary_text
     assert len(raw_findings["findings"]) == 6
     assert {

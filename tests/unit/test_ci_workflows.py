@@ -64,16 +64,59 @@ jobs:
         inventory=inventory,
     )
 
+    assert [finding.rule_id for finding in findings] == ["ci-write-permission"]
+    assert [evidence.line_start for evidence in findings[0].evidence] == [6, 7]
+    assert {evidence.workflow_job for evidence in findings[0].evidence} == {None}
+    assert {evidence.permission_scope for evidence in findings[0].evidence} == {
+        "contents",
+        "pull-requests",
+    }
+    assert "scopes=contents,pull-requests" in (
+        findings[0].evidence[0].context_note or ""
+    )
+
+
+def test_ci_scanner_groups_write_permissions_by_job(tmp_path) -> None:
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True)
+    (workflow_dir / "agent.yml").write_text(
+        """name: Agent
+on:
+  pull_request:
+
+jobs:
+  review:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - run: python agent.py
+  label:
+    permissions:
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - run: python label.py
+"""
+    )
+    inventory = FileInventoryScanner().scan(tmp_path, scan_run_id="run-write-jobs")
+
+    findings = CiWorkflowScanner().scan(
+        tmp_path,
+        scan_run_id="run-write-jobs",
+        inventory=inventory,
+    )
+
     assert [finding.rule_id for finding in findings] == [
         "ci-write-permission",
         "ci-write-permission",
     ]
-    assert {finding.evidence[0].line_start for finding in findings} == {6, 7}
-    assert {finding.evidence[0].workflow_job for finding in findings} == {None}
-    assert {finding.evidence[0].permission_scope for finding in findings} == {
-        "contents",
-        "pull-requests",
-    }
+    assert [evidence.workflow_job for evidence in findings[0].evidence] == ["label"]
+    assert [evidence.workflow_job for evidence in findings[1].evidence] == [
+        "review",
+        "review",
+    ]
 
 
 def test_ci_scanner_flags_pr_target_head_checkout(tmp_path) -> None:
