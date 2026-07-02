@@ -55,7 +55,7 @@ export function FindingQueueTable({
   showAddRepository,
 }: FindingQueueTableProps) {
   const activeJobs = jobs.filter((job) =>
-    ["queued", "running", "failed"].includes(job.status),
+    ["queued", "running"].includes(job.status),
   )
 
   return (

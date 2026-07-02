@@ -37,6 +37,15 @@ uv run --extra db agent-permit scan tests/fixtures/risky-ci-agent --ci --run-id 
 uv run --extra db agent-permit scan tests/fixtures/risky-mcp-agent --ci --run-id neon-seed-risky-mcp-agent || true
 ```
 
+Process a dashboard-queued repository scan from the local repo root:
+
+```bash
+set -a; source .env; set +a
+uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto
+```
+
+The Worker only creates the queue record. The local runner claims the job from Neon, reads the local repository path, runs the scanner, writes artifacts, and updates the shared database.
+
 Check the Worker:
 
 ```bash

@@ -21,7 +21,8 @@ Queueing a scan from the dashboard creates a Postgres job through `POST /api/job
 Process the queued job from the repo root:
 
 ```bash
-DATABASE_URL="postgresql://..." uv run --extra db agent-permit runner --once
+set -a; source .env; set +a
+uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto
 ```
 
 Refresh the dashboard data snapshot from repo-local `.agent-permit` artifacts:

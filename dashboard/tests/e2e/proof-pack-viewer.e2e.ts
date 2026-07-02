@@ -8,8 +8,11 @@ test("queue screen supports scan form, search, drilldown, back, and theme cycle"
   await expect(page.getByRole("heading", { name: "Repository findings" })).toBeVisible()
   await expect(page.getByTestId("finding-row")).toHaveCount(5)
 
-  await page.getByRole("button", { name: "Stage a repository scan" }).click()
+  await page.getByRole("button", { name: "Add repository to scan queue" }).click()
   await expect(page.getByTestId("queue-scan-form")).toBeVisible()
+  await expect(page.getByTestId("runner-command")).toContainText(
+    "agent-permit runner --once",
+  )
   await expect(page.getByTestId("queue-scan-submit")).toBeDisabled()
   await page.getByTestId("queue-scan-path").fill("/tmp/example-repo")
   await expect(page.getByTestId("queue-scan-submit")).toBeEnabled()
