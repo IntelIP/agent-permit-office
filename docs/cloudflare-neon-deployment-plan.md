@@ -54,12 +54,12 @@ export DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
 uv run --extra db agent-permit db migrate
 ```
 
-Then seed data from local proof artifacts:
+Then seed data by running deterministic fixture scans. The public demo export is intentionally curated for docs and does not contain every file needed by `agent-permit ingest`.
 
 ```bash
-uv run --extra db agent-permit ingest docs/demo-artifacts/public-fixture-scans/risky-ci-agent
-uv run --extra db agent-permit ingest docs/demo-artifacts/public-fixture-scans/risky-mcp-agent
-uv run --extra db agent-permit ingest docs/demo-artifacts/public-fixture-scans/safe-agent
+uv run --extra db agent-permit scan tests/fixtures/safe-agent --ci --run-id neon-seed-safe-agent
+uv run --extra db agent-permit scan tests/fixtures/risky-ci-agent --ci --run-id neon-seed-risky-ci-agent || true
+uv run --extra db agent-permit scan tests/fixtures/risky-mcp-agent --ci --run-id neon-seed-risky-mcp-agent || true
 ```
 
 ### Do not use D1 first
@@ -213,7 +213,7 @@ Steps:
 2. Copy pooled or direct Postgres connection string.
 3. Store it locally in `.env`.
 4. Run `agent-permit db migrate`.
-5. Ingest public fixture scans.
+5. Run the three fixture seed scans.
 6. Query `/api/snapshot` locally through Wrangler.
 
 ### 3. Deploy Worker API
