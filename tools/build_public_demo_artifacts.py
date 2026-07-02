@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import redirect_stderr
+from datetime import datetime, timezone
 from io import StringIO
 import json
 from pathlib import Path
@@ -8,7 +9,9 @@ import shutil
 import tempfile
 from typing import Any
 
+from agent_permit.baseline import build_finding_baseline
 from agent_permit.cli import run_scan
+from agent_permit.models import Finding
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +26,7 @@ SELECTED_ARTIFACTS = (
     "controls.json",
     "run-metrics.json",
 )
+PUBLIC_BASELINE_GENERATED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
 FIXTURES = (
     {
         "id": "safe-agent",
@@ -116,6 +120,7 @@ def main() -> int:
                         encoding="utf-8",
                     )
 
+            _write_public_baseline(public_dir)
             metrics = json.loads((public_dir / "run-metrics.json").read_text())
             manifest["fixtures"].append(
                 {
@@ -127,6 +132,9 @@ def main() -> int:
                     "graph_paths": metrics["graph_paths"],
                     "controls": metrics["controls"],
                     "artifact_dir": str(public_dir.relative_to(REPO_ROOT)),
+                    "baseline": str(
+                        (public_dir / "finding-baseline.json").relative_to(REPO_ROOT)
+                    ),
                 }
             )
 
@@ -151,6 +159,23 @@ def _write_sanitized_json(
     payload = _strip_volatile(_sanitize_json(payload, replacements))
     destination.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_public_baseline(public_dir: Path) -> None:
+    raw_findings = json.loads((public_dir / "raw-findings.json").read_text())
+    findings = [
+        Finding.model_validate(finding)
+        for finding in raw_findings.get("findings", [])
+    ]
+    baseline = build_finding_baseline(
+        findings,
+        scan_run_id=str(raw_findings.get("scan_run_id")),
+        generated_at=PUBLIC_BASELINE_GENERATED_AT,
+    )
+    (public_dir / "finding-baseline.json").write_text(
+        json.dumps(baseline.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
