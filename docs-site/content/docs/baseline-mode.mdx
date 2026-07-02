@@ -1,0 +1,39 @@
+---
+title: Baseline Mode
+description: Track new findings without re-triaging known repository risk.
+---
+
+## What this is
+
+Baseline mode compares a new scan to known findings.
+
+## When to use it
+
+Use it when adopting PermitGraph in a repository that already has known findings.
+
+## Command or example
+
+```bash
+uv run agent-permit baseline .agent-permit/runs/<run_id> --output .agent-permit/finding-baseline.json
+uv run agent-permit scan . --ci --baseline .agent-permit/finding-baseline.json --ci-new-findings-only
+```
+
+## Output to expect
+
+The scanner reports whether new findings were introduced after the baseline.
+
+## How to interpret it
+
+Baseline mode is for migration. It should not become a permanent excuse to ignore risk.
+
+## Common mistakes
+
+- Creating a baseline without review.
+- Baseline drift after rule ID changes.
+- Forgetting to revisit old findings.
+
+## Related pages
+
+- [Review Findings](./review-findings)
+- [Rule Reference](./rule-reference)
+- [Baseline and Diff Mode](https://github.com/IntelIP/agent-permit-office/blob/main/docs/baseline-diff-mode.md)

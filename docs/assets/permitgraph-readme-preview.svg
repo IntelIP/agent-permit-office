@@ -1,0 +1,30 @@
+<svg width="1180" height="560" viewBox="0 0 1180 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">PermitGraph scan preview</title>
+  <desc id="desc">A terminal-style preview showing a PermitGraph scan, permit decision, evidence, and next step.</desc>
+  <rect width="1180" height="560" rx="28" fill="#101419"/>
+  <rect x="32" y="32" width="1116" height="496" rx="22" fill="#0B0D10" stroke="#26313A"/>
+  <circle cx="70" cy="70" r="8" fill="#FF8D87"/>
+  <circle cx="98" cy="70" r="8" fill="#F7D06A"/>
+  <circle cx="126" cy="70" r="8" fill="#73E1A2"/>
+  <text x="62" y="128" fill="#DCE4EA" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">$ uv run agent-permit scan . --ci</text>
+  <rect x="62" y="164" width="1056" height="92" rx="16" fill="#111820" stroke="#283542"/>
+  <text x="92" y="204" fill="#7DDCE0" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">Permit decision</text>
+  <text x="92" y="236" fill="#FFD76D" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="800">needs_review</text>
+  <text x="360" y="216" fill="#A9B5C2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22">Reviewer must inspect evidence before unattended agent access continues.</text>
+  <rect x="62" y="286" width="332" height="154" rx="16" fill="#101419" stroke="#2B3845"/>
+  <text x="92" y="326" fill="#A9B5C2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700" letter-spacing="1.6">FINDING</text>
+  <text x="92" y="362" fill="#F1F5F8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="800">CI secrets with</text>
+  <text x="92" y="394" fill="#F1F5F8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="800">write access</text>
+  <text x="92" y="424" fill="#A9B5C2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">github-mcp-server</text>
+  <rect x="424" y="286" width="332" height="154" rx="16" fill="#101419" stroke="#2B3845"/>
+  <text x="454" y="326" fill="#A9B5C2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700" letter-spacing="1.6">EVIDENCE</text>
+  <text x="454" y="366" fill="#F1F5F8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="22">.github/workflows/</text>
+  <text x="454" y="398" fill="#F1F5F8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="22">agent.yml:18</text>
+  <text x="454" y="424" fill="#A9B5C2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Scanner artifact cited</text>
+  <rect x="786" y="286" width="332" height="154" rx="16" fill="#101419" stroke="#2B3845"/>
+  <text x="816" y="326" fill="#A9B5C2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700" letter-spacing="1.6">NEXT STEP</text>
+  <text x="816" y="362" fill="#F1F5F8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="800">Use least-privilege</text>
+  <text x="816" y="394" fill="#F1F5F8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="800">permissions</text>
+  <text x="816" y="424" fill="#A9B5C2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">or approve exception</text>
+  <text x="62" y="492" fill="#6D7A86" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Static scanner source of truth. Deep Agent review explains bounded artifacts with citations.</text>
+</svg>

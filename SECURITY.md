@@ -1,6 +1,6 @@
 # Security Policy
 
-Agent Permit Office is a security tool, but it is still investigation-stage software.
+PermitGraph is a security tool, but it is still investigation-stage software.
 
 ## Supported Versions
 

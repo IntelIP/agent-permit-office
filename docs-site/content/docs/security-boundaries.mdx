@@ -1,0 +1,38 @@
+---
+title: Security Boundaries
+description: What PermitGraph does and does not execute.
+---
+
+## What this is
+
+Security boundaries define what the scanner is allowed to inspect.
+
+## When to use it
+
+Use this page before scanning untrusted repositories or sharing generated artifacts.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci
+```
+
+## Output to expect
+
+The scanner reads files and configuration. It does not run agent code, MCP servers, CI workflows, package scripts, or external tools.
+
+## How to interpret it
+
+PermitGraph is intentionally static in the MVP path. This keeps evidence repeatable and avoids giving the scanner the same dangerous access it is reviewing.
+
+## Common mistakes
+
+- Expecting the scanner to prove runtime behavior.
+- Adding destructive tools to the scan path.
+- Publishing generated evidence without review.
+
+## Related pages
+
+- [Scan a Repository](./scan-a-repository)
+- [Redaction](./redaction)
+- [Deep Agent Review](./deep-agent-review)

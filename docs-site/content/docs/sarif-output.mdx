@@ -1,0 +1,39 @@
+---
+title: SARIF Output
+description: Export findings to GitHub code scanning and related tooling.
+---
+
+## What this is
+
+SARIF output maps PermitGraph findings into code scanning results.
+
+## When to use it
+
+Use SARIF when you want repository findings visible in GitHub security tooling.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci --sarif
+uv run agent-permit sarif .agent-permit/runs/<run_id>
+```
+
+## Output to expect
+
+The SARIF file includes rule IDs, messages, locations, and severity mapping.
+
+## How to interpret it
+
+SARIF is an integration format. The full review still belongs in PermitGraph artifacts.
+
+## Common mistakes
+
+- Treating SARIF as the only audit artifact.
+- Changing rule IDs and creating duplicate code-scanning alerts.
+- Emitting SARIF without file and line evidence.
+
+## Related pages
+
+- [Run in GitHub Actions](./run-in-github-actions)
+- [Rule Reference](./rule-reference)
+- [SARIF and Code Scanning](https://github.com/IntelIP/agent-permit-office/blob/main/docs/sarif-code-scanning.md)

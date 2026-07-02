@@ -1,0 +1,42 @@
+---
+title: CLI Reference
+description: Common PermitGraph commands for local and CI usage.
+---
+
+## What this is
+
+The CLI is the primary local interface for scans, investigations, evals, baselines, SARIF, and analytics.
+
+## When to use it
+
+Use CLI commands during local development, CI setup, release checks, and demo validation.
+
+## Command or example
+
+```bash
+uv run agent-permit rules
+uv run agent-permit scan . --ci --sarif
+uv run agent-permit sarif .agent-permit/runs/<run_id>
+uv run agent-permit baseline .agent-permit/runs/<run_id> --output .agent-permit/finding-baseline.json
+uv run agent-permit eval tests/fixtures
+```
+
+## Output to expect
+
+Commands write local artifacts, print summaries, and return non-zero exit codes when CI should stop.
+
+## How to interpret it
+
+Use `scan` first. Use `rules` when a policy name is unclear. Use `baseline` when tracking only new findings.
+
+## Common mistakes
+
+- Running investigation before a scan exists.
+- Treating `eval` results as production repository findings.
+- Committing generated `.agent-permit/` directories.
+
+## Related pages
+
+- [Quickstart](./quickstart)
+- [Artifact Reference](./artifact-reference)
+- [Baseline Mode](./baseline-mode)

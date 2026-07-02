@@ -1,10 +1,10 @@
 # Support
 
-Agent Permit Office is currently an open-source MVP project.
+PermitGraph is currently an open-source MVP project.
 
 ## Community Support
 
-For public project usage after launch:
+For public project usage:
 
 - use GitHub issues for bugs, false positives, rule requests, and docs gaps
 - include command output, artifact paths, and relevant rule IDs

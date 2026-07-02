@@ -1,0 +1,38 @@
+---
+title: Policy Checks
+description: How deterministic rules convert repository facts into reviewable findings.
+---
+
+## What this is
+
+Policy checks are deterministic rules that evaluate repository facts.
+
+## When to use it
+
+Use this page when a finding names a policy check and the reviewer needs to understand why it exists.
+
+## Command or example
+
+```bash
+uv run agent-permit rules
+```
+
+## Output to expect
+
+The command lists rule IDs, descriptions, severity, and remediation guidance.
+
+## How to interpret it
+
+A policy check usually connects one source to one risky sink. Example: a CI workflow references secrets and also has write access. That can create an approval boundary because automation may be able to expose or misuse credentials.
+
+## Common mistakes
+
+- Reading a policy check as an accusation instead of a review prompt.
+- Renaming rule IDs without considering baselines and SARIF stability.
+- Adding model reasoning before deterministic rule evidence exists.
+
+## Related pages
+
+- [Rule Reference](./rule-reference)
+- [Configure Policy](./configure-policy)
+- [SARIF Output](./sarif-output)

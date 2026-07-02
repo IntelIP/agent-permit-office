@@ -17,6 +17,11 @@ dist/
 htmlcov/
 output/
 *.egg-info/
+*.tsbuildinfo
+docs-site/.next/
+docs-site/.source/
+docs-site/node_modules/
+docs-site/out/
 worker/.wrangler/
 worker/dist/
 worker/node_modules/

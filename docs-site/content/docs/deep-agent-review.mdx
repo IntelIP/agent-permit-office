@@ -1,0 +1,39 @@
+---
+title: Deep Agent Review
+description: How the LangChain Deep Agent fits into the deterministic scanner path.
+---
+
+## What this is
+
+Deep Agent review explains scanner artifacts and checks whether claims are grounded in local evidence.
+
+## When to use it
+
+Use Deep Agent review after a scan has already produced deterministic artifacts.
+
+## Command or example
+
+```bash
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+```
+
+## Output to expect
+
+The investigation writes a cited Markdown report and usage metrics. The citation critic checks whether claims are supported by local artifacts.
+
+## How to interpret it
+
+Deep Agent is not the scanner. It is the reviewer assistant. It reads bounded artifacts, explains why a finding matters, and points back to evidence.
+
+## Common mistakes
+
+- Letting model output create findings without scanner evidence.
+- Treating uncited model claims as approved facts.
+- Running live model review without cost and cache telemetry.
+
+## Related pages
+
+- [Cost Controls](./cost-controls)
+- [Observability](./observability)
+- [Evidence and Artifacts](./evidence-and-artifacts)

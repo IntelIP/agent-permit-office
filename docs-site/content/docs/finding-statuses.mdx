@@ -1,0 +1,42 @@
+---
+title: Finding Statuses
+description: How to read approved, needs review, and blocked scan outcomes.
+---
+
+## What this is
+
+Finding statuses explain what action a reviewer should take.
+
+## When to use it
+
+Use this page when triaging a scan queue or reviewing a single repository.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci
+```
+
+## Output to expect
+
+Each run produces a permit status and finding-level evidence.
+
+## How to interpret it
+
+`approved` means no configured risky access path matched.
+
+`needs_review` means the repository may be safe, but a reviewer must inspect evidence before unattended access continues.
+
+`blocked` means the scanner found a risky path that should stop unattended access until remediated or explicitly excepted.
+
+## Common mistakes
+
+- Treating `needs_review` as failure.
+- Treating `approved` as a guarantee that all security risks are absent.
+- Ignoring blocked CI trust paths because the workflow has not run yet.
+
+## Related pages
+
+- [Review Findings](./review-findings)
+- [Policy Checks](./policy-checks)
+- [Artifact Reference](./artifact-reference)

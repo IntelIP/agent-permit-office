@@ -1,0 +1,55 @@
+---
+title: Run in GitHub Actions
+description: Use PermitGraph in CI to block risky agent-access changes.
+---
+
+## What this is
+
+The GitHub Action runs PermitGraph in repository workflows.
+
+## When to use it
+
+Use it when pull requests may change agent instructions, MCP config, CI permissions, or credential references.
+
+## Command or example
+
+```yaml
+name: PermitGraph
+
+on:
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: IntelIP/agent-permit-office@main
+        with:
+          path: .
+          exclude: |
+            tests/fixtures/**
+          sarif: "true"
+```
+
+## Output to expect
+
+The action uploads scan artifacts and can emit SARIF when enabled.
+
+## How to interpret it
+
+Use CI to catch risky access changes before they merge. Treat blocked results as release blockers unless an exception is documented.
+
+## Common mistakes
+
+- Running with checkout credentials persisted.
+- Scanning generated fixture data.
+- Treating SARIF alerts as the only output.
+
+## Related pages
+
+- [SARIF Output](./sarif-output)
+- [Baseline Mode](./baseline-mode)
+- [GitHub Action Reference](https://github.com/IntelIP/agent-permit-office/blob/main/docs/github-action.md)

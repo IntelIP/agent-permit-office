@@ -1,0 +1,38 @@
+---
+title: Configure Policy
+description: Apply repository-specific policy without changing scanner code.
+---
+
+## What this is
+
+Policy configuration adjusts how a repository should be evaluated.
+
+## When to use it
+
+Use policy config when a team needs explicit severity, exceptions, or rule behavior for a repository.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci --policy agent-permit-policy.json
+```
+
+## Output to expect
+
+The run artifacts include policy evaluation output and permit status.
+
+## How to interpret it
+
+Policy config should narrow or clarify scanner behavior. It should not hide risk silently.
+
+## Common mistakes
+
+- Encoding permanent exceptions without review.
+- Using policy config to work around unclear findings instead of improving rules.
+- Forgetting to commit policy changes with the repository decision.
+
+## Related pages
+
+- [Policy Checks](./policy-checks)
+- [Rule Reference](./rule-reference)
+- [Repository Policy Configuration](https://github.com/IntelIP/agent-permit-office/blob/main/docs/repository-policy-config.md)

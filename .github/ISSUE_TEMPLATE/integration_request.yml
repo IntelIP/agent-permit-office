@@ -15,7 +15,7 @@ body:
     id: workflow
     attributes:
       label: Workflow
-      description: Where would Agent Permit Office run, and who reviews the output?
+      description: Where would PermitGraph run, and who reviews the output?
       placeholder: Run on pull_request before agent deployment; AppSec reviews blocked findings...
     validations:
       required: true

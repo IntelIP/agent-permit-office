@@ -1,0 +1,38 @@
+---
+title: Rule Reference
+description: How to inspect deterministic scanner rules.
+---
+
+## What this is
+
+Rule reference explains scanner rule IDs and why they exist.
+
+## When to use it
+
+Use it when a finding references a rule such as `ci-secret-reference`, `ci-write-permission`, or `mcp-stdio-credential-ref`.
+
+## Command or example
+
+```bash
+uv run agent-permit rules
+```
+
+## Output to expect
+
+Rules include ID, severity, description, and remediation guidance.
+
+## How to interpret it
+
+Rule IDs are product surface. They appear in reports, SARIF, baselines, and dashboard rows. Keep them stable.
+
+## Common mistakes
+
+- Renaming rules casually.
+- Treating all high severity findings as automatically blocked.
+- Hiding a rule instead of documenting an exception.
+
+## Related pages
+
+- [Policy Checks](./policy-checks)
+- [SARIF Output](./sarif-output)
+- [Configure Policy](./configure-policy)

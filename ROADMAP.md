@@ -2,7 +2,7 @@
 
 Date: 2026-06-07
 
-Agent Permit Office is moving from local MVP proof to public open-core launch.
+PermitGraph is moving from local MVP proof to public open-core launch.
 
 ## Now: Public Core Hardening
 

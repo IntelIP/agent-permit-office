@@ -1,0 +1,38 @@
+---
+title: Scan a Repository
+description: Run PermitGraph against local source code safely.
+---
+
+## What this is
+
+This guide runs the deterministic scanner against a repository.
+
+## When to use it
+
+Use it before enabling agents, MCP tools, or CI automation with expanded access.
+
+## Command or example
+
+```bash
+uv run agent-permit scan /path/to/repo --ci --run-id repo-review
+```
+
+## Output to expect
+
+The run directory is written under the repository being scanned unless a different output path is configured.
+
+## How to interpret it
+
+The scanner is static. It reads files and configuration. It does not execute package scripts, workflows, MCP servers, or agent tools.
+
+## Common mistakes
+
+- Scanning generated output directories.
+- Forgetting to exclude test fixtures that intentionally contain risky examples.
+- Treating no findings as a replacement for normal code review.
+
+## Related pages
+
+- [Security Boundaries](./security-boundaries)
+- [Finding Statuses](./finding-statuses)
+- [Baseline Mode](./baseline-mode)

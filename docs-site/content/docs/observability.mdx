@@ -1,0 +1,38 @@
+---
+title: Observability
+description: How tracing and evals help assess Deep Agent investigations.
+---
+
+## What this is
+
+Observability records how scanner, model, and citation checks behave during validation.
+
+## When to use it
+
+Use it when comparing model behavior, debugging investigation quality, or running live validation.
+
+## Command or example
+
+```bash
+uv run --extra deep-agent --extra phoenix agent-permit live-validate . --phoenix
+```
+
+## Output to expect
+
+Phoenix traces and local metrics can show model calls, token usage, cache hit ratio, and citation outcomes.
+
+## How to interpret it
+
+Observability is for quality and cost review. It does not change deterministic permit status.
+
+## Common mistakes
+
+- Treating tracing as product value by itself.
+- Uploading sensitive traces without policy.
+- Ignoring citation pass/fail because the prose looks convincing.
+
+## Related pages
+
+- [Deep Agent Review](./deep-agent-review)
+- [Cost Controls](./cost-controls)
+- [Phoenix Observability](https://github.com/IntelIP/agent-permit-office/blob/main/docs/phoenix-observability-evaluation.md)

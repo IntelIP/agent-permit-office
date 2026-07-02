@@ -1,6 +1,6 @@
-# Contributing
+# Contributing To PermitGraph
 
-Agent Permit Office accepts focused contributions that improve scanner accuracy, evidence quality, docs, fixtures, or integrations.
+PermitGraph accepts focused contributions that improve scanner accuracy, evidence quality, docs, fixtures, or integrations.
 
 ## Development Setup
 
@@ -17,7 +17,7 @@ export OPENROUTER_API_KEY=<key>
 uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
 ```
 
-## Contribution Areas
+## Good First Issues
 
 Good first contribution areas:
 
@@ -30,6 +30,8 @@ Good first contribution areas:
 - public repo validation manifests
 
 Avoid broad rewrites until the scanner artifact contracts are stable.
+
+Good first pull requests should include one small rule, fixture, documentation, or artifact improvement. If the change affects scanner behavior, include a fixture or test that proves the new evidence shape.
 
 ## Scanner Contribution Rules
 
@@ -57,7 +59,7 @@ Deep Agent changes must:
 
 Before opening a pull request:
 
-- `uv run --all-extras pytest`
+- `uv run pytest -q`
 - `uv run agent-permit scan . --ci --exclude "tests/fixtures/**"`
 - no `.env.local`, generated `.agent-permit/`, traces, or private reports committed
 - README or docs updated when behavior changes

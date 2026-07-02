@@ -1,0 +1,45 @@
+---
+title: First Scan Walkthrough
+description: How to inspect the first scan from status to evidence.
+---
+
+## What this is
+
+This walkthrough shows the review order for one scan result.
+
+## When to use it
+
+Use it when a scan produced findings and the reviewer needs to decide whether agent access is safe.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci --run-id first-review
+open .agent-permit/runs/first-review/summary.md
+```
+
+## Output to expect
+
+The run folder contains a short summary, raw finding records, graph paths, permit status, and metrics.
+
+## How to interpret it
+
+Review in this order:
+
+1. Open `summary.md` for the plain-English result.
+2. Open `permit.yaml` for the deterministic status.
+3. Open `raw-findings.json` for file and rule evidence.
+4. Open `graph-paths.json` for source-to-sink paths.
+5. Run Deep Agent investigation only after scanner artifacts exist.
+
+## Common mistakes
+
+- Jumping directly to model output before scanner evidence.
+- Approving a finding without checking file and line evidence.
+- Assuming `needs_review` means false positive.
+
+## Related pages
+
+- [Evidence and Artifacts](./evidence-and-artifacts)
+- [Review Findings](./review-findings)
+- [Deep Agent Review](./deep-agent-review)

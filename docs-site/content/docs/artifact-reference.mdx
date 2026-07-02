@@ -1,0 +1,49 @@
+---
+title: Artifact Reference
+description: Meaning of each major generated file in a PermitGraph run.
+---
+
+## What this is
+
+This reference explains the generated files in `.agent-permit/runs/<run_id>/`.
+
+## When to use it
+
+Use it when building integrations, reviewing findings, or asking an AI agent to inspect a run.
+
+## Command or example
+
+```bash
+find .agent-permit/runs/<run_id> -maxdepth 1 -type f | sort
+```
+
+## Output to expect
+
+Core artifacts:
+
+| File | Purpose |
+| --- | --- |
+| `summary.md` | human-readable scan summary |
+| `risk-report.md` | expanded risk explanation |
+| `permit.yaml` | deterministic permit status |
+| `raw-findings.json` | normalized finding records |
+| `graph-paths.json` | source-to-sink access paths |
+| `controls.json` | controls checked before approval |
+| `run-metrics.json` | timing, counts, and usage metadata |
+| `agent-investigation.md` | optional Deep Agent report |
+
+## How to interpret it
+
+Use YAML and JSON for tools. Use Markdown for reviewer decisions. Treat Deep Agent files as explanation and citation output.
+
+## Common mistakes
+
+- Parsing Markdown when JSON exists.
+- Reading `agent-investigation.md` without checking `raw-findings.json`.
+- Assuming artifact schemas are safe to change without dashboard and CI impact.
+
+## Related pages
+
+- [Evidence and Artifacts](./evidence-and-artifacts)
+- [Deep Agent Review](./deep-agent-review)
+- [AI Analysis Guide](./ai-analysis-guide)

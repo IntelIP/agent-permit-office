@@ -1,0 +1,52 @@
+---
+title: Quickstart
+description: Install dependencies, run the first scan, and open the main artifacts.
+---
+
+## What this is
+
+Quickstart gets one local repository scan running with deterministic evidence.
+
+## When to use it
+
+Use this path when evaluating the project for the first time or validating a local checkout.
+
+## Command or example
+
+```bash
+uv sync --all-extras --dev
+uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
+```
+
+Open the artifacts printed by the command:
+
+```text
+.agent-permit/runs/<run_id>/summary.md
+.agent-permit/runs/<run_id>/permit.yaml
+.agent-permit/runs/<run_id>/raw-findings.json
+.agent-permit/runs/<run_id>/graph-paths.json
+```
+
+## Output to expect
+
+The command exits successfully when the permit is approved or needs review. In CI mode, blocked runs exit non-zero.
+
+## How to interpret it
+
+Read the permit status first:
+
+- `approved`: no configured agent-access risk matched.
+- `needs_review`: reviewer must inspect evidence before approval.
+- `blocked`: unattended agent access should not proceed.
+
+## Common mistakes
+
+- Running without `--ci` and missing CI workflow checks.
+- Reading only the final status and ignoring evidence paths.
+- Reusing old run folders after a repository changed.
+
+## Related pages
+
+- [First Scan Walkthrough](./first-scan-walkthrough)
+- [Finding Statuses](./finding-statuses)
+- [CLI Reference](./cli-reference)

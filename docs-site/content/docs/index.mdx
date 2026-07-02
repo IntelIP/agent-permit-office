@@ -1,0 +1,50 @@
+---
+title: Introduction
+description: What PermitGraph is, who uses it, and why agent access needs a permit gate.
+---
+
+## What this is
+
+PermitGraph is a local permit gate for AI agents. It checks whether a repository should allow agents, MCP servers, CI workflows, credentials, memory, or production tools before access is expanded.
+
+The scanner does not run agent code. It reads repository configuration, builds evidence, and writes a permit status: approved, needs review, or blocked.
+
+## When to use it
+
+Use PermitGraph before enabling agent automation in a repository that may contain:
+
+- MCP server configuration
+- CI workflows with write permissions
+- workflow secrets or environment references
+- repository instructions for AI tools
+- generated agent artifacts
+- approval or exception decisions
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
+```
+
+## Output to expect
+
+The scan writes a run directory under `.agent-permit/runs/<run_id>/` with Markdown, JSON, YAML, and optional SARIF artifacts.
+
+## How to interpret it
+
+Start with `summary.md`, then read `permit.yaml`. If the run is not approved, inspect `raw-findings.json` and `graph-paths.json` to see which access path created the decision.
+
+Deep Agent reports explain scanner artifacts. They do not replace scanner evidence.
+
+## Common mistakes
+
+- Treating Deep Agent output as source of truth.
+- Publishing `.agent-permit/` artifacts without redaction.
+- Approving a repository only because no human-readable report was opened.
+- Running against generated fixtures without excluding test data.
+
+## Related pages
+
+- [Quickstart](/docs/quickstart)
+- [Agent Permit Model](/docs/agent-permit-model)
+- [Evidence and Artifacts](/docs/evidence-and-artifacts)

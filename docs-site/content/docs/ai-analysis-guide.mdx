@@ -1,0 +1,52 @@
+---
+title: AI Analysis Guide
+description: How AI agents should inspect PermitGraph output without inventing findings or leaking sensitive data.
+---
+
+## What this is
+
+This guide explains how an AI agent should read PermitGraph output. The scanner is the source of truth. Deep Agent review is an explanation layer over scanner artifacts.
+
+## When to use it
+
+Use this page when an AI agent needs to summarize a run, explain why a repository is blocked or needs review, compare expected findings with actual findings, or draft reviewer-facing remediation.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+```
+
+## Output to expect
+
+Review artifacts in this order:
+
+1. `summary.md`
+2. `permit.yaml`
+3. `raw-findings.json`
+4. `graph-paths.json`
+5. `controls.json`
+6. `agent-investigation.md`
+
+## How to interpret it
+
+`approved` means no configured agent-access risk matched in this scanner run.
+
+`needs_review` means a reviewer must inspect evidence before unattended access continues.
+
+`blocked` means unattended agent access should stop until remediation or an explicit exception exists.
+
+## Common mistakes
+
+- Creating new findings from model intuition.
+- Claiming a repository is safe beyond the configured scanner scope.
+- Publishing generated artifacts without redaction review.
+- Revealing raw secret values.
+- Executing repository code, MCP servers, CI workflows, package scripts, or external tools to prove a scanner result.
+
+## Related pages
+
+- [Artifact Reference](./artifact-reference)
+- [Deep Agent Review](./deep-agent-review)
+- [Evidence and Artifacts](./evidence-and-artifacts)

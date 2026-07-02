@@ -1,0 +1,45 @@
+---
+title: Agent Permit Model
+description: The decision model behind approved, needs review, and blocked repository access.
+---
+
+## What this is
+
+The permit model turns scanner evidence into an access decision for agent automation.
+
+## When to use it
+
+Use this page when deciding whether a repository can safely receive more agent permissions.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci
+```
+
+## Output to expect
+
+The scanner writes `permit.yaml` with the status and decision evidence.
+
+## How to interpret it
+
+PermitGraph asks one core question: should this repository get unattended agent access right now?
+
+The decision is deterministic:
+
+- scanner facts create findings
+- findings map to graph paths
+- graph paths map to controls
+- controls produce a permit status
+
+## Common mistakes
+
+- Treating a permit as a vulnerability score.
+- Treating approval as permanent.
+- Treating human review as optional when status is `needs_review`.
+
+## Related pages
+
+- [Finding Statuses](./finding-statuses)
+- [Policy Checks](./policy-checks)
+- [Security Boundaries](./security-boundaries)

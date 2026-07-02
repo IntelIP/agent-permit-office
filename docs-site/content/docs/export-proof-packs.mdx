@@ -1,0 +1,38 @@
+---
+title: Export Proof Packs
+description: Package redacted evidence for sharing with reviewers or customers.
+---
+
+## What this is
+
+Proof packs copy allowlisted artifacts into a shareable package.
+
+## When to use it
+
+Use proof packs when a reviewer, customer, or auditor needs evidence without the whole repository.
+
+## Command or example
+
+```bash
+python3 tools/export_dashboard_snapshot.py --proof-pack
+```
+
+## Output to expect
+
+The exporter prints a folder and a zip file under `.agent-permit/proof-packs/`.
+
+## How to interpret it
+
+Proof packs are still sensitive. Review them before sharing.
+
+## Common mistakes
+
+- Assuming all generated artifacts are safe to publish.
+- Sharing packs from old temp repo paths.
+- Removing redaction from proof pack exports.
+
+## Related pages
+
+- [Redaction](./redaction)
+- [Artifact Reference](./artifact-reference)
+- [Proof Pack Export](https://github.com/IntelIP/agent-permit-office/blob/main/docs/proof-pack-export.md)

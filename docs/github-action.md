@@ -1,11 +1,11 @@
 # GitHub Action
 
-Agent Permit Office ships as a composite GitHub Action through `action.yml`.
+PermitGraph ships as a composite GitHub Action through `action.yml`.
 
 ## Recommended Workflow
 
 ```yaml
-name: Agent Permit Office
+name: PermitGraph
 
 on:
   pull_request:
@@ -26,14 +26,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run Agent Permit Office
-        uses: OWNER/agent-permit-office@v0.1.0
+      - name: Run PermitGraph
+        uses: IntelIP/agent-permit-office@v0.1.0
         with:
           path: .
           artifact-name: agent-permit-office-${{ github.run_id }}
 ```
 
-For production use, pin `OWNER/agent-permit-office` to a release tag or commit SHA.
+For production use, pin `IntelIP/agent-permit-office` to a release tag or commit SHA.
 
 ## Inputs
 
@@ -43,7 +43,7 @@ For production use, pin `OWNER/agent-permit-office` to a release tag or commit S
 | `run-id` | empty | Optional deterministic scan run ID. |
 | `exclude` | empty | Newline-separated gitignore-style patterns to skip. |
 | `upload-artifacts` | `true` | Upload `.agent-permit/runs/<run_id>/` as a workflow artifact. |
-| `artifact-name` | `agent-permit-office` | Artifact name. |
+| `artifact-name` | `permitgraph` | Artifact name. |
 | `sarif` | `false` | Generate `results.sarif` in the scan artifact directory. |
 | `upload-sarif` | `false` | Upload `results.sarif` to GitHub code scanning. Requires `security-events: write`. |
 | `sarif-category` | `agent-permit-office` | Code scanning category. |
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: OWNER/agent-permit-office@v0.1.0
+      - uses: IntelIP/agent-permit-office@v0.1.0
         with:
           path: .
           sarif: "true"
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: OWNER/agent-permit-office@v0.1.0
+      - uses: IntelIP/agent-permit-office@v0.1.0
         with:
           path: .
           upload-sarif: "true"
@@ -140,7 +140,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: OWNER/agent-permit-office@v0.1.0
+      - uses: IntelIP/agent-permit-office@v0.1.0
         with:
           path: .
           baseline: .agent-permit/finding-baseline.json
@@ -164,7 +164,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: OWNER/agent-permit-office@v0.1.0
+      - uses: IntelIP/agent-permit-office@v0.1.0
         with:
           path: .
           policy: agent-permit-policy.json

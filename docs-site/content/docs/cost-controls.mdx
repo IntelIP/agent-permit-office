@@ -1,0 +1,39 @@
+---
+title: Cost Controls
+description: How model usage stays bounded during Deep Agent review.
+---
+
+## What this is
+
+Cost controls track and limit live model usage.
+
+## When to use it
+
+Use this page before running OpenRouter-backed investigations or live validation.
+
+## Command or example
+
+```bash
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+```
+
+## Output to expect
+
+Usage artifacts record token counts, cached tokens, cache-hit ratio, model calls, and run metadata.
+
+## How to interpret it
+
+Prompt caching and bounded artifacts reduce model cost. The scanner remains deterministic and local-first.
+
+## Common mistakes
+
+- Running live validation without checking API key and spend limits.
+- Asking the model to read the whole repository instead of bounded artifacts.
+- Ignoring cache metrics after a demo run.
+
+## Related pages
+
+- [Deep Agent Review](./deep-agent-review)
+- [OpenRouter Model Decision](https://github.com/IntelIP/agent-permit-office/blob/main/docs/openrouter-model-decision.md)
+- [Observability](./observability)

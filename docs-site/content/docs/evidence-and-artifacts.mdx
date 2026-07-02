@@ -1,0 +1,47 @@
+---
+title: Evidence and Artifacts
+description: What scan artifacts exist and how reviewers should use them.
+---
+
+## What this is
+
+Artifacts are local files that preserve scanner evidence, graph paths, decisions, and optional model analysis.
+
+## When to use it
+
+Use artifacts when reviewing a finding, exporting proof, or debugging a rule.
+
+## Command or example
+
+```bash
+ls .agent-permit/runs/<run_id>
+```
+
+## Output to expect
+
+Important files include:
+
+- `summary.md`
+- `risk-report.md`
+- `permit.yaml`
+- `raw-findings.json`
+- `graph-paths.json`
+- `controls.json`
+- `run-metrics.json`
+- `agent-investigation.md`
+
+## How to interpret it
+
+Use Markdown files for human review. Use JSON and YAML files for automation, dashboards, tests, and AI analysis.
+
+## Common mistakes
+
+- Publishing generated artifacts without redaction.
+- Reading `agent-investigation.md` without checking citations.
+- Moving artifacts out of the run folder and breaking path context.
+
+## Related pages
+
+- [Artifact Reference](./artifact-reference)
+- [Export Proof Packs](./export-proof-packs)
+- [Deep Agent Review](./deep-agent-review)

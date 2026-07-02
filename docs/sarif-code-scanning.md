@@ -65,7 +65,7 @@ steps:
   - uses: actions/checkout@v6
     with:
       persist-credentials: false
-  - uses: OWNER/agent-permit-office@v0.1.0
+  - uses: IntelIP/agent-permit-office@v0.1.0
     with:
       path: .
       upload-sarif: "true"

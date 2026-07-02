@@ -1,4 +1,4 @@
-name: Agent Permit Office
+name: PermitGraph
 
 on:
   pull_request:
@@ -19,11 +19,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run Agent Permit Office
+      - name: Run PermitGraph
         uses: ./
         with:
           path: .
           exclude: |
             tests/fixtures/**
-          artifact-name: agent-permit-office-${{ github.run_id }}
+          artifact-name: permitgraph-${{ github.run_id }}
           sarif: "true"

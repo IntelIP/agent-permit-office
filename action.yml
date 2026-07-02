@@ -1,4 +1,4 @@
-name: Agent Permit Office
+name: PermitGraph
 description: Scan a repository before AI agents receive tools, credentials, memory, or production access.
 
 inputs:
@@ -21,13 +21,13 @@ inputs:
   artifact-name:
     description: Workflow artifact name for scan output.
     required: false
-    default: agent-permit-office
+    default: permitgraph
   sarif:
     description: Generate results.sarif in the scan artifact directory.
     required: false
     default: "false"
   upload-sarif:
-    description: Upload results.sarif to GitHub code scanning. Requires security-events: write in the calling workflow.
+    description: "Upload results.sarif to GitHub code scanning. Requires security-events: write in the calling workflow."
     required: false
     default: "false"
   sarif-category:
@@ -70,7 +70,7 @@ runs:
     - name: Set up uv
       uses: astral-sh/setup-uv@v6
 
-    - name: Run Agent Permit Office
+    - name: Run PermitGraph
       id: scan
       shell: bash
       env:

@@ -1,0 +1,59 @@
+# PermitGraph
+
+PermitGraph is a local permit gate for AI agents. It scans repositories before agents receive tools, credentials, memory, CI permissions, or production access.
+
+## Canonical Human Docs
+
+- Introduction: /docs
+- Quickstart: /docs/quickstart
+- First Scan Walkthrough: /docs/first-scan-walkthrough
+- Agent Permit Model: /docs/agent-permit-model
+- Finding Statuses: /docs/finding-statuses
+- Policy Checks: /docs/policy-checks
+- Evidence and Artifacts: /docs/evidence-and-artifacts
+- Deep Agent Review: /docs/deep-agent-review
+- Scan a Repository: /docs/scan-a-repository
+- Review Findings: /docs/review-findings
+- Configure Policy: /docs/configure-policy
+- Run in GitHub Actions: /docs/run-in-github-actions
+- Export Proof Packs: /docs/export-proof-packs
+- CLI Reference: /docs/cli-reference
+- Artifact Reference: /docs/artifact-reference
+- AI Analysis Guide: /docs/ai-analysis-guide
+- Rule Reference: /docs/rule-reference
+- SARIF Output: /docs/sarif-output
+- Baseline Mode: /docs/baseline-mode
+- Security Boundaries: /docs/security-boundaries
+- Redaction: /docs/redaction
+- Observability: /docs/observability
+- Cost Controls: /docs/cost-controls
+- Roadmap: /docs/roadmap
+- Hosted Product Boundary: /docs/hosted-product-boundary
+
+## AI Analysis Entry Points
+
+- Agent guide: AGENTS.md
+- Artifact guide: docs/artifact-reference.md
+- AI analysis guide: docs/ai-analysis-guide.md
+- README quickstart: README.md
+
+## Core Rule For AI Agents
+
+Scanner artifacts are source of truth. Deep Agent reports explain and cite evidence; they do not create standalone truth.
+
+## Main Commands
+
+```bash
+uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
+uv run agent-permit rules
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+python3 tools/release_check.py
+```
+
+## Safety Notes
+
+- Do not execute target repository agent code during scanner work.
+- Do not publish `.agent-permit/` runs without redaction review.
+- Do not expose raw secret values.
+- Do not treat `approved` as a complete security audit.
+- Do not treat `needs_review` as failure.

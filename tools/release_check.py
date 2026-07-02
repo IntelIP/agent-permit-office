@@ -135,6 +135,15 @@ def build_checks(args: argparse.Namespace) -> list[Check]:
                 Check(name="Dashboard build", command=["bun", "run", "build"], cwd=dashboard_dir),
             ]
         )
+    if not args.skip_docs:
+        docs_site_dir = REPO_ROOT / "docs-site"
+        checks.append(
+            Check(
+                name="Documentation site build",
+                command=["bun", "run", "build"],
+                cwd=docs_site_dir,
+            )
+        )
     return checks
 
 
@@ -144,6 +153,11 @@ def parse_args() -> argparse.Namespace:
         "--skip-dashboard",
         action="store_true",
         help="Skip Bun dashboard lint/build checks.",
+    )
+    parser.add_argument(
+        "--skip-docs",
+        action="store_true",
+        help="Skip Bun documentation site build checks.",
     )
     parser.add_argument(
         "--skip-package",
@@ -164,7 +178,7 @@ def main() -> int:
     args = parse_args()
     require_executable("git")
     require_executable("uv")
-    if not args.skip_dashboard:
+    if not args.skip_dashboard or not args.skip_docs:
         require_executable("bun")
 
     failures = 0

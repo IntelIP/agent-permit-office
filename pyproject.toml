@@ -35,6 +35,12 @@ phoenix = [
 [project.scripts]
 agent-permit = "agent_permit.cli:main"
 
+[project.urls]
+Homepage = "https://github.com/IntelIP/agent-permit-office#readme"
+Documentation = "https://github.com/IntelIP/agent-permit-office/tree/main/docs-site"
+Repository = "https://github.com/IntelIP/agent-permit-office"
+Issues = "https://github.com/IntelIP/agent-permit-office/issues"
+
 [dependency-groups]
 dev = [
   "pytest>=8.0",

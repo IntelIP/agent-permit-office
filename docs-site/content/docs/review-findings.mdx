@@ -1,0 +1,40 @@
+---
+title: Review Findings
+description: Turn findings into approve, request changes, or exception decisions.
+---
+
+## What this is
+
+Finding review is the human decision step after scanner evidence is created.
+
+## When to use it
+
+Use it when a repository is `needs_review` or `blocked`.
+
+## Command or example
+
+```bash
+open .agent-permit/runs/<run_id>/summary.md
+```
+
+## Output to expect
+
+The reviewer sees a status, rule name, evidence location, and remediation guidance.
+
+## How to interpret it
+
+Ask one question: should this access path be allowed before the repo receives unattended agent access?
+
+Approve only when evidence is understood. Request changes when the path should be fixed. Document an exception when the risk is intentional and accepted.
+
+## Common mistakes
+
+- Approving because the finding title sounds generic.
+- Ignoring the policy check explanation.
+- Treating a clean repository as permanently approved.
+
+## Related pages
+
+- [First Scan Walkthrough](./first-scan-walkthrough)
+- [Policy Checks](./policy-checks)
+- [Export Proof Packs](./export-proof-packs)

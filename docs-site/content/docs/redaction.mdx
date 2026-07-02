@@ -1,0 +1,38 @@
+---
+title: Redaction
+description: How PermitGraph handles sensitive values in findings and proof packs.
+---
+
+## What this is
+
+Redaction prevents raw secrets and sensitive values from being emitted in shared artifacts.
+
+## When to use it
+
+Use it before exporting proof packs, opening reports in shared channels, or publishing demo artifacts.
+
+## Command or example
+
+```bash
+python3 tools/export_dashboard_snapshot.py --proof-pack
+```
+
+## Output to expect
+
+Proof packs copy allowlisted artifacts and apply redaction before export.
+
+## How to interpret it
+
+Evidence may include secret variable names when needed for risk explanation. It should not include raw secret values.
+
+## Common mistakes
+
+- Committing `.env` or generated `.agent-permit/` artifacts.
+- Sharing full run folders instead of proof packs.
+- Assuming redaction removes all business-sensitive context.
+
+## Related pages
+
+- [Export Proof Packs](./export-proof-packs)
+- [Security Boundaries](./security-boundaries)
+- [Artifact Reference](./artifact-reference)

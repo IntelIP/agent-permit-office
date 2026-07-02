@@ -1,0 +1,39 @@
+---
+title: Hosted Product Boundary
+description: What belongs in the open-source core versus a future hosted control plane.
+---
+
+## What this is
+
+The hosted product boundary explains what should stay open and what can become commercial workflow.
+
+## When to use it
+
+Use it when planning open-core packaging or evaluating PermitGraph as a feature inside a larger DevSecOps platform.
+
+## Command or example
+
+```text
+Open core: scanner, graph, permit artifacts, Deep Agent evidence review.
+Hosted: multi-repo queue, SSO, retention, approvals, policy packs, integrations.
+```
+
+## Output to expect
+
+The local scanner should remain usable without a hosted account.
+
+## How to interpret it
+
+Commercial value is not hiding detection logic. Commercial value is making reviews repeatable across teams, repositories, models, and audit history.
+
+## Common mistakes
+
+- Monetizing before developer trust exists.
+- Making local scan output depend on hosted services.
+- Building hosted dashboards before clear reviewer workflows.
+
+## Related pages
+
+- [Roadmap](./roadmap)
+- [Review Findings](./review-findings)
+- [Open Core Business Plan](https://github.com/IntelIP/agent-permit-office/blob/main/docs/open-core-business-plan.md)

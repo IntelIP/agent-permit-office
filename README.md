@@ -1,20 +1,25 @@
-# Agent Permit Office
+# PermitGraph
 
-PermitGraph for AI agents: a local permit gate that checks whether a repository's agents should receive tools, credentials, memory, or production access.
+[![CI](https://github.com/IntelIP/agent-permit-office/actions/workflows/ci.yml/badge.svg)](https://github.com/IntelIP/agent-permit-office/actions/workflows/ci.yml)
+[![Agent Permit](https://github.com/IntelIP/agent-permit-office/actions/workflows/agent-permit.yml/badge.svg)](https://github.com/IntelIP/agent-permit-office/actions/workflows/agent-permit.yml)
+[![License](https://img.shields.io/github/license/IntelIP/agent-permit-office)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-AI teams are starting to wire coding agents, MCP servers, CI workflows, and long-lived credentials into the same repos. That creates a new approval problem: a normal code review does not show whether an agent can reach a secret, write to a protected branch, follow unsafe repository instructions, or pass repo context into an external tool. Agent Permit Office turns those facts into reviewable evidence before the agent runs.
+Pre-flight security checks for AI coding agents.
 
-## What It Does
+PermitGraph scans a repository before agents receive tools, secrets, memory, MCP servers, or CI write access. It returns a clear permit decision: `approved`, `needs_review`, or `blocked`, with evidence a reviewer can inspect.
 
-- Scans a repository without executing agent code, MCP servers, workflows, package scripts, or external tools.
-- Builds an Agent Capability Graph from MCP configs, prompt instructions, credential references, CI workflows, file inventory, and relationship edges.
-- Finds risky source-to-sink paths such as repo file access to credential context, privileged CI trust paths, or prompt instructions that override scanner boundaries.
-- Writes deterministic permit artifacts: `approved`, `needs_review`, or `blocked`.
-- Runs a bounded LangChain Deep Agent investigation over scanner artifacts when model access is enabled.
-- Citation-checks Deep Agent output against local evidence.
-- Exports SARIF, baselines, policy evaluations, local analytics, dashboard snapshots, and sanitized proof packs.
+Run it before enabling Codex, Claude, Cursor, GitHub Actions agents, LangGraph/LangChain agents, or MCP tools inside sensitive repositories.
 
-## Quickstart
+![PermitGraph preview](docs/assets/permitgraph-readme-preview.svg)
+
+## Why This Exists
+
+AI teams are wiring coding agents, MCP servers, CI workflows, repo instructions, and long-lived credentials into the same repos. Normal code review does not show whether an agent can reach a secret, write to a protected branch, follow unsafe repository instructions, or pass repo context into an external tool.
+
+PermitGraph turns those agent-access facts into reviewable evidence before the agent runs.
+
+## 60-Second Scan
 
 Install dependencies:
 
@@ -22,22 +27,113 @@ Install dependencies:
 uv sync --all-extras --dev
 ```
 
-Scan the repo:
+Scan a repository:
 
 ```bash
 uv run agent-permit scan . --ci --exclude "tests/fixtures/**"
 ```
 
-Open the run artifacts:
+Open the generated evidence:
 
 ```text
 .agent-permit/runs/<run_id>/summary.md
-.agent-permit/runs/<run_id>/risk-report.md
 .agent-permit/runs/<run_id>/permit.yaml
 .agent-permit/runs/<run_id>/raw-findings.json
 .agent-permit/runs/<run_id>/graph-paths.json
-.agent-permit/runs/<run_id>/run-metrics.json
 ```
+
+The scanner is static. It does not execute agent code, MCP servers, CI workflows, package scripts, or external tools.
+
+## What A Finding Looks Like
+
+Plain-English result:
+
+```text
+Status: needs_review
+
+Review CI secrets and write permissions in github-mcp-server.
+
+Why: a workflow references CI secrets and also has write permissions.
+Reviewer question: should this automation be allowed before agent access continues?
+Evidence: .github/workflows/agent.yml:18
+Next step: use least-privilege workflow permissions or document an exception.
+```
+
+Machine-readable artifacts preserve the same evidence for CI, dashboards, proof packs, SARIF, and AI review.
+
+## What It Checks
+
+- MCP server configuration and tool boundaries
+- CI workflow permissions and secret references
+- repository instructions for AI tools
+- credential-bearing environment references
+- generated agent artifacts
+- source-to-sink paths in the Agent Capability Graph
+- policy controls before access approval
+
+## How It Fits With Other Tools
+
+| Tool | Main job | PermitGraph job |
+| --- | --- | --- |
+| Trivy | Find vulnerabilities, misconfigurations, secrets, and SBOM issues. | Decide whether AI agents should receive repo/tool/credential access. |
+| Semgrep | Find code and security patterns across source files. | Connect repo instructions, MCP config, CI permissions, and credentials into agent-access findings. |
+| OPA | Enforce general policy as code. | Provide a domain-specific scanner and artifacts for AI agent access review. |
+| LangSmith | Observe, evaluate, and debug agents after or during execution. | Gate access before the agent receives dangerous capabilities. |
+
+PermitGraph is not a replacement for SAST, dependency scanning, secrets scanning, or LLM observability. It is the missing review gate for agent permissions.
+
+## Deep Agent Review
+
+Deep Agent review is part of the product path, not a side demo.
+
+The deterministic scanner creates bounded evidence. The Deep Agent reads that evidence, reasons across related artifacts, writes a cited report, and the citation critic checks whether claims are grounded.
+
+Run from an existing scan:
+
+```bash
+export OPENROUTER_API_KEY=<key>
+uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
+```
+
+Offline deterministic fallback for tests or no-key debugging:
+
+```bash
+uv run agent-permit investigate .agent-permit/runs/<run_id> --deterministic-only
+```
+
+Default live-model path uses Claude Sonnet through OpenRouter. Prompt caching, response caching, timeout caps, completion caps, token metrics, and cache-hit metrics are recorded in local run artifacts.
+
+## GitHub Action
+
+Use PermitGraph in pull requests before risky agent-access changes merge:
+
+```yaml
+name: PermitGraph
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: IntelIP/agent-permit-office@main
+        with:
+          path: .
+          exclude: |
+            tests/fixtures/**
+          sarif: "true"
+          upload-sarif: "true"
+```
+
+## Proof Packs
 
 Generate dashboard data and a shareable proof pack:
 
@@ -53,6 +149,10 @@ The proof pack exporter prints both paths:
 .agent-permit/proof-packs/<validation_run_id>.zip
 ```
 
+Proof packs are redacted, but still sensitive. Review them before sharing.
+
+## Local Apps
+
 Run the local dashboard:
 
 ```bash
@@ -61,86 +161,17 @@ bun install
 bun dev
 ```
 
-Then open the localhost URL printed by Vite.
-
-Run the local public-release check:
+Run the documentation site:
 
 ```bash
-python3 tools/release_check.py
+cd docs-site
+bun install
+bun dev
 ```
 
-## Deep Agent Investigation
+Then open `http://localhost:3000/docs` or the next free port printed by Next.js.
 
-Deep Agent investigation is part of the product path, not a side demo. The deterministic scanner creates bounded evidence. The Deep Agent reads that evidence, reasons across related artifacts, writes a cited report, and the citation critic checks whether claims are grounded.
-
-Run from an existing scan:
-
-```bash
-export OPENROUTER_API_KEY=<key>
-uv run --extra deep-agent agent-permit investigate .agent-permit/runs/<run_id>
-```
-
-Run the full live validation harness with Phoenix tracing:
-
-```bash
-export OPENROUTER_API_KEY=<key>
-uv run --extra deep-agent --extra phoenix agent-permit live-validate . \
-  --agent-recursion-limit 20 \
-  --phoenix
-```
-
-Offline deterministic fallback for tests or no-key debugging:
-
-```bash
-uv run agent-permit investigate .agent-permit/runs/<run_id> --deterministic-only
-```
-
-Default model path is Claude Sonnet 4.6 through OpenRouter. Prompt caching, response caching, timeout caps, completion caps, token metrics, and cache-hit metrics are recorded in local run artifacts.
-
-## Demo Paths
-
-Safe fixture:
-
-```bash
-uv run agent-permit scan tests/fixtures/safe-agent --ci --run-id demo-safe
-```
-
-Risky CI fixture:
-
-```bash
-uv run agent-permit scan tests/fixtures/risky-ci-agent --ci --run-id demo-risky || true
-```
-
-Risky MCP fixture:
-
-```bash
-uv run agent-permit scan tests/fixtures/risky-mcp-agent --ci --run-id demo-mcp || true
-```
-
-Open-source validation dry run without model spend:
-
-```bash
-uv run agent-permit open-source-demo docs/evals/open-source-live-repos.json \
-  --repo-root /tmp/agent-permit-open-source-validation \
-  --run-id open-source-demo-prep \
-  --skip-live
-```
-
-Full open-source validation with Deep Agent and Phoenix:
-
-```bash
-export OPENROUTER_API_KEY=<key>
-uv run --extra deep-agent --extra phoenix agent-permit open-source-demo \
-  docs/evals/open-source-live-repos.json \
-  --repo-root /tmp/agent-permit-open-source-validation \
-  --agent-recursion-limit 20 \
-  --phoenix \
-  --exclude ".agent-permit/**"
-```
-
-## CLI Reference
-
-Common commands:
+## Common Commands
 
 ```bash
 uv run agent-permit rules
@@ -152,10 +183,9 @@ uv run agent-permit scan . --ci --policy agent-permit-policy.json
 uv run agent-permit analytics summarize .
 uv run agent-permit eval tests/fixtures
 uv run --extra phoenix agent-permit eval tests/fixtures --upload-phoenix
-uv run agent-permit eval-real docs/evals/real-repos.json --repo-root /tmp/agent-permit-validation
 ```
 
-## Open Core Boundary
+## Open-Core Boundary
 
 Open-source core:
 
@@ -170,13 +200,13 @@ Open-source core:
 
 Hosted product roadmap:
 
-- multi-repo dashboard and team review queue
+- multi-repo queue and team review workflow
 - private repo connectors and scheduled scans
 - SSO/RBAC, assignments, approval history, and audit retention
 - managed model gateway, model policy, key isolation, and spend controls
-- policy packs, custom rules, notifications, and support/SLA
+- policy packs, custom rules, notifications, support, and SLA
 
-The hosted product is not required to use the local scanner. The commercial value is managed workflow, governance, retention, and integrations, not hiding the scanner logic.
+The hosted product is not required to use the local scanner. Commercial value is managed workflow, governance, retention, and integrations, not hiding scanner logic.
 
 ## Safety Boundaries
 
@@ -184,50 +214,44 @@ The hosted product is not required to use the local scanner. The commercial valu
 - Real `.env` files and generated/junk directories are skipped.
 - Secret values are not emitted; evidence may include secret variable names when needed for risk explanation.
 - Proof packs copy only allowlisted artifacts and apply redaction before export.
-- Old validation runs may produce partial proof packs when referenced temp repo directories no longer exist. Regenerate live validation for complete audit evidence.
+- Deep Agent output explains scanner artifacts. It does not replace scanner evidence.
 
-## Docs Map
+## Documentation
 
-Product and business:
+Developer docs:
 
-- [Product Scope and Market Review](docs/product-scope-market-review.md)
-- [Open Core Business Plan](docs/open-core-business-plan.md)
-- [Customer Discovery Kit](docs/customer-discovery-kit.md)
-- [Open Source Release Readiness](docs/open-source-release-readiness.md)
-- [Release Candidate Plan](docs/release-candidate-plan.md)
-- [Project Management and Sprint Plan](docs/project-management-sprint-plan.md)
+- `docs-site/` - curated Fumadocs site for developers and AI agents
+- `AGENTS.md` - repo guidance for AI agents
+- `llms.txt` - compact AI-readable docs map
+- [AI Analysis Guide](docs/ai-analysis-guide.md)
+- [Artifact Reference](docs/artifact-reference.md)
 
-Architecture:
+Planning and research archives live in [docs/](docs/).
 
-- [Starter Scope and Architecture](docs/agent-permit-office-scope.md)
-- [Codebase and Services Blueprint](docs/codebase-and-services-blueprint.md)
-- [End-to-End System Diagram](docs/system-diagram-end-to-end.md)
-- [Dashboard Stack Architecture](docs/dashboard-stack-architecture.md)
+## Contributing
 
-Scanner and evidence:
+Good first contribution areas:
 
-- [Deterministic Scanners and Model Plan](docs/scanner-and-model-plan.md)
-- [Static Analysis and Agent Security Research](docs/research/static-analysis-agent-security-research.md)
-- [Repository Policy Configuration](docs/repository-policy-config.md)
-- [SARIF and Code Scanning](docs/sarif-code-scanning.md)
-- [Baseline and Diff Mode](docs/baseline-diff-mode.md)
-- [PermitGraph Proof Pack Export](docs/proof-pack-export.md)
+- deterministic rule improvements
+- false-positive reductions
+- fixture coverage
+- SARIF output improvements
+- GitHub Action hardening
+- documentation and demo clarity
 
-Deep Agent and observability:
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [SUPPORT.md](SUPPORT.md) before opening issues or pull requests. Do not paste secrets, private code, raw traces, or customer data into public issues.
 
-- [LangChain Deep Agents Architecture Research](docs/research/langchain-deep-agents-architecture.md)
-- [Deep Agent Investigator](docs/deep-agent-investigator.md)
-- [Live Deep Agent Validation](docs/live-deep-agent-validation.md)
-- [Live Proof Rerun Plan](docs/live-proof-rerun-plan.md)
-- [OpenRouter Model Decision](docs/openrouter-model-decision.md)
-- [Phoenix Observability and Evaluation](docs/phoenix-observability-evaluation.md)
-- [Product Analytics and Evals Roadmap](docs/product-analytics-evals-roadmap.md)
+## Verification
 
-Demo and release:
+Run the public-release check:
 
-- [Demo](docs/demo.md)
-- [Sanitized Demo Artifacts](docs/sanitized-demo-artifacts.md)
-- [Open Source Agent Access Scan Report](docs/open-source-agent-access-scan-report.md)
-- [Open Source Live Validation](docs/open-source-live-validation.md)
-- [Real Repo Validation](docs/real-repo-validation.md)
-- [MVP Hardening](docs/mvp-hardening.md)
+```bash
+python3 tools/release_check.py
+```
+
+Core checks:
+
+```bash
+uv run pytest -q
+cd docs-site && bun run build
+```

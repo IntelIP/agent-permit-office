@@ -1,0 +1,38 @@
+---
+title: Roadmap
+description: Product direction for the open-source scanner and future hosted workflow.
+---
+
+## What this is
+
+The roadmap separates the open-source core from future hosted workflow.
+
+## When to use it
+
+Use this page when deciding whether PermitGraph is a local tool, CI control, or future DevSecOps platform feature.
+
+## Command or example
+
+```bash
+uv run agent-permit scan . --ci
+```
+
+## Output to expect
+
+The open-source product remains useful locally: scanner, graph, permit engine, Deep Agent review, artifacts, SARIF, and proof packs.
+
+## How to interpret it
+
+Hosted value should come from workflow, governance, retention, integrations, and managed model policy. The scanner logic should remain open and inspectable.
+
+## Common mistakes
+
+- Hiding the scanner behind hosted-only features.
+- Building team workflow before the local proof is understandable.
+- Adding dashboards that do not help reviewers decide.
+
+## Related pages
+
+- [Hosted Product Boundary](./hosted-product-boundary)
+- [Open Core Business Plan](https://github.com/IntelIP/agent-permit-office/blob/main/docs/open-core-business-plan.md)
+- [Introduction](./)

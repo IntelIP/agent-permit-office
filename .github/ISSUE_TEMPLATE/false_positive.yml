@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this when Agent Permit Office flagged a risky path or rule that should not block review. Do not paste secrets or private code.
+        Use this when PermitGraph flagged a risky path or rule that should not block review. Do not paste secrets or private code.
   - type: input
     id: rule
     attributes:
