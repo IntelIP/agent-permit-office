@@ -76,11 +76,32 @@ function scanRequest(input: QueueScanInput): RequestInit {
 }
 
 function scanRequestBody(input: QueueScanInput) {
+  const target = input.repositoryTarget.trim()
   return {
     branch: input.branch.trim() || null,
     label: input.label.trim() || undefined,
-    localPath: input.localPath.trim(),
+    ...(isGithubRepositoryUrl(target) ? { repositoryUrl: target } : { localPath: target }),
     mode: "scan",
+  }
+}
+
+function isGithubRepositoryUrl(value: string) {
+  try {
+    const url = new URL(value)
+    const pathParts = url.pathname
+      .replace(/\/$/, "")
+      .replace(/\.git$/, "")
+      .split("/")
+      .filter(Boolean)
+    return (
+      ["http:", "https:"].includes(url.protocol) &&
+      url.hostname === "github.com" &&
+      !url.username &&
+      !url.password &&
+      pathParts.length === 2
+    )
+  } catch {
+    return false
   }
 }
 

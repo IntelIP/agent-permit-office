@@ -402,6 +402,7 @@ def load_ingest_records(
     *,
     repository_label: str | None = None,
     local_path: Path | None = None,
+    repository_source: str | None = None,
     branch: str | None = None,
     mode: str = "scan",
     job_id: str | None = None,
@@ -420,7 +421,11 @@ def load_ingest_records(
         artifact_dir=artifact_dir,
     )
     label = repository_label or target_path.name
-    repository = repository_record_from_path(target_path, label=label, branch=branch)
+    repository = repository_record_from_source(
+        repository_source or str(target_path.absolute()),
+        label=label,
+        branch=branch,
+    )
 
     run_id = context.scan_run_id
     started_at = _parse_datetime(scan_run_payload.get("started_at"))
@@ -474,12 +479,34 @@ def repository_record_from_path(
     branch: str | None = None,
 ) -> RepositoryRecord:
     resolved_path = local_path.absolute()
+    return repository_record_from_source(str(resolved_path), label=label, branch=branch)
+
+
+def repository_record_from_source(
+    source: str,
+    *,
+    label: str | None = None,
+    branch: str | None = None,
+) -> RepositoryRecord:
+    normalized_source = source.strip()
+    if not normalized_source:
+        raise ValueError("repository source is required")
     return RepositoryRecord(
-        id=_stable_id("repo", str(resolved_path)),
-        label=label or resolved_path.name,
-        local_path=str(resolved_path),
+        id=_stable_id("repo", normalized_source),
+        label=label or _source_label(normalized_source),
+        local_path=normalized_source,
         branch=branch,
     )
+
+
+def _source_label(source: str) -> str:
+    if source.startswith("https://github.com/") or source.startswith(
+        "http://github.com/"
+    ):
+        parts = source.rstrip("/").removesuffix(".git").split("/")
+        if len(parts) >= 2:
+            return parts[-1]
+    return Path(source).name or source
 
 
 def _finding_records(context: EvidenceContext) -> list[FindingRecord]:

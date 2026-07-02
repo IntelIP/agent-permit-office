@@ -8,8 +8,11 @@ from io import StringIO
 import json
 import os
 from pathlib import Path
+import re
+import subprocess
 import sys
 from typing import Any, TextIO
+from urllib.parse import urlparse
 
 from agent_permit import __version__
 from agent_permit.artifacts import (
@@ -829,6 +832,7 @@ def run_scan(
     db_job_id: str | None = None,
     db_repository_label: str | None = None,
     db_local_path: Path | None = None,
+    db_repository_source: str | None = None,
     db_branch: str | None = None,
     stdout: TextIO,
     stderr: TextIO,
@@ -1072,6 +1076,7 @@ def run_scan(
                     scan_run.artifact_dir,
                     repository_label=db_repository_label,
                     local_path=db_local_path,
+                    repository_source=db_repository_source,
                     branch=db_branch,
                     job_id=db_job_id,
                 )
@@ -1622,6 +1627,71 @@ def run_ingest(
     return 0
 
 
+def _resolve_runner_target(source: str, *, job_id: str, branch: str | None) -> Path:
+    if _is_github_repository_url(source):
+        return _clone_github_repository(source, job_id=job_id, branch=branch)
+
+    target_path = Path(source)
+    if not target_path.exists() or not target_path.is_dir():
+        raise RuntimeError(f"repository path is not a directory: {target_path}")
+    return target_path
+
+
+def _is_github_repository_url(source: str) -> bool:
+    parsed = urlparse(source)
+    if parsed.scheme not in {"http", "https"}:
+        return False
+    if parsed.netloc.lower() != "github.com":
+        return False
+    if parsed.username or parsed.password:
+        return False
+    parts = parsed.path.strip("/").removesuffix(".git").split("/")
+    return len(parts) == 2 and all(parts)
+
+
+def _clone_github_repository(source: str, *, job_id: str, branch: str | None) -> Path:
+    clone_dir = _runner_clone_root() / _github_clone_slug(source, job_id=job_id)
+    if clone_dir.exists():
+        raise RuntimeError(f"runner clone directory already exists: {clone_dir}")
+    clone_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    command = ["git", "clone", "--depth", "1"]
+    if branch:
+        command.extend(["--branch", branch])
+    command.extend([source, str(clone_dir)])
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "git clone failed"
+        raise RuntimeError(f"failed to clone GitHub repository: {detail}")
+    return clone_dir
+
+
+def _runner_clone_root() -> Path:
+    configured = os.getenv("AGENT_PERMIT_RUNNER_WORKDIR")
+    root = Path(configured or ".agent-permit/runner-worktrees").expanduser()
+    if not root.is_absolute():
+        root = Path.cwd() / root
+    return root
+
+
+def _github_clone_slug(source: str, *, job_id: str) -> str:
+    parsed = urlparse(source)
+    parts = parsed.path.strip("/").removesuffix(".git").split("/")
+    owner = _safe_path_segment(parts[0])
+    repo = _safe_path_segment(parts[1])
+    return f"{owner}__{repo}__{_safe_path_segment(job_id)}"
+
+
+def _safe_path_segment(value: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "-", value).strip(".-")
+    return safe or "repo"
+
+
 def run_runner(
     *,
     once: bool,
@@ -1655,9 +1725,14 @@ def run_runner(
         print("Queued jobs: 0", file=stdout)
         return 0
 
-    target_path = Path(claimed.repository.local_path)
-    if not target_path.exists() or not target_path.is_dir():
-        error = f"repository path is not a directory: {target_path}"
+    try:
+        target_path = _resolve_runner_target(
+            claimed.repository.local_path,
+            job_id=claimed.job.id,
+            branch=claimed.repository.branch,
+        )
+    except RuntimeError as exc:
+        error = str(exc)
         try:
             store.fail_scan_job(claimed.job.id, error)
         except Exception as exc:
@@ -1673,7 +1748,8 @@ def run_runner(
         run_id=claimed.job.id,
         db_job_id=claimed.job.id,
         db_repository_label=claimed.repository.label,
-        db_local_path=Path(claimed.repository.local_path),
+        db_local_path=target_path,
+        db_repository_source=claimed.repository.local_path,
         db_branch=claimed.repository.branch,
         stdout=scan_stdout,
         stderr=scan_stderr,
@@ -1802,6 +1878,7 @@ def run_runner(
                     "status": "passed" if passed else "failed",
                     "generated_at": datetime.now(timezone.utc).isoformat(),
                     "run_id": claimed.job.id,
+                    "source": claimed.repository.local_path,
                     "target": str(target_path.resolve()),
                     "artifact_dir": str(artifact_dir),
                     "report_path": str(report_path) if report_path.is_file() else None,
@@ -1861,7 +1938,8 @@ def run_runner(
                     load_ingest_records(
                         artifact_dir,
                         repository_label=claimed.repository.label,
-                        local_path=Path(claimed.repository.local_path),
+                        local_path=target_path,
+                        repository_source=claimed.repository.local_path,
                         branch=claimed.repository.branch,
                         mode=claimed.job.mode,
                         job_id=claimed.job.id,

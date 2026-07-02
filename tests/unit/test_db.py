@@ -8,6 +8,7 @@ from agent_permit.db import (
     _scan_job_from_row,
     load_ingest_records,
     repository_record_from_path,
+    repository_record_from_source,
 )
 
 
@@ -114,6 +115,38 @@ def test_load_ingest_records_can_attach_existing_job_id(tmp_path, monkeypatch) -
     assert records.job.id == "job_existing"
     assert records.run.job_id == "job_existing"
     assert {event.job_id for event in records.events} == {"job_existing"}
+
+
+def test_load_ingest_records_can_preserve_repository_source(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    (tmp_path / "AGENTS.md").write_text("# Safe agent\n", encoding="utf-8")
+
+    exit_code = main(
+        ["scan", str(tmp_path), "--run-id", "github-url-run"],
+        stdout=stdout,
+        stderr=stderr,
+    )
+    records = load_ingest_records(
+        tmp_path / ".agent-permit" / "runs" / "github-url-run",
+        repository_label="github-mcp-server",
+        local_path=tmp_path,
+        repository_source="https://github.com/github/github-mcp-server",
+        job_id="job_github_url",
+    )
+
+    expected_repository = repository_record_from_source(
+        "https://github.com/github/github-mcp-server",
+        label="github-mcp-server",
+    )
+    assert exit_code == 0
+    assert records.repository == expected_repository
+    assert records.job.repository_id == expected_repository.id
+    assert records.run.repository_id == expected_repository.id
 
 
 def test_repository_record_from_path_uses_stable_local_path_id(tmp_path) -> None:

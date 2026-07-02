@@ -58,23 +58,23 @@ export function AddRepositoryPanel({
   queueError: string | null
   recentJob: ScanJob | null
 }) {
-  const [localPath, setLocalPath] = useState("")
+  const [repositoryTarget, setRepositoryTarget] = useState("")
   const [label, setLabel] = useState("")
-  const [branch, setBranch] = useState("main")
+  const [branch, setBranch] = useState("")
 
   async function queueRepository(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    await submitQueuedRepository({ branch, label, localPath, onQueueScan })
+    await submitQueuedRepository({ branch, label, onQueueScan, repositoryTarget })
   }
 
   return (
     <div className="mb-5 rounded-lg border border-border bg-background p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold">Queue a local repository</h2>
+          <h2 className="text-sm font-semibold">Queue a GitHub repository</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            This creates a Postgres job. The scan starts when you run the local CLI
-            runner on this machine.
+            Paste a GitHub repository URL. The local CLI runner clones it, scans it,
+            and updates this dashboard.
           </p>
         </div>
         <Button onClick={onClose} size="sm" variant="ghost">
@@ -88,12 +88,12 @@ export function AddRepositoryPanel({
         onSubmit={queueRepository}
       >
         <Input
-          aria-label="Local repository path"
+          aria-label="GitHub repository URL or local path"
           autoFocus
           data-testid="queue-scan-path"
-          onChange={(event) => setLocalPath(event.target.value)}
-          placeholder="/absolute/path/to/repository"
-          value={localPath}
+          onChange={(event) => setRepositoryTarget(event.target.value)}
+          placeholder="https://github.com/owner/repository"
+          value={repositoryTarget}
         />
         <Input
           aria-label="Repository label"
@@ -106,10 +106,13 @@ export function AddRepositoryPanel({
           aria-label="Default branch"
           data-testid="queue-scan-branch"
           onChange={(event) => setBranch(event.target.value)}
-          placeholder="main"
+          placeholder="Default branch"
           value={branch}
         />
-        <QueueSubmitButton isQueueing={isQueueing} localPath={localPath} />
+        <QueueSubmitButton
+          isQueueing={isQueueing}
+          repositoryTarget={repositoryTarget}
+        />
       </form>
 
       <RunnerInstructions />
@@ -122,34 +125,34 @@ export function AddRepositoryPanel({
 async function submitQueuedRepository({
   branch,
   label,
-  localPath,
   onQueueScan,
+  repositoryTarget,
 }: {
   branch: string
   label: string
-  localPath: string
   onQueueScan: (input: QueueScanInput) => Promise<void>
+  repositoryTarget: string
 }) {
-  const trimmedPath = localPath.trim()
-  if (!trimmedPath) return
+  const trimmedTarget = repositoryTarget.trim()
+  if (!trimmedTarget) return
   await onQueueScan({
     branch,
     label,
-    localPath: trimmedPath,
+    repositoryTarget: trimmedTarget,
   })
 }
 
 function QueueSubmitButton({
   isQueueing,
-  localPath,
+  repositoryTarget,
 }: {
   isQueueing: boolean
-  localPath: string
+  repositoryTarget: string
 }) {
   return (
     <Button
       data-testid="queue-scan-submit"
-      disabled={localPath.trim().length === 0 || isQueueing}
+      disabled={repositoryTarget.trim().length === 0 || isQueueing}
       type="submit"
     >
       {isQueueing ? "Queueing" : "Queue scan job"}
@@ -168,8 +171,9 @@ function RunnerInstructions() {
         {RUNNER_COMMAND}
       </code>
       <p className="mt-2">
-        The hosted dashboard cannot read your local filesystem. The local runner
-        claims the queued job, scans the path, writes artifacts, and updates this view.
+        The hosted dashboard cannot scan code directly. The local runner claims the
+        queued job, clones GitHub URLs into a local worktree, writes artifacts, and
+        updates this view. Absolute local paths still work for advanced scans.
       </p>
     </div>
   )

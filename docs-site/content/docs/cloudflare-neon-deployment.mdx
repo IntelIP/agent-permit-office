@@ -44,7 +44,7 @@ set -a; source .env; set +a
 uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto
 ```
 
-The Worker only creates the queue record. The local runner claims the job from Neon, reads the local repository path, runs the scanner, writes artifacts, and updates the shared database.
+The Worker only creates the queue record. The dashboard should queue GitHub repository URLs first. The local runner claims the job from Neon, clones GitHub URLs into `.agent-permit/runner-worktrees`, runs the scanner, writes artifacts, and updates the shared database. Absolute local paths still work for advanced local scans.
 
 Check the Worker:
 
@@ -134,7 +134,7 @@ Requires explicit hosting approval.
 2. Deploy `worker/`.
 3. Verify `/api/health`.
 4. Verify `/api/snapshot`.
-5. Verify `POST /api/jobs`.
+5. Verify `POST /api/jobs` with a GitHub repository URL.
 
 ### 4. Deploy dashboard
 

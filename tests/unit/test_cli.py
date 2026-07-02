@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from io import StringIO
 import json
+from pathlib import Path
 
 import agent_permit.cli as cli
 from agent_permit import __version__
@@ -85,6 +86,77 @@ def test_runner_once_claims_and_completes_job(tmp_path, monkeypatch) -> None:
     assert "Status: runner_job_complete" in stdout.getvalue()
     assert "Deep Agent: skipped (OPENROUTER_API_KEY missing)" in stdout.getvalue()
     assert (tmp_path / ".agent-permit" / "runs" / "job_test_runner").is_dir()
+
+
+def test_runner_once_clones_github_url_before_scan(tmp_path, monkeypatch) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    completed = []
+    failed = []
+    clone_commands = []
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    claimed = ClaimedScanJob(
+        job=ScanJobRecord(
+            id="job_github_url",
+            repository_id="repo_github",
+            mode="scan",
+            status="running",
+            requested_at=datetime.now(timezone.utc),
+        ),
+        repository=RepositoryRecord(
+            id="repo_github",
+            label="github-mcp-server",
+            local_path="https://github.com/github/github-mcp-server",
+        ),
+    )
+
+    class FakeStore:
+        def claim_next_scan_job(self):
+            return claimed
+
+        def complete_scan_job(self, job_id):
+            completed.append(job_id)
+
+        def fail_scan_job(self, job_id, error):
+            failed.append((job_id, error))
+
+    class CloneResult:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_clone(command, *, capture_output, check, text):
+        clone_commands.append(command)
+        clone_dir = Path(command[-1])
+        clone_dir.mkdir(parents=True)
+        (clone_dir / "AGENTS.md").write_text("# Safe agent\n", encoding="utf-8")
+        return CloneResult()
+
+    monkeypatch.setattr(cli, "store_from_env", lambda: FakeStore())
+    monkeypatch.setattr(cli, "optional_store_from_env", lambda: None)
+    monkeypatch.setattr(cli.subprocess, "run", fake_clone)
+
+    exit_code = main(["runner", "--once"], stdout=stdout, stderr=stderr)
+
+    clone_root = tmp_path / ".agent-permit" / "runner-worktrees"
+    cloned_repo = clone_root / "github__github-mcp-server__job_github_url"
+    assert exit_code == 0
+    assert stderr.getvalue() == ""
+    assert completed == ["job_github_url"]
+    assert failed == []
+    assert clone_commands == [
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "https://github.com/github/github-mcp-server",
+            str(cloned_repo),
+        ]
+    ]
+    assert (cloned_repo / ".agent-permit" / "runs" / "job_github_url").is_dir()
+    assert "Target: https://github.com/github/github-mcp-server" in stdout.getvalue()
 
 
 def test_runner_required_deep_agent_marks_job_and_run_failed(
