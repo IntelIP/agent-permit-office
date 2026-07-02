@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { ApiStatus, QueueScanInput, RunEvent, ScanJob } from "@/data/liveApi"
 
+const RUNNER_COMMAND =
+  "set -a; source .env; set +a; uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto"
+
 export function LiveStatusStrip({
   apiStatus,
   error,
@@ -68,9 +71,10 @@ export function AddRepositoryPanel({
     <div className="mb-5 rounded-lg border border-border bg-background p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold">Queue a repository scan</h2>
+          <h2 className="text-sm font-semibold">Queue a local repository</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Add an absolute local repository path. The local runner claims it from Postgres.
+            This creates a Postgres job. The scan starts when you run the local CLI
+            runner on this machine.
           </p>
         </div>
         <Button onClick={onClose} size="sm" variant="ghost">
@@ -85,6 +89,7 @@ export function AddRepositoryPanel({
       >
         <Input
           aria-label="Local repository path"
+          autoFocus
           data-testid="queue-scan-path"
           onChange={(event) => setLocalPath(event.target.value)}
           placeholder="/absolute/path/to/repository"
@@ -107,6 +112,7 @@ export function AddRepositoryPanel({
         <QueueSubmitButton isQueueing={isQueueing} localPath={localPath} />
       </form>
 
+      <RunnerInstructions />
       <QueueErrorMessage queueError={queueError} />
       <RecentJobNotice recentJob={recentJob} />
     </div>
@@ -146,8 +152,26 @@ function QueueSubmitButton({
       disabled={localPath.trim().length === 0 || isQueueing}
       type="submit"
     >
-      {isQueueing ? "Queueing" : "Queue scan"}
+      {isQueueing ? "Queueing" : "Queue scan job"}
     </Button>
+  )
+}
+
+function RunnerInstructions() {
+  return (
+    <div className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+      <div className="font-medium text-foreground">After queueing, run this from the repo root:</div>
+      <code
+        className="mt-2 block overflow-x-auto rounded border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+        data-testid="runner-command"
+      >
+        {RUNNER_COMMAND}
+      </code>
+      <p className="mt-2">
+        The hosted dashboard cannot read your local filesystem. The local runner
+        claims the queued job, scans the path, writes artifacts, and updates this view.
+      </p>
+    </div>
   )
 }
 
@@ -166,11 +190,8 @@ function RecentJobNotice({ recentJob }: { recentJob: ScanJob | null }) {
 
   return (
     <div className="mt-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-      Queued {recentJob.repositoryLabel}. Run{" "}
-      <code className="font-mono text-xs text-foreground">
-        agent-permit runner --once
-      </code>{" "}
-      to process it locally.
+      Job queued for {recentJob.repositoryLabel}. Run the local runner command above
+      to start the scan.
     </div>
   )
 }
@@ -218,7 +239,7 @@ export function QueueProgressPanel({
         </div>
       ) : (
         <div className="mt-4 text-sm text-muted-foreground">
-          No runner events yet.
+          No runner events yet. Start the local CLI runner to process this job.
         </div>
       )}
     </div>

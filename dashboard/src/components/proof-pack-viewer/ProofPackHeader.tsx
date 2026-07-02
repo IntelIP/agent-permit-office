@@ -19,14 +19,14 @@ export function ProofPackHeader({
 
       <div className="flex shrink-0 items-center gap-2">
         <Button
-          aria-label="Stage a repository scan"
+          aria-label="Add repository to scan queue"
           data-testid="queue-scan-open"
           onClick={onAddRepository}
-          title="Open a form to stage a repository scan"
+          title="Open the repository scan queue form"
           variant="outline"
         >
           <PlusIcon data-icon="inline-start" />
-          Queue scan
+          Add repository
         </Button>
       </div>
     </header>
