@@ -1,0 +1,37 @@
+{
+  "description": "Sanitized scanner outputs generated from repository fixtures. These files show real PermitGraph decisions without publishing private repositories or generated local state.",
+  "fixtures": [
+    {
+      "artifact_dir": "docs/demo-artifacts/public-fixture-scans/safe-agent",
+      "controls": 0,
+      "findings": 0,
+      "graph_paths": 0,
+      "id": "safe-agent",
+      "label": "Approved repository",
+      "permit_status": "approved",
+      "why": "No configured agent-access risk matched."
+    },
+    {
+      "artifact_dir": "docs/demo-artifacts/public-fixture-scans/risky-ci-agent",
+      "controls": 5,
+      "findings": 4,
+      "graph_paths": 1,
+      "id": "risky-ci-agent",
+      "label": "Blocked CI automation",
+      "permit_status": "blocked",
+      "why": "A pull_request_target workflow grants write permissions and references a token."
+    },
+    {
+      "artifact_dir": "docs/demo-artifacts/public-fixture-scans/risky-mcp-agent",
+      "controls": 3,
+      "findings": 2,
+      "graph_paths": 1,
+      "id": "risky-mcp-agent",
+      "label": "MCP credential review",
+      "permit_status": "needs_review",
+      "why": "A local MCP server receives a credential reference and uses an unpinned package command."
+    }
+  ],
+  "generator": "tools/build_public_demo_artifacts.py",
+  "name": "PermitGraph public fixture scans"
+}

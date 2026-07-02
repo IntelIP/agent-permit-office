@@ -1,0 +1,74 @@
+{
+  "controls": [
+    {
+      "evidence": [
+        {
+          "command": null,
+          "config_key": "mcpServers.github-tools.env",
+          "context_note": null,
+          "line_end": null,
+          "line_start": 3,
+          "package": null,
+          "path": ".mcp.json",
+          "permission_scope": null,
+          "redacted_snippet": "{\"command\": \"npx\", \"env\": [\"GITHUB_TOKEN\"], \"server\": \"github-tools\"}",
+          "secret_name": null,
+          "workflow_event": null,
+          "workflow_job": null
+        }
+      ],
+      "id": "control:mcp-credential-approval:finding:mcp-stdio-credential-ref:.mcp.json:github-tools",
+      "name": "MCP credential approval gate",
+      "rationale": "Credential reference is passed to a local MCP runtime.",
+      "recommendation": "Require human approval and least-privilege credential scope.",
+      "related_finding_ids": [
+        "finding:mcp-stdio-credential-ref:.mcp.json:github-tools"
+      ],
+      "related_path_ids": [],
+      "status": "missing",
+      "target_id": "mcp-server:.mcp.json:github-tools"
+    },
+    {
+      "evidence": [
+        {
+          "command": "npx",
+          "config_key": null,
+          "context_note": null,
+          "line_end": null,
+          "line_start": 3,
+          "package": "github-mcp-server",
+          "path": ".mcp.json",
+          "permission_scope": null,
+          "redacted_snippet": "{\"command\": \"npx\", \"env\": [\"GITHUB_TOKEN\"], \"server\": \"github-tools\"}",
+          "secret_name": null,
+          "workflow_event": null,
+          "workflow_job": null
+        }
+      ],
+      "id": "control:mcp-package-pinning:finding:mcp-unpinned-package-command:.mcp.json:github-tools",
+      "name": "MCP package version pinning",
+      "rationale": "MCP server package is not pinned.",
+      "recommendation": "Pin MCP package versions before granting credentials.",
+      "related_finding_ids": [
+        "finding:mcp-unpinned-package-command:.mcp.json:github-tools"
+      ],
+      "related_path_ids": [],
+      "status": "missing",
+      "target_id": "mcp-server:.mcp.json:github-tools"
+    },
+    {
+      "evidence": [],
+      "id": "control:path-mcp-credential-boundary:path:961a20858a40",
+      "name": "Credential-to-MCP boundary control",
+      "rationale": "Credential can reach an MCP runtime through the graph.",
+      "recommendation": "Require package pinning, allowlist the MCP server, and use least-privilege credentials.",
+      "related_finding_ids": [],
+      "related_path_ids": [
+        "path:961a20858a40"
+      ],
+      "status": "weak",
+      "target_id": "mcp-server:.mcp.json:github-tools"
+    }
+  ],
+  "scan_run_id": "public-demo-risky-mcp-agent"
+}

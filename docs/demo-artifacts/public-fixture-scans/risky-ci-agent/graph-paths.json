@@ -1,0 +1,44 @@
+{
+  "paths": [
+    {
+      "edge_ids": [
+        "edge:file:.github/workflows/agent.yml:runs_in:workflow:.github/workflows/agent.yml"
+      ],
+      "id": "path:a87e710d72ed",
+      "node_ids": [
+        "file:.github/workflows/agent.yml",
+        "workflow:.github/workflows/agent.yml"
+      ],
+      "rationale": "Workflow file defines a privileged CI execution context.",
+      "severity": "high",
+      "sink_category": "privileged_ci_workflow",
+      "sink_id": "workflow:.github/workflows/agent.yml",
+      "source_category": "workflow_file",
+      "source_id": "file:.github/workflows/agent.yml"
+    }
+  ],
+  "scan_run_id": "public-demo-risky-ci-agent",
+  "taxonomy": [
+    {
+      "category": "workflow_file",
+      "label": ".github/workflows/agent.yml",
+      "node_id": "file:.github/workflows/agent.yml",
+      "rationale": "Workflow file controls CI execution context.",
+      "role": "source"
+    },
+    {
+      "category": "instruction_file",
+      "label": "AGENTS.md",
+      "node_id": "file:AGENTS.md",
+      "rationale": "Agent instruction file can influence agent behavior.",
+      "role": "source"
+    },
+    {
+      "category": "privileged_ci_workflow",
+      "label": ".github/workflows/agent.yml",
+      "node_id": "workflow:.github/workflows/agent.yml",
+      "rationale": "Workflow has privileged trigger, write, secret, or checkout risk.",
+      "role": "sink"
+    }
+  ]
+}

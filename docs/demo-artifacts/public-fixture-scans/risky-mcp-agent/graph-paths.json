@@ -1,0 +1,51 @@
+{
+  "paths": [
+    {
+      "edge_ids": [
+        "edge:mcp-server:.mcp.json:github-tools:receives_credential:credential-ref:GITHUB_TOKEN"
+      ],
+      "id": "path:961a20858a40",
+      "node_ids": [
+        "credential-ref:GITHUB_TOKEN",
+        "mcp-server:.mcp.json:github-tools"
+      ],
+      "rationale": "Credential reference can reach an MCP tool runtime.",
+      "severity": "high",
+      "sink_category": "mcp_server",
+      "sink_id": "mcp-server:.mcp.json:github-tools",
+      "source_category": "credential",
+      "source_id": "credential-ref:GITHUB_TOKEN"
+    }
+  ],
+  "scan_run_id": "public-demo-risky-mcp-agent",
+  "taxonomy": [
+    {
+      "category": "credential",
+      "label": "GITHUB_TOKEN",
+      "node_id": "credential-ref:GITHUB_TOKEN",
+      "rationale": "Credential variable can grant external or privileged access.",
+      "role": "source"
+    },
+    {
+      "category": "repo_config",
+      "label": ".mcp.json",
+      "node_id": "file:.mcp.json",
+      "rationale": "MCP config controls external tool/runtime wiring.",
+      "role": "source"
+    },
+    {
+      "category": "instruction_file",
+      "label": "AGENTS.md",
+      "node_id": "file:AGENTS.md",
+      "rationale": "Agent instruction file can influence agent behavior.",
+      "role": "source"
+    },
+    {
+      "category": "mcp_server",
+      "label": "github-tools",
+      "node_id": "mcp-server:.mcp.json:github-tools",
+      "rationale": "MCP server is a tool runtime sink using stdio transport.",
+      "role": "sink"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+Agent Permit Office
+Status: scan_complete
+Target: tests/fixtures/risky-ci-agent
+Run ID: public-demo-risky-ci-agent
+Artifacts: tests/fixtures/risky-ci-agent/.agent-permit/runs/public-demo-risky-ci-agent
+Files indexed: 5
+High signal files: 2
+Skipped files/dirs: 1
+MCP servers: 0
+Credential refs: 0
+Prompt findings: 0
+CI findings: 4
+Findings: 4
+Graph nodes: 6
+Graph edges: 1
+Graph paths: 1
+Controls: 5
+Permit status: blocked
+Summary: tests/fixtures/risky-ci-agent/.agent-permit/runs/public-demo-risky-ci-agent/summary.md
+Metrics: tests/fixtures/risky-ci-agent/.agent-permit/runs/public-demo-risky-ci-agent/run-metrics.json
+Events: tests/fixtures/risky-ci-agent/.agent-permit/analytics-events.jsonl
+Next: review summary.md and risk-report.md

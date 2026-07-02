@@ -61,6 +61,24 @@ Next step: use least-privilege workflow permissions or document an exception.
 
 Machine-readable artifacts preserve the same evidence for CI, dashboards, proof packs, SARIF, and AI review.
 
+## Public Proof Artifacts
+
+The repository includes sanitized fixture scans so reviewers can inspect real output without running private code:
+
+| Fixture | Status | Purpose |
+| --- | --- | --- |
+| `safe-agent` | `approved` | Shows a clean repository passing the configured agent-access checks. |
+| `risky-ci-agent` | `blocked` | Shows a privileged pull request workflow with write access being stopped. |
+| `risky-mcp-agent` | `needs_review` | Shows an MCP server receiving a credential reference and requiring human review. |
+
+Start with [the public fixture manifest](docs/demo-artifacts/public-fixture-scans/manifest.json), then inspect the blocked CI [summary](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/summary.md), [permit](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/permit.yaml), and [raw findings](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/raw-findings.json).
+
+Regenerate them with:
+
+```bash
+uv run python tools/build_public_demo_artifacts.py
+```
+
 ## What It Checks
 
 - MCP server configuration and tool boundaries
@@ -223,6 +241,7 @@ Developer docs:
 - `docs-site/` - curated Fumadocs site for developers and AI agents
 - `AGENTS.md` - repo guidance for AI agents
 - `llms.txt` - compact AI-readable docs map
+- [Public Demo Artifacts](docs-site/content/docs/public-demo-artifacts.mdx)
 - [AI Analysis Guide](docs/ai-analysis-guide.md)
 - [Artifact Reference](docs/artifact-reference.md)
 

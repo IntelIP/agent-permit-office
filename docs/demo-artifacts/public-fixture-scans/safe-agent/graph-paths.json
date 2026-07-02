@@ -1,0 +1,13 @@
+{
+  "paths": [],
+  "scan_run_id": "public-demo-safe-agent",
+  "taxonomy": [
+    {
+      "category": "instruction_file",
+      "label": "AGENTS.md",
+      "node_id": "file:AGENTS.md",
+      "rationale": "Agent instruction file can influence agent behavior.",
+      "role": "source"
+    }
+  ]
+}

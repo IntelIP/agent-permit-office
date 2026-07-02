@@ -1,0 +1,94 @@
+---
+title: Public Demo Artifacts
+description: Sanitized scan outputs that show PermitGraph working on safe fixture repositories.
+---
+
+## What this is
+
+Public demo artifacts are committed examples of real scanner output.
+
+They come from test fixtures, not private repositories. The generator runs PermitGraph, strips machine-local paths, and publishes selected artifacts under `docs/demo-artifacts/public-fixture-scans/`.
+
+## When to use it
+
+Use these artifacts when you need to show what PermitGraph produces before running it on a new repository.
+
+They are useful for:
+
+- README and documentation examples
+- sales or investor demos
+- issue reports about scanner behavior
+- AI agents trying to understand artifact shape
+
+Do not treat them as customer audit evidence. They are fixture scans.
+
+## Command or example
+
+Regenerate the examples from the repository root:
+
+```bash
+uv run python tools/build_public_demo_artifacts.py
+```
+
+The current demo set includes:
+
+| Fixture | Permit status | What it proves |
+| --- | --- | --- |
+| `safe-agent` | `approved` | A repository with no configured agent-access risk passes. |
+| `risky-ci-agent` | `blocked` | A privileged pull request workflow with write access is stopped. |
+| `risky-mcp-agent` | `needs_review` | A local MCP server receiving a credential reference requires human review. |
+
+## Output to expect
+
+The generator writes:
+
+```text
+docs/demo-artifacts/public-fixture-scans/manifest.json
+docs/demo-artifacts/public-fixture-scans/<fixture>/cli-output.txt
+docs/demo-artifacts/public-fixture-scans/<fixture>/summary.md
+docs/demo-artifacts/public-fixture-scans/<fixture>/permit.yaml
+docs/demo-artifacts/public-fixture-scans/<fixture>/raw-findings.json
+docs/demo-artifacts/public-fixture-scans/<fixture>/graph-paths.json
+docs/demo-artifacts/public-fixture-scans/<fixture>/controls.json
+docs/demo-artifacts/public-fixture-scans/<fixture>/run-metrics.json
+```
+
+Open the manifest first:
+
+[Public fixture scan manifest](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/manifest.json)
+
+Then compare the blocked CI example:
+
+- [CLI output](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/cli-output.txt)
+- [Summary](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/summary.md)
+- [Permit](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/permit.yaml)
+- [Raw findings](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/raw-findings.json)
+- [Graph paths](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/graph-paths.json)
+
+## How to interpret it
+
+Read the artifacts in this order:
+
+1. `cli-output.txt`: fast proof that the command ran and what status it returned.
+2. `summary.md`: human-readable decision summary.
+3. `permit.yaml`: the allow, forbid, and approval conditions.
+4. `raw-findings.json`: exact scanner findings with evidence locations.
+5. `graph-paths.json`: source-to-sink paths, such as credential to MCP server.
+6. `controls.json`: review controls that must pass before approval.
+7. `run-metrics.json`: counts used by dashboards and CI.
+
+The important pattern: scanner output owns the decision. Deep Agent review may explain these artifacts later, but it should not invent a different permit status.
+
+## Common mistakes
+
+- Presenting fixture artifacts as customer evidence.
+- Editing the artifacts by hand instead of regenerating them.
+- Publishing raw `.agent-permit/` folders from private repos.
+- Showing only `summary.md` without `raw-findings.json` and `graph-paths.json`.
+
+## Related pages
+
+- [Quickstart](./quickstart)
+- [Evidence and Artifacts](./evidence-and-artifacts)
+- [Review Findings](./review-findings)
+- [Artifact Reference](./artifact-reference)

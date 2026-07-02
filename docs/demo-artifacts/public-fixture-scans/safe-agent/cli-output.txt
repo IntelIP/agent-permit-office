@@ -1,0 +1,22 @@
+Agent Permit Office
+Status: scan_complete
+Target: tests/fixtures/safe-agent
+Run ID: public-demo-safe-agent
+Artifacts: tests/fixtures/safe-agent/.agent-permit/runs/public-demo-safe-agent
+Files indexed: 4
+High signal files: 1
+Skipped files/dirs: 1
+MCP servers: 0
+Credential refs: 0
+Prompt findings: 0
+CI findings: 0
+Findings: 0
+Graph nodes: 4
+Graph edges: 0
+Graph paths: 0
+Controls: 0
+Permit status: approved
+Summary: tests/fixtures/safe-agent/.agent-permit/runs/public-demo-safe-agent/summary.md
+Metrics: tests/fixtures/safe-agent/.agent-permit/runs/public-demo-safe-agent/run-metrics.json
+Events: tests/fixtures/safe-agent/.agent-permit/analytics-events.jsonl
+Next: review summary.md and risk-report.md
