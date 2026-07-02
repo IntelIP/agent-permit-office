@@ -453,6 +453,7 @@ jobs:
     assert "`.github/workflows/agent.yml` / `workflow`" in summary_text
     assert "Rules: ci-pr-target-write-token" in summary_text
     assert "raw-findings.json" in summary_text
+    assert "policy-evaluation.json" not in summary_text
     assert len(raw_findings["findings"]) == 6
     assert {
         finding["rule_id"] for finding in raw_findings["findings"]

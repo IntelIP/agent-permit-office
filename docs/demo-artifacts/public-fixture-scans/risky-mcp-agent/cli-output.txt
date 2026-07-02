@@ -1,0 +1,22 @@
+Agent Permit Office
+Status: scan_complete
+Target: tests/fixtures/risky-mcp-agent
+Run ID: public-demo-risky-mcp-agent
+Artifacts: tests/fixtures/risky-mcp-agent/.agent-permit/runs/public-demo-risky-mcp-agent
+Files indexed: 5
+High signal files: 2
+Skipped files/dirs: 1
+MCP servers: 1
+Credential refs: 1
+Prompt findings: 0
+CI findings: 0
+Findings: 2
+Graph nodes: 7
+Graph edges: 2
+Graph paths: 1
+Controls: 3
+Permit status: needs_review
+Summary: tests/fixtures/risky-mcp-agent/.agent-permit/runs/public-demo-risky-mcp-agent/summary.md
+Metrics: tests/fixtures/risky-mcp-agent/.agent-permit/runs/public-demo-risky-mcp-agent/run-metrics.json
+Events: tests/fixtures/risky-mcp-agent/.agent-permit/analytics-events.jsonl
+Next: review summary.md and risk-report.md

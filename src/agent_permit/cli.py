@@ -1010,6 +1010,7 @@ def run_scan(
             findings=graph_result.findings,
             graph_paths=graph_path_report,
             controls=permit_evaluation.controls,
+            include_policy_evaluation=policy_evaluation is not None,
         )
         if finding_diff is not None:
             summary_markdown += "\n" + build_finding_diff_markdown(

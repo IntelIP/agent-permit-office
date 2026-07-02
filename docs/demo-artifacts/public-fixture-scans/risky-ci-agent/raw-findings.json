@@ -1,0 +1,139 @@
+{
+  "findings": [
+    {
+      "category": "runtime_policy",
+      "confidence": "high",
+      "evidence": [
+        {
+          "command": null,
+          "config_key": null,
+          "context_note": "pull_request_target",
+          "line_end": 4,
+          "line_start": 4,
+          "package": null,
+          "path": ".github/workflows/agent.yml",
+          "permission_scope": null,
+          "redacted_snippet": "pull_request_target:",
+          "secret_name": null,
+          "workflow_event": "pull_request_target",
+          "workflow_job": null
+        }
+      ],
+      "id": "finding:ci-pull-request-target:.github/workflows/agent.yml:4",
+      "recommendation": "Use pull_request for untrusted code, or tightly gate all jobs that run under pull_request_target.",
+      "requires_human_review": true,
+      "risk": "pull_request_target runs in the base repository context and can expose privileged tokens or secrets to automation that handles PRs.",
+      "rule_id": "ci-pull-request-target",
+      "severity": "high",
+      "source_fact_ids": [
+        "workflow:.github/workflows/agent.yml:4:ci-pull-request-target"
+      ],
+      "title": "Workflow uses pull_request_target"
+    },
+    {
+      "category": "runtime_policy",
+      "confidence": "high",
+      "evidence": [
+        {
+          "command": null,
+          "config_key": null,
+          "context_note": "events=pull_request_target",
+          "line_end": 7,
+          "line_start": 7,
+          "package": null,
+          "path": ".github/workflows/agent.yml",
+          "permission_scope": "write-all",
+          "redacted_snippet": "permissions: write-all",
+          "secret_name": null,
+          "workflow_event": "pull_request_target",
+          "workflow_job": null
+        }
+      ],
+      "id": "finding:ci-write-all-permissions:.github/workflows/agent.yml:7",
+      "recommendation": "Replace write-all with least-privilege permissions scoped to the job that needs them.",
+      "requires_human_review": true,
+      "risk": "write-all grants broad repository mutation capability to workflow jobs.",
+      "rule_id": "ci-write-all-permissions",
+      "severity": "high",
+      "source_fact_ids": [
+        "workflow:.github/workflows/agent.yml:7:ci-write-all-permissions"
+      ],
+      "title": "Workflow grants write-all permissions"
+    },
+    {
+      "category": "credential_scope",
+      "confidence": "high",
+      "evidence": [
+        {
+          "command": null,
+          "config_key": null,
+          "context_note": "events=pull_request_target; job=agent-review",
+          "line_end": 16,
+          "line_start": 16,
+          "package": null,
+          "path": ".github/workflows/agent.yml",
+          "permission_scope": null,
+          "redacted_snippet": "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+          "secret_name": "GITHUB_TOKEN",
+          "workflow_event": "pull_request_target",
+          "workflow_job": "agent-review"
+        }
+      ],
+      "id": "finding:ci-secret-reference:.github/workflows/agent.yml:16",
+      "recommendation": "Verify the workflow only exposes secrets to trusted events and least-privilege jobs.",
+      "requires_human_review": true,
+      "risk": "Workflow job references repository secret GITHUB_TOKEN, so event and permission controls determine whether automation can use it.",
+      "rule_id": "ci-secret-reference",
+      "severity": "medium",
+      "source_fact_ids": [
+        "workflow:.github/workflows/agent.yml:16:ci-secret-reference"
+      ],
+      "title": "Workflow references repository secrets"
+    },
+    {
+      "category": "runtime_policy",
+      "confidence": "high",
+      "evidence": [
+        {
+          "command": null,
+          "config_key": null,
+          "context_note": null,
+          "line_end": 4,
+          "line_start": 4,
+          "package": null,
+          "path": ".github/workflows/agent.yml",
+          "permission_scope": null,
+          "redacted_snippet": "pull_request_target:",
+          "secret_name": null,
+          "workflow_event": null,
+          "workflow_job": null
+        },
+        {
+          "command": null,
+          "config_key": null,
+          "context_note": "pull_request_target",
+          "line_end": 7,
+          "line_start": 7,
+          "package": null,
+          "path": ".github/workflows/agent.yml",
+          "permission_scope": "write-all",
+          "redacted_snippet": "permissions: write-all",
+          "secret_name": null,
+          "workflow_event": "pull_request_target",
+          "workflow_job": null
+        }
+      ],
+      "id": "finding:ci-pr-target-write-token:.github/workflows/agent.yml:7",
+      "recommendation": "Block agent execution until the workflow uses least-privilege permissions and trusted-code checkout semantics.",
+      "requires_human_review": true,
+      "risk": "A pull_request_target workflow with write permissions can run automation in a privileged repository context while processing PRs.",
+      "rule_id": "ci-pr-target-write-token",
+      "severity": "critical",
+      "source_fact_ids": [
+        "workflow:.github/workflows/agent.yml:4:ci-pr-target-write-token"
+      ],
+      "title": "PR-target workflow has write token permissions"
+    }
+  ],
+  "scan_run_id": "public-demo-risky-ci-agent"
+}

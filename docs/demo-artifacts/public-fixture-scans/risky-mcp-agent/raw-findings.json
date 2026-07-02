@@ -1,0 +1,65 @@
+{
+  "findings": [
+    {
+      "category": "credential_scope",
+      "confidence": "high",
+      "evidence": [
+        {
+          "command": null,
+          "config_key": "mcpServers.github-tools.env",
+          "context_note": null,
+          "line_end": null,
+          "line_start": 3,
+          "package": null,
+          "path": ".mcp.json",
+          "permission_scope": null,
+          "redacted_snippet": "{\"command\": \"npx\", \"env\": [\"GITHUB_TOKEN\"], \"server\": \"github-tools\"}",
+          "secret_name": null,
+          "workflow_event": null,
+          "workflow_job": null
+        }
+      ],
+      "id": "finding:mcp-stdio-credential-ref:.mcp.json:github-tools",
+      "recommendation": "Use least-privilege credentials, pin the MCP server package, and require human approval before enabling this server.",
+      "requires_human_review": true,
+      "risk": "A locally launched MCP server can receive credential-bearing environment variables before its package, command, and permissions are reviewed.",
+      "rule_id": "mcp-stdio-credential-ref",
+      "severity": "high",
+      "source_fact_ids": [
+        "mcp-server:.mcp.json:github-tools"
+      ],
+      "title": "Stdio MCP server receives credential references"
+    },
+    {
+      "category": "supply_chain",
+      "confidence": "high",
+      "evidence": [
+        {
+          "command": "npx",
+          "config_key": null,
+          "context_note": null,
+          "line_end": null,
+          "line_start": 3,
+          "package": "github-mcp-server",
+          "path": ".mcp.json",
+          "permission_scope": null,
+          "redacted_snippet": "{\"command\": \"npx\", \"env\": [\"GITHUB_TOKEN\"], \"server\": \"github-tools\"}",
+          "secret_name": null,
+          "workflow_event": null,
+          "workflow_job": null
+        }
+      ],
+      "id": "finding:mcp-unpinned-package-command:.mcp.json:github-tools",
+      "recommendation": "Pin the MCP package version or vendor the server command before granting credentials or filesystem access.",
+      "requires_human_review": true,
+      "risk": "Package-runner MCP commands can install a different server version over time, changing tool behavior without code review.",
+      "rule_id": "mcp-unpinned-package-command",
+      "severity": "medium",
+      "source_fact_ids": [
+        "mcp-server:.mcp.json:github-tools"
+      ],
+      "title": "MCP server package is not version pinned"
+    }
+  ],
+  "scan_run_id": "public-demo-risky-mcp-agent"
+}

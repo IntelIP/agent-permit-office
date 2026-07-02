@@ -45,6 +45,7 @@ jobs:
     artifact_dir = tmp_path / ".agent-permit" / "runs" / "policy-ci"
     raw_findings = json.loads((artifact_dir / "raw-findings.json").read_text())
     policy_eval = json.loads((artifact_dir / "policy-evaluation.json").read_text())
+    summary_text = (artifact_dir / "summary.md").read_text()
     assert exit_code == 0
     assert stderr.getvalue() == ""
     assert "Permit status: approved_with_conditions" in stdout.getvalue()
@@ -52,6 +53,7 @@ jobs:
     assert raw_findings["findings"][0]["severity"] == "low"
     assert raw_findings["findings"][0]["requires_human_review"] is False
     assert policy_eval["adjustments"][0]["action"] == "trusted_workflow_permission"
+    assert "policy-evaluation.json" in summary_text
 
 
 def test_scan_policy_allows_named_mcp_server_but_keeps_condition(tmp_path) -> None:

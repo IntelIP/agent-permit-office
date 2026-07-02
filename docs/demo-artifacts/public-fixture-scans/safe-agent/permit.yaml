@@ -1,0 +1,19 @@
+scan_run_id: public-demo-safe-agent
+status: approved
+agent_name: repo-agent
+discovered_tools:
+  []
+discovered_credentials:
+  []
+allowed_actions:
+  - "read repository files"
+  - "generate local report"
+forbidden_actions:
+  []
+required_approvals:
+  []
+conditions:
+  []
+findings_summary:
+  {}
+evidence_bundle_path: tests/fixtures/safe-agent/.agent-permit/runs/public-demo-safe-agent

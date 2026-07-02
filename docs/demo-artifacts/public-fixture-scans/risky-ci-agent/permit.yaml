@@ -1,0 +1,30 @@
+scan_run_id: public-demo-risky-ci-agent
+status: blocked
+agent_name: repo-agent
+discovered_tools:
+  []
+discovered_credentials:
+  []
+allowed_actions:
+  - "read repository files"
+  - "generate local report"
+forbidden_actions:
+  - "enable agent tool execution"
+  - "grant credentials to agent or MCP runtime"
+  - "run agent workflow in privileged CI context"
+required_approvals:
+  - "CI least-privilege workflow control: Use trusted PR context and least-privilege workflow permissions."
+  - "Privileged CI boundary control: Remove write permissions or privileged PR context before running agent workflows."
+conditions:
+  - "Block agent execution until the workflow uses least-privilege permissions and trusted-code checkout semantics."
+  - "Remove write permissions or privileged PR context before running agent workflows."
+  - "Replace write-all with least-privilege permissions scoped to the job that needs them."
+  - "Use pull_request for untrusted code, or tightly gate all jobs that run under pull_request_target."
+  - "Use trusted PR context and least-privilege workflow permissions."
+  - "Verify the workflow only exposes secrets to trusted events and least-privilege jobs."
+  - "Workflow file defines a privileged CI execution context."
+findings_summary:
+  critical: 1
+  high: 2
+  medium: 1
+evidence_bundle_path: tests/fixtures/risky-ci-agent/.agent-permit/runs/public-demo-risky-ci-agent

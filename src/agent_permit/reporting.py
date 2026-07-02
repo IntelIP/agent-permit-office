@@ -9,6 +9,7 @@ def build_summary_markdown(
     findings: list[Finding],
     graph_paths: GraphPathReport,
     controls: ControlReport,
+    include_policy_evaluation: bool = False,
 ) -> str:
     lines = [
         "# Agent Permit Office Summary",
@@ -50,7 +51,7 @@ def build_summary_markdown(
                 lines.append(f"  - Secret refs: {', '.join(group['secrets'])}")
 
     lines.extend(["", "## Artifacts"])
-    for artifact_name in (
+    artifact_names = [
         "permit.yaml",
         "risk-report.md",
         "raw-findings.json",
@@ -58,8 +59,10 @@ def build_summary_markdown(
         "codebase-map.json",
         "graph-paths.json",
         "controls.json",
-        "policy-evaluation.json",
-    ):
+    ]
+    if include_policy_evaluation:
+        artifact_names.append("policy-evaluation.json")
+    for artifact_name in artifact_names:
         lines.append(f"- {artifact_name}")
 
     return "\n".join(lines) + "\n"

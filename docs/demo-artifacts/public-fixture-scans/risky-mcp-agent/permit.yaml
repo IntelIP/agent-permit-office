@@ -1,0 +1,27 @@
+scan_run_id: public-demo-risky-mcp-agent
+status: needs_review
+agent_name: repo-agent
+discovered_tools:
+  - "github-tools"
+discovered_credentials:
+  - "GITHUB_TOKEN"
+allowed_actions:
+  - "read repository files"
+  - "generate local report"
+forbidden_actions:
+  []
+required_approvals:
+  - "Credential-to-MCP boundary control: Require package pinning, allowlist the MCP server, and use least-privilege credentials."
+  - "MCP credential approval gate: Require human approval and least-privilege credential scope."
+  - "MCP package version pinning: Pin MCP package versions before granting credentials."
+conditions:
+  - "Credential reference can reach an MCP tool runtime."
+  - "Pin MCP package versions before granting credentials."
+  - "Pin the MCP package version or vendor the server command before granting credentials or filesystem access."
+  - "Require human approval and least-privilege credential scope."
+  - "Require package pinning, allowlist the MCP server, and use least-privilege credentials."
+  - "Use least-privilege credentials, pin the MCP server package, and require human approval before enabling this server."
+findings_summary:
+  high: 1
+  medium: 1
+evidence_bundle_path: tests/fixtures/risky-mcp-agent/.agent-permit/runs/public-demo-risky-mcp-agent

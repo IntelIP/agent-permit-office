@@ -7,6 +7,7 @@ PermitGraph is a local permit gate for AI agents. It scans repositories before a
 - Introduction: /docs
 - Quickstart: /docs/quickstart
 - First Scan Walkthrough: /docs/first-scan-walkthrough
+- Public Demo Artifacts: /docs/public-demo-artifacts
 - Agent Permit Model: /docs/agent-permit-model
 - Finding Statuses: /docs/finding-statuses
 - Policy Checks: /docs/policy-checks
@@ -35,6 +36,7 @@ PermitGraph is a local permit gate for AI agents. It scans repositories before a
 - Agent guide: AGENTS.md
 - Artifact guide: docs/artifact-reference.md
 - AI analysis guide: docs/ai-analysis-guide.md
+- Public fixture scan artifacts: docs/demo-artifacts/public-fixture-scans/manifest.json
 - README quickstart: README.md
 
 ## Core Rule For AI Agents
