@@ -1,0 +1,154 @@
+---
+title: Cloudflare and Neon Deployment
+description: Plan for deploying PermitGraph with Cloudflare Workers, a static dashboard, Fumadocs, and Neon Postgres.
+---
+
+## What this is
+
+This page explains how to host the PermitGraph proof of concept without changing the scanner.
+
+The hosted stack keeps the scanner local and deterministic. Cloudflare serves the API, dashboard, and docs. Neon stores shared run state.
+
+No live Cloudflare, Neon, DNS, or paid infrastructure is created by this page.
+
+## When to use it
+
+Use this plan when you want a public demo where:
+
+- the CLI can write scan results to shared Postgres
+- the dashboard can show current runs and findings
+- the Worker can serve flat API endpoints
+- the docs can explain how to run and review PermitGraph
+
+## Command or example
+
+The current database bootstrap path is already implemented:
+
+```bash
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
+uv run --extra db agent-permit db migrate
+```
+
+Seed public fixture scans:
+
+```bash
+uv run --extra db agent-permit ingest docs/demo-artifacts/public-fixture-scans/risky-ci-agent
+uv run --extra db agent-permit ingest docs/demo-artifacts/public-fixture-scans/risky-mcp-agent
+uv run --extra db agent-permit ingest docs/demo-artifacts/public-fixture-scans/safe-agent
+```
+
+Check the Worker:
+
+```bash
+cd worker
+bun run check
+bun test
+```
+
+Check docs and dashboard builds:
+
+```bash
+cd dashboard
+bun run build
+
+cd ../docs-site
+bun run build
+```
+
+## Output to expect
+
+The deployable units are:
+
+| Unit | Artifact | Host |
+| --- | --- | --- |
+| CLI | `dist/agent_permit_office-0.1.0-py3-none-any.whl` | GitHub release, PyPI later |
+| Worker API | `worker/` | Cloudflare Workers |
+| Dashboard | `dashboard/dist/` | Cloudflare static assets or Pages |
+| Docs | `docs-site/` | Cloudflare Workers with OpenNext |
+| Shared state | Postgres schema in `src/agent_permit/db.py` | Neon Postgres |
+| Demo proof | `docs/demo-artifacts/public-fixture-scans/` | GitHub and docs |
+
+## How to interpret it
+
+Use Neon first because the product already speaks Postgres.
+
+D1 is cheaper for simple SQLite applications, but using it now would require a separate migration sprint. Current code depends on Postgres features and libraries:
+
+- `JSONB`
+- `TIMESTAMPTZ`
+- identity columns
+- Python `psycopg`
+- Worker `pg`
+
+Use Hyperdrive for the production Worker after the first smoke test. Hyperdrive supports Postgres databases and lets Workers use existing drivers through a pooled connection layer.
+
+The first production Worker change should be small:
+
+- keep `DATABASE_URL` for local dev
+- add optional `HYPERDRIVE` binding support for production
+- prefer `env.HYPERDRIVE.connectionString` when present
+- fall back to `env.DATABASE_URL`
+
+## Common mistakes
+
+- Creating a D1 database before rewriting the Postgres schema.
+- Putting the Neon connection string in committed config.
+- Deploying the dashboard before the Worker `/api/snapshot` route is live.
+- Treating public fixture artifacts as customer audit evidence.
+- Moving scanner execution into the Worker. The local runner should execute scans.
+
+## Execution checklist
+
+### 1. Verify release artifacts
+
+```bash
+python3 tools/release_check.py
+cd worker && bun run check && bun test
+```
+
+### 2. Create shared database
+
+Requires explicit infrastructure approval.
+
+1. Create Neon project.
+2. Copy the Postgres connection string.
+3. Store it locally in `.env`.
+4. Run `agent-permit db migrate`.
+5. Ingest public fixture scans.
+6. Query `/api/snapshot` locally through Wrangler.
+
+### 3. Deploy Worker API
+
+Requires explicit hosting approval.
+
+1. Add Hyperdrive binding or `DATABASE_URL` secret.
+2. Deploy `worker/`.
+3. Verify `/api/health`.
+4. Verify `/api/snapshot`.
+5. Verify `POST /api/jobs`.
+
+### 4. Deploy dashboard
+
+Requires explicit hosting approval.
+
+1. Build `dashboard/dist`.
+2. Configure dashboard API base URL.
+3. Deploy static app.
+4. Verify search, filtering, drilldown, and live snapshot data.
+
+### 5. Deploy docs
+
+Requires explicit hosting approval.
+
+1. Add OpenNext Cloudflare adapter.
+2. Preview docs through `wrangler dev`.
+3. Deploy docs app.
+4. Verify `/docs`, search, public demo artifact links, and AI-readable docs.
+
+## Related pages
+
+- [Quickstart](./quickstart)
+- [Public Demo Artifacts](./public-demo-artifacts)
+- [CLI Reference](./cli-reference)
+- [Artifact Reference](./artifact-reference)
+- [Hosted Product Boundary](./hosted-product-boundary)
