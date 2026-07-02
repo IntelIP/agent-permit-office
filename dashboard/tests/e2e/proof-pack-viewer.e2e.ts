@@ -14,7 +14,9 @@ test("queue screen supports scan form, search, drilldown, back, and theme cycle"
     "agent-permit runner --once",
   )
   await expect(page.getByTestId("queue-scan-submit")).toBeDisabled()
-  await page.getByTestId("queue-scan-path").fill("/tmp/example-repo")
+  await page
+    .getByTestId("queue-scan-path")
+    .fill("https://github.com/github/github-mcp-server")
   await expect(page.getByTestId("queue-scan-submit")).toBeEnabled()
   await page.getByRole("button", { name: "Close" }).click()
 

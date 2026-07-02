@@ -19,7 +19,7 @@ export type ScanJob = {
 export type QueueScanInput = {
   branch: string
   label: string
-  localPath: string
+  repositoryTarget: string
 }
 
 export type RunEvent = {

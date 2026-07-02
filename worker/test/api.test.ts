@@ -140,6 +140,59 @@ describe("worker api", () => {
     expect(payload.job.status).toBe("queued");
   });
 
+  test("job creation accepts GitHub repository URLs", async () => {
+    const calls: Array<{ query: string; params: unknown[] }> = [];
+    const sql: SqlClient = async (query, params) => {
+      calls.push({ query, params: params ?? [] });
+      return [];
+    };
+    const response = await handleRequest(
+      request("/api/jobs", {
+        method: "POST",
+        body: JSON.stringify({
+          repositoryUrl: "https://github.com/github/github-mcp-server",
+        }),
+      }),
+      {},
+      sql,
+    );
+    const payload = (await response.json()) as {
+      job: {
+        local_path: string;
+        repository_label: string;
+        status: string;
+      };
+    };
+
+    expect(response.status).toBe(201);
+    expect(payload.job.local_path).toBe(
+      "https://github.com/github/github-mcp-server",
+    );
+    expect(payload.job.repository_label).toBe("github-mcp-server");
+    expect(payload.job.status).toBe("queued");
+    expect(calls[0]?.params?.[2]).toBe(
+      "https://github.com/github/github-mcp-server",
+    );
+  });
+
+  test("job creation rejects unsupported URL targets", async () => {
+    const sql: SqlClient = async () => [];
+    const response = await handleRequest(
+      request("/api/jobs", {
+        method: "POST",
+        body: JSON.stringify({
+          repositoryUrl: "https://example.com/not-a-github-repo",
+        }),
+      }),
+      {},
+      sql,
+    );
+    const payload = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.error).toContain("GitHub URL");
+  });
+
   test("jobs endpoint lists queued scans", async () => {
     const calls: Array<{ query: string; params: unknown[] }> = [];
     const sql: SqlClient = async (query, params) => {

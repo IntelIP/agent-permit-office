@@ -179,6 +179,15 @@ bun install
 bun dev
 ```
 
+Use the dashboard `Queue scan` flow with a GitHub repository URL. The hosted
+dashboard writes the job to the Worker API; the local CLI runner clones the repo
+and runs the scanner:
+
+```bash
+set -a; source .env; set +a
+uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto
+```
+
 Run the documentation site:
 
 ```bash

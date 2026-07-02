@@ -56,7 +56,7 @@ export async function handleRequest(
       return json({ error: "not_found" }, { status: 404 });
     }
     const db = sql ?? createSqlClient(env);
-    return route(request, { db, url });
+    return await route(request, { db, url });
   } catch (error) {
     if (error instanceof ApiError) {
       return json({ error: error.message }, { status: error.status });
@@ -212,25 +212,18 @@ async function countJobs(sql: SqlClient, status: string): Promise<number> {
 
 async function createJob(request: Request, sql: SqlClient): Promise<JsonObject> {
   const payload = await readJson(request);
-  const localPath =
-    optionalString(payload, "localPath") ?? optionalString(payload, "local_path");
-  if (!localPath) {
-    throw new ApiError(400, "localPath is required");
-  }
-  if (!localPath.startsWith("/")) {
-    throw new ApiError(400, "localPath must be absolute");
-  }
+  const scanTarget = scanTargetFromPayload(payload);
   const label =
     optionalString(payload, "label") ??
     optionalString(payload, "repo_label") ??
-    pathLabel(localPath);
+    scanTargetLabel(scanTarget);
   const branch = optionalString(payload, "branch");
   const mode = optionalString(payload, "mode") ?? "scan";
   if (mode !== "scan") {
     throw new ApiError(400, "mode must be scan");
   }
 
-  const repositoryId = await stableId("repo", localPath);
+  const repositoryId = await stableId("repo", scanTarget);
   const jobId = `job_${crypto.randomUUID()}`;
   await sql(
     `
@@ -242,7 +235,7 @@ async function createJob(request: Request, sql: SqlClient): Promise<JsonObject> 
       branch = EXCLUDED.branch,
       updated_at = now()
     `,
-    [repositoryId, label, localPath, branch],
+    [repositoryId, label, scanTarget, branch],
   );
   await sql(
     `
@@ -255,7 +248,7 @@ async function createJob(request: Request, sql: SqlClient): Promise<JsonObject> 
     job: {
       branch,
       id: jobId,
-      local_path: localPath,
+      local_path: scanTarget,
       mode,
       repository_id: repositoryId,
       repository_label: label,
@@ -334,9 +327,57 @@ function optionalString(payload: JsonObject, key: string): string | null {
   return value.trim() || null;
 }
 
-function pathLabel(localPath: string): string {
-  const parts = localPath.split("/").filter(Boolean);
-  return parts.at(-1) ?? localPath;
+function scanTargetFromPayload(payload: JsonObject): string {
+  const repositoryUrl =
+    optionalString(payload, "repositoryUrl") ??
+    optionalString(payload, "repository_url") ??
+    optionalString(payload, "githubUrl") ??
+    optionalString(payload, "github_url") ??
+    optionalString(payload, "url");
+  const localPath =
+    optionalString(payload, "localPath") ?? optionalString(payload, "local_path");
+  const scanTarget = repositoryUrl ?? localPath;
+  if (!scanTarget) {
+    throw new ApiError(400, "repositoryUrl is required");
+  }
+  if (isGithubRepositoryUrl(scanTarget) || scanTarget.startsWith("/")) {
+    return scanTarget;
+  }
+  throw new ApiError(
+    400,
+    "repositoryUrl must be a GitHub URL or localPath must be absolute",
+  );
+}
+
+function isGithubRepositoryUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol)) return false;
+    if (url.hostname !== "github.com") return false;
+    if (url.username || url.password) return false;
+    const parts = url.pathname
+      .replace(/\/$/, "")
+      .replace(/\.git$/, "")
+      .split("/")
+      .filter(Boolean);
+    return parts.length === 2 && Boolean(parts[0]) && Boolean(parts[1]);
+  } catch {
+    return false;
+  }
+}
+
+function scanTargetLabel(scanTarget: string): string {
+  if (isGithubRepositoryUrl(scanTarget)) {
+    const url = new URL(scanTarget);
+    const parts = url.pathname
+      .replace(/\/$/, "")
+      .replace(/\.git$/, "")
+      .split("/")
+      .filter(Boolean);
+    return parts[1] ?? scanTarget;
+  }
+  const parts = scanTarget.split("/").filter(Boolean);
+  return parts.at(-1) ?? scanTarget;
 }
 
 async function stableId(prefix: string, value: string): Promise<string> {
