@@ -3,6 +3,7 @@
   "fixtures": [
     {
       "artifact_dir": "docs/demo-artifacts/public-fixture-scans/safe-agent",
+      "baseline": "docs/demo-artifacts/public-fixture-scans/safe-agent/finding-baseline.json",
       "controls": 0,
       "findings": 0,
       "graph_paths": 0,
@@ -13,6 +14,7 @@
     },
     {
       "artifact_dir": "docs/demo-artifacts/public-fixture-scans/risky-ci-agent",
+      "baseline": "docs/demo-artifacts/public-fixture-scans/risky-ci-agent/finding-baseline.json",
       "controls": 5,
       "findings": 4,
       "graph_paths": 1,
@@ -23,6 +25,7 @@
     },
     {
       "artifact_dir": "docs/demo-artifacts/public-fixture-scans/risky-mcp-agent",
+      "baseline": "docs/demo-artifacts/public-fixture-scans/risky-mcp-agent/finding-baseline.json",
       "controls": 3,
       "findings": 2,
       "graph_paths": 1,

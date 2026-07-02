@@ -71,7 +71,7 @@ The repository includes sanitized fixture scans so reviewers can inspect real ou
 | `risky-ci-agent` | `blocked` | Shows a privileged pull request workflow with write access being stopped. |
 | `risky-mcp-agent` | `needs_review` | Shows an MCP server receiving a credential reference and requiring human review. |
 
-Start with [the public fixture manifest](docs/demo-artifacts/public-fixture-scans/manifest.json), then inspect the blocked CI [summary](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/summary.md), [permit](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/permit.yaml), and [raw findings](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/raw-findings.json).
+Start with [the public fixture manifest](docs/demo-artifacts/public-fixture-scans/manifest.json), then inspect the blocked CI [summary](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/summary.md), [permit](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/permit.yaml), [raw findings](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/raw-findings.json), and [finding baseline](docs/demo-artifacts/public-fixture-scans/risky-ci-agent/finding-baseline.json).
 
 Regenerate them with:
 

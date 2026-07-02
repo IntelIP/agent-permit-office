@@ -1,0 +1,51 @@
+{
+  "findings": [
+    {
+      "category": "runtime_policy",
+      "finding_id": "finding:ci-pr-target-write-token:.github/workflows/agent.yml:7",
+      "key": "283fcff6a21dee45c569dc9cbe7953a5852415f937f36b072daddd94e12ba425",
+      "line_end": 4,
+      "line_start": 4,
+      "path": ".github/workflows/agent.yml",
+      "rule_id": "ci-pr-target-write-token",
+      "severity": "critical",
+      "title": "PR-target workflow has write token permissions"
+    },
+    {
+      "category": "credential_scope",
+      "finding_id": "finding:ci-secret-reference:.github/workflows/agent.yml:16",
+      "key": "373477bfd7de2192d376abaa70a197bb31a5d7459e32c2c05eb6206982e31e3d",
+      "line_end": 16,
+      "line_start": 16,
+      "path": ".github/workflows/agent.yml",
+      "rule_id": "ci-secret-reference",
+      "severity": "medium",
+      "title": "Workflow references repository secrets"
+    },
+    {
+      "category": "runtime_policy",
+      "finding_id": "finding:ci-write-all-permissions:.github/workflows/agent.yml:7",
+      "key": "5aa6c21ac8aad6819887091cb2d69d82a80246ba3a0aff8957c52cbc6cf8bb00",
+      "line_end": 7,
+      "line_start": 7,
+      "path": ".github/workflows/agent.yml",
+      "rule_id": "ci-write-all-permissions",
+      "severity": "high",
+      "title": "Workflow grants write-all permissions"
+    },
+    {
+      "category": "runtime_policy",
+      "finding_id": "finding:ci-pull-request-target:.github/workflows/agent.yml:4",
+      "key": "b87dfcfe645ab40389e4fc1d31ad8bb9ea643a2c967af8746f4e6911f2635d93",
+      "line_end": 4,
+      "line_start": 4,
+      "path": ".github/workflows/agent.yml",
+      "rule_id": "ci-pull-request-target",
+      "severity": "high",
+      "title": "Workflow uses pull_request_target"
+    }
+  ],
+  "generated_at": "2026-01-01T00:00:00Z",
+  "scan_run_id": "public-demo-risky-ci-agent",
+  "version": 1
+}

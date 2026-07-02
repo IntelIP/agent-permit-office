@@ -1,0 +1,29 @@
+{
+  "findings": [
+    {
+      "category": "credential_scope",
+      "finding_id": "finding:mcp-stdio-credential-ref:.mcp.json:github-tools",
+      "key": "e5c680f51bfa51d075d6d913c5a337001ae788dcc4d605ac9316b9dc984949fa",
+      "line_end": null,
+      "line_start": 3,
+      "path": ".mcp.json",
+      "rule_id": "mcp-stdio-credential-ref",
+      "severity": "high",
+      "title": "Stdio MCP server receives credential references"
+    },
+    {
+      "category": "supply_chain",
+      "finding_id": "finding:mcp-unpinned-package-command:.mcp.json:github-tools",
+      "key": "f9e305d3e60f3a64ef84f3a6dcd1791916772995c8e99da24b2f163cccbabbb2",
+      "line_end": null,
+      "line_start": 3,
+      "path": ".mcp.json",
+      "rule_id": "mcp-unpinned-package-command",
+      "severity": "medium",
+      "title": "MCP server package is not version pinned"
+    }
+  ],
+  "generated_at": "2026-01-01T00:00:00Z",
+  "scan_run_id": "public-demo-risky-mcp-agent",
+  "version": 1
+}

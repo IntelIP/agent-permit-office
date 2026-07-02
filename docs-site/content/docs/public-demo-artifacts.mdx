@@ -50,6 +50,7 @@ docs/demo-artifacts/public-fixture-scans/<fixture>/permit.yaml
 docs/demo-artifacts/public-fixture-scans/<fixture>/raw-findings.json
 docs/demo-artifacts/public-fixture-scans/<fixture>/graph-paths.json
 docs/demo-artifacts/public-fixture-scans/<fixture>/controls.json
+docs/demo-artifacts/public-fixture-scans/<fixture>/finding-baseline.json
 docs/demo-artifacts/public-fixture-scans/<fixture>/run-metrics.json
 ```
 
@@ -64,6 +65,7 @@ Then compare the blocked CI example:
 - [Permit](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/permit.yaml)
 - [Raw findings](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/raw-findings.json)
 - [Graph paths](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/graph-paths.json)
+- [Finding baseline](https://github.com/IntelIP/agent-permit-office/blob/main/docs/demo-artifacts/public-fixture-scans/risky-ci-agent/finding-baseline.json)
 
 ## How to interpret it
 
@@ -75,7 +77,8 @@ Read the artifacts in this order:
 4. `raw-findings.json`: exact scanner findings with evidence locations.
 5. `graph-paths.json`: source-to-sink paths, such as credential to MCP server.
 6. `controls.json`: review controls that must pass before approval.
-7. `run-metrics.json`: counts used by dashboards and CI.
+7. `finding-baseline.json`: frozen finding keys for future diff scans.
+8. `run-metrics.json`: counts used by dashboards and CI.
 
 The important pattern: scanner output owns the decision. Deep Agent review may explain these artifacts later, but it should not invent a different permit status.
 
