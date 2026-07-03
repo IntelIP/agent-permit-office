@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from io import StringIO
 import json
+import os
 from pathlib import Path
+import time
 
 import agent_permit.cli as cli
 from agent_permit import __version__
@@ -157,6 +159,40 @@ def test_runner_once_clones_github_url_before_scan(tmp_path, monkeypatch) -> Non
     ]
     assert (cloned_repo / ".agent-permit" / "runs" / "job_github_url").is_dir()
     assert "Target: https://github.com/github/github-mcp-server" in stdout.getvalue()
+
+
+def test_runner_cleans_stale_github_clone_worktrees(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    stdout = StringIO()
+    stderr = StringIO()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    clone_root = tmp_path / ".agent-permit" / "runner-worktrees"
+    stale_clone = clone_root / "old__repo__job_old"
+    fresh_clone = clone_root / "fresh__repo__job_fresh"
+    stale_clone.mkdir(parents=True)
+    fresh_clone.mkdir(parents=True)
+    stale_time = time.time() - (8 * 24 * 60 * 60)
+    os.utime(stale_clone, (stale_time, stale_time))
+
+    class FakeStore:
+        def claim_next_scan_job(self):
+            return None
+
+    monkeypatch.setattr(cli, "store_from_env", lambda: FakeStore())
+
+    exit_code = main(
+        ["runner", "--once", "--clone-retention-days", "7"],
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert exit_code == 0
+    assert stderr.getvalue() == ""
+    assert not stale_clone.exists()
+    assert fresh_clone.is_dir()
 
 
 def test_runner_required_deep_agent_marks_job_and_run_failed(
@@ -380,6 +416,7 @@ def test_runner_once_runs_required_deep_agent_and_reingests_usage(
     def fake_run_investigate(artifact_dir, **kwargs) -> int:
         captured["artifact_dir"] = artifact_dir
         captured["model"] = kwargs["model"]
+        captured["agent_recursion_limit"] = kwargs["agent_recursion_limit"]
         context = EvidenceContext.load(artifact_dir)
         (artifact_dir / "agent-investigation.md").write_text(
             build_investigation_markdown(context),
@@ -423,6 +460,7 @@ def test_runner_once_runs_required_deep_agent_and_reingests_usage(
     assert completed == ["job_test_runner_deep"]
     assert failed == []
     assert captured["model"] == "openrouter:test/model"
+    assert captured["agent_recursion_limit"] == 12
     assert len(ingested) == 1
     assert ingested[0].model_usage is not None
     assert ingested[0].model_usage.model == "openrouter:test/model"

@@ -9,8 +9,10 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
+import time
 from typing import Any, TextIO
 from urllib.parse import urlparse
 
@@ -511,6 +513,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     runner_parser.add_argument(
+        "--clone-retention-days",
+        type=int,
+        default=int(os.getenv("AGENT_PERMIT_RUNNER_CLONE_RETENTION_DAYS", "7")),
+        help=(
+            "remove runner GitHub clone worktrees older than this many days; "
+            "set 0 to disable cleanup; default 7"
+        ),
+    )
+    runner_parser.add_argument(
         "--phoenix",
         action="store_true",
         help="request Phoenix tracing for runner Deep Agent runs",
@@ -785,6 +796,7 @@ def main(
             deep_agent=args.deep_agent,
             model=args.model,
             agent_recursion_limit=args.agent_recursion_limit,
+            clone_retention_days=args.clone_retention_days,
             enable_phoenix=args.phoenix,
             enable_langsmith=args.langsmith,
             stdout=stdout,
@@ -1679,6 +1691,20 @@ def _runner_clone_root() -> Path:
     return root
 
 
+def _cleanup_stale_runner_clones(retention_days: int) -> None:
+    if retention_days <= 0:
+        return
+    clone_root = _runner_clone_root()
+    if not clone_root.exists():
+        return
+    cutoff = time.time() - (retention_days * 24 * 60 * 60)
+    for child in clone_root.iterdir():
+        if not child.is_dir():
+            continue
+        if child.stat().st_mtime < cutoff:
+            shutil.rmtree(child)
+
+
 def _github_clone_slug(source: str, *, job_id: str) -> str:
     parsed = urlparse(source)
     parts = parsed.path.strip("/").removesuffix(".git").split("/")
@@ -1698,6 +1724,7 @@ def run_runner(
     deep_agent: str = "auto",
     model: str | None = None,
     agent_recursion_limit: int = DEFAULT_DEEP_AGENT_RECURSION_LIMIT,
+    clone_retention_days: int = 7,
     enable_phoenix: bool = False,
     enable_langsmith: bool = False,
     stdout: TextIO,
@@ -1709,6 +1736,11 @@ def run_runner(
     if deep_agent not in {"auto", "required", "off"}:
         print("error: --deep-agent must be auto, required, or off", file=stderr)
         return 2
+    try:
+        _cleanup_stale_runner_clones(clone_retention_days)
+    except OSError as exc:
+        print(f"error: failed to clean runner clone worktrees: {exc}", file=stderr)
+        return 1
     try:
         store = store_from_env()
         claimed = store.claim_next_scan_job()
