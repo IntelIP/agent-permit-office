@@ -185,7 +185,7 @@ and runs the scanner:
 
 ```bash
 set -a; source .env; set +a
-uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto
+uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto --agent-recursion-limit 20
 ```
 
 Run the documentation site:

@@ -90,6 +90,7 @@ export function FindingQueueTable({
           />
 
           <QueueOptionalPanels
+            activeJobs={activeJobs}
             isQueueing={isQueueing}
             jobEvents={jobEvents}
             onCloseAddRepository={onCloseAddRepository}
@@ -113,6 +114,7 @@ export function FindingQueueTable({
 }
 
 function QueueOptionalPanels({
+  activeJobs,
   isQueueing,
   jobEvents,
   onCloseAddRepository,
@@ -121,6 +123,7 @@ function QueueOptionalPanels({
   recentJob,
   showAddRepository,
 }: {
+  activeJobs: ScanJob[]
   isQueueing: boolean
   jobEvents: RunEvent[]
   onCloseAddRepository: () => void
@@ -141,8 +144,12 @@ function QueueOptionalPanels({
         />
       ) : null}
 
-      {recentJob || jobEvents.length > 0 ? (
-        <QueueProgressPanel events={jobEvents} job={recentJob} />
+      {recentJob || activeJobs.length > 0 || jobEvents.length > 0 ? (
+        <QueueProgressPanel
+          activeJobs={activeJobs}
+          events={jobEvents}
+          job={recentJob}
+        />
       ) : null}
     </>
   )

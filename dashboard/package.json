@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:prod": "VITE_AGENT_PERMIT_API_URL=https://agent-permit-worker.hudson-228.workers.dev/api bun run build",
+    "deploy:prod": "bun run build:prod && bun x wrangler pages deploy dist --project-name agent-permit-dashboard --branch main",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",

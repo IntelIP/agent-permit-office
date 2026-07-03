@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import type { ApiStatus, QueueScanInput, RunEvent, ScanJob } from "@/data/liveApi"
 
 const RUNNER_COMMAND =
-  "set -a; source .env; set +a; uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto"
+  "set -a; source .env; set +a; uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto --agent-recursion-limit 20"
 
 export function LiveStatusStrip({
   apiStatus,
@@ -194,33 +194,36 @@ function RecentJobNotice({ recentJob }: { recentJob: ScanJob | null }) {
 
   return (
     <div className="mt-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-      Job queued for {recentJob.repositoryLabel}. Run the local runner command above
-      to start the scan.
+      {jobStatusMessage(recentJob)}
     </div>
   )
 }
 
 export function QueueProgressPanel({
+  activeJobs = [],
   events,
   job,
 }: {
+  activeJobs?: ScanJob[]
   events: RunEvent[]
   job: ScanJob | null
 }) {
+  const visibleJob = job ?? activeJobs[0] ?? null
+
   return (
     <div className="mb-5 rounded-lg border border-border bg-background p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Latest queued scan</h2>
+          <h2 className="text-sm font-semibold">Scan handoff</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {job
-              ? `${job.repositoryLabel} is ${job.status}.`
+            {visibleJob
+              ? jobStatusMessage(visibleJob)
               : "Waiting for runner events."}
           </p>
         </div>
-        {job ? (
+        {visibleJob ? (
           <span className="rounded-full border border-border px-2 py-1 font-mono text-xs text-muted-foreground">
-            {job.id}
+            {visibleJob.id}
           </span>
         ) : null}
       </div>
@@ -248,6 +251,22 @@ export function QueueProgressPanel({
       )}
     </div>
   )
+}
+
+function jobStatusMessage(job: ScanJob) {
+  if (job.status === "queued") {
+    return `${job.repositoryLabel} is queued. Start the local runner to clone and scan it.`
+  }
+  if (job.status === "running") {
+    return `${job.repositoryLabel} is running. The local runner is scanning and writing artifacts.`
+  }
+  if (job.status === "completed") {
+    return `${job.repositoryLabel} completed. Refreshing findings from the Worker API.`
+  }
+  if (job.status === "failed") {
+    return `${job.repositoryLabel} failed. ${job.error ?? "Review runner logs."}`
+  }
+  return `${job.repositoryLabel} status: ${job.status}.`
 }
 
 function liveStatusLabel(apiStatus: ApiStatus) {

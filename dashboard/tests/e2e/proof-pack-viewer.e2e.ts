@@ -13,6 +13,9 @@ test("queue screen supports scan form, search, drilldown, back, and theme cycle"
   await expect(page.getByTestId("runner-command")).toContainText(
     "agent-permit runner --once",
   )
+  await expect(page.getByTestId("runner-command")).toContainText(
+    "--agent-recursion-limit 20",
+  )
   await expect(page.getByTestId("queue-scan-submit")).toBeDisabled()
   await page
     .getByTestId("queue-scan-path")

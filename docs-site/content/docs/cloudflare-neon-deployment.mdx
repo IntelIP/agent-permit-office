@@ -41,7 +41,7 @@ Process a dashboard-queued repository scan from the local repo root:
 
 ```bash
 set -a; source .env; set +a
-uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto
+uv run --extra db --extra deep-agent agent-permit runner --once --deep-agent auto --agent-recursion-limit 20
 ```
 
 The Worker only creates the queue record. The dashboard should queue GitHub repository URLs first. The local runner claims the job from Neon, clones GitHub URLs into `.agent-permit/runner-worktrees`, runs the scanner, writes artifacts, and updates the shared database. Absolute local paths still work for advanced local scans.
