@@ -60,3 +60,11 @@ For docs-only work:
 cd docs-site
 bun run build
 ```
+
+## Product validation gate
+
+- Unit tests are structural evidence only. Before review or merge readiness, run the committed `tabellio.validation.json` against the exact candidate commit with `tabellio-validate gate`.
+- Schema, semantic, workflow, operational, and security evidence must pass. `blocked` is not `passed`; a new commit invalidates earlier evidence.
+- Preserve PermitGraph's boundary: validators may scan committed fixtures and this repository, but never execute target repository code, MCP servers, target workflows, or paid model providers.
+- Keep validation external cost at zero. Upload generated evidence from CI; do not commit it.
+- Track rollout and failures in Plane item `APO-120`.
