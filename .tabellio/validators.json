@@ -30,6 +30,12 @@
       "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
       "summary": "CLI, CI mode, fixtures, and packaged action workflows"
     },
+    "visual": {
+      "commands": [["bun", "run", "--cwd", "dashboard", "build"], ["bun", "run", "--cwd", "dashboard", "design:capture"], ["node", "scripts/design/finalize-captures.mjs"]],
+      "metrics": [{"name": "visual_capture_count", "unit": "count", "pattern": "Visual capture count: ([0-9]+)"}],
+      "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
+      "summary": "Deterministic PermitGraph dashboard matrix with font and overflow checks"
+    },
     "operational": {
       "commands": [["uv", "run", "--frozen", "pytest", "-q", "tests/unit/test_model_provider.py", "tests/unit/test_db.py"]],
       "metrics": [

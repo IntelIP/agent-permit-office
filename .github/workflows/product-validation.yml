@@ -11,19 +11,25 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TABELLIO_ARTIFACT_BASE_URI: artifact+github://IntelIP/agent-permit-office/actions/runs/${{ github.run_id }}/design-captures/
     steps:
       - uses: actions/checkout@v6
         with: {fetch-depth: 0, persist-credentials: false}
       - uses: actions/setup-node@v6
         with: {node-version: 22}
+      - uses: oven-sh/setup-bun@v2
+        with: {bun-version: "1.3.3"}
       - uses: actions/setup-python@v6
         with: {python-version: "3.12"}
       - uses: astral-sh/setup-uv@v6
         with: {enable-cache: true}
+      - name: Install Chromium runtime
+        run: bun x playwright@1.61.1 install --with-deps chromium
       - name: Validate exact candidate
         run: |
           set -o pipefail
-          npm exec --yes --package=github:IntelIP/Tabellio#7558d49bad23cf8393fe766c799d81423ad7cf7d -- \
+          npm exec --yes --package=github:IntelIP/Tabellio#870eb739381215ce6e6f4cf11339dd558ef64f44 -- \
             tabellio-validate gate --repo . --repo-id IntelIP/agent-permit-office \
             --base origin/main --commit HEAD --manifest tabellio.validation.json | tee tabellio-validation-result.json
       - name: Upload validation result
@@ -34,4 +40,5 @@ jobs:
           path: |
             tabellio-validation-result.json
             refs/tabellio/validations/
+            .artifacts/tabellio/
           if-no-files-found: warn

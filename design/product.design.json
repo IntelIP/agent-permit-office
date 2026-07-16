@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "tabellio-product-design/v0.1",
+  "productId": "permitgraph/dashboard",
+  "title": "PermitGraph Dashboard",
+  "audience": ["Security engineers", "Platform operators", "AI governance teams"],
+  "platforms": ["web", "docs"],
+  "visualThesis": "Calm security-control software that makes permit state, evidence, risk paths, and remediation decisions immediately legible without alarmist decoration.",
+  "sources": {
+    "tokens": [
+      {"path": "dashboard/src/index.css", "digest": "25661b152f617fdc477e91eba08c0eb6b969e70c5a168b47db697ec74ee25581"}
+    ],
+    "components": [
+      {"path": "dashboard/components.json", "digest": "49101704a7f660f485a362e1d31d0f123877c34b58bc0cdc7796e99a7fe4438a"}
+    ],
+    "decisions": ["AGENTS.md", "design/decisions/0001-design-memory-bootstrap.md"]
+  },
+  "referenceLock": {
+    "primary": "Existing PermitGraph dashboard tokens and deterministic evidence-review workflow",
+    "preserve": [
+      "DM Sans typography",
+      "Muted teal primary actions",
+      "Distinct approved, review, blocked, critical, agent, and artifact semantics",
+      "Evidence-first information hierarchy",
+      "True black high-contrast dark surfaces"
+    ],
+    "borrow": ["Security operations patterns from real control-plane interfaces"],
+    "roleRules": [
+      "Permit colors communicate deterministic status only",
+      "Risk emphasis must remain subordinate to evidence and remediation",
+      "Use Phosphor icons for product actions"
+    ],
+    "reject": [
+      "Cyberpunk decoration",
+      "Red-first fear signaling without evidence",
+      "Generic compliance dashboard card grids",
+      "Model prose presented as deterministic finding state"
+    ],
+    "mediaStrategy": "Prefer graph paths, proof-pack artifacts, and real scanner output over decorative illustration."
+  },
+  "policy": {
+    "themes": ["light", "dark"],
+    "viewports": [
+      {"id": "desktop", "width": 1440, "height": 1000, "deviceScaleFactor": 1},
+      {"id": "mobile", "width": 390, "height": 844, "deviceScaleFactor": 1}
+    ],
+    "states": ["default", "hover", "focus", "disabled", "loading", "empty", "error", "approved", "review", "blocked", "critical"],
+    "surfaces": [
+      {"id": "dashboard", "kind": "route", "target": "/", "viewports": ["desktop", "mobile"], "themes": ["light", "dark"], "states": ["default"]}
+    ],
+    "forbiddenPatterns": [
+      "Status conveyed by color alone",
+      "Raw colors outside canonical token definitions",
+      "Target repository code execution during validation",
+      "Motion without reduced-motion behavior"
+    ],
+    "accessibility": {
+      "standard": "WCAG 2.2 AA",
+      "keyboardRequired": true,
+      "reducedMotionRequired": true
+    }
+  },
+  "baselines": {"manifest": "design/baselines/manifest.json"}
+}
