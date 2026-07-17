@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: IntelIP/Tabellio
-          ref: 0bfa1160bc97726cab1847e2eccfa4d18cafbc7d
+          ref: c4789837ee5ad779198141d6ffd2fea77792fbfb
           path: .tabellio-runner
           persist-credentials: false
       - name: Isolate validator from candidate scan
