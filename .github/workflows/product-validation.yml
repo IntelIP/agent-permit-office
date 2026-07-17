@@ -40,7 +40,7 @@ jobs:
         run: |
           set -o pipefail
           install -m 755 .tabellio-runner/scripts/tabellio-validator.mjs "$RUNNER_TEMP/tabellio-validator"
-          install -m 755 .tabellio-runner/scripts/finalize-tabellio-visual-captures.mjs "$RUNNER_TEMP/tabellio-design-captures"
+          ln -s "$GITHUB_WORKSPACE/.tabellio-runner/scripts/finalize-tabellio-visual-captures.mjs" "$RUNNER_TEMP/tabellio-design-captures"
           PATH="$RUNNER_TEMP:$PATH" node .tabellio-runner/scripts/tabellio-validate.mjs gate \
             --repo . --repo-id IntelIP/agent-permit-office \
             --base origin/main --commit HEAD --manifest tabellio.validation.json | tee tabellio-validation-result.json
