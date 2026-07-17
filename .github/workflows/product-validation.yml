@@ -15,11 +15,21 @@ jobs:
       TABELLIO_ARTIFACT_BASE_URI: artifact+github://IntelIP/agent-permit-office/actions/runs/${{ github.run_id }}/design-captures/
     steps:
       - uses: actions/checkout@v6
-        with: {fetch-depth: 0, persist-credentials: false}
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v6
         with: {node-version: 22}
       - uses: oven-sh/setup-bun@v2
         with: {bun-version: "1.3.3"}
+      - name: Checkout pinned Tabellio runner
+        uses: actions/checkout@v6
+        with:
+          repository: IntelIP/Tabellio
+          ref: 0bfa1160bc97726cab1847e2eccfa4d18cafbc7d
+          path: .tabellio-runner
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with: {python-version: "3.12"}
       - uses: astral-sh/setup-uv@v6
@@ -29,14 +39,15 @@ jobs:
       - name: Validate exact candidate
         run: |
           set -o pipefail
-          npm exec --yes --package=github:IntelIP/Tabellio#49f3975c29cdd3dd725b8410e3e908fb6dfbcc1d -- \
-            tabellio-validate gate --repo . --repo-id IntelIP/agent-permit-office \
+          install -m 755 .tabellio-runner/scripts/tabellio-validator.mjs "$RUNNER_TEMP/tabellio-validator"
+          PATH="$RUNNER_TEMP:$PATH" node .tabellio-runner/scripts/tabellio-validate.mjs gate \
+            --repo . --repo-id IntelIP/agent-permit-office \
             --base origin/main --commit HEAD --manifest tabellio.validation.json | tee tabellio-validation-result.json
       - name: Upload validation result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tabellio-validation-${{ github.sha }}
+          name: tabellio-validation-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             tabellio-validation-result.json
             refs/tabellio/validations/
