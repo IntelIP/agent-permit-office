@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      TABELLIO_ARTIFACT_BASE_URI: artifact+github://IntelIP/agent-permit-office/actions/runs/${{ github.run_id }}/design-captures/
+      TABELLIO_ARTIFACT_BASE_URI: artifact+github://IntelIP/agent-permit-office/actions/runs/${{ github.run_id }}/tabellio-validation-${{ github.event.pull_request.head.sha || github.sha }}/.artifacts/tabellio/visual-captures/
     steps:
       - uses: actions/checkout@v6
         with:

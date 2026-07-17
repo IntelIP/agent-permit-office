@@ -109,6 +109,7 @@ test.describe("Tabellio visual capture matrix", () => {
         await page.evaluate(() => document.fonts.ready);
 
         await expect(page.getByRole("heading", { name: "Repository findings" })).toBeVisible();
+        await expect(page.getByText("Live Worker data", { exact: true })).toBeVisible();
         expect(fixtureRequests).toBeGreaterThan(0);
         await expect(page.getByText("unknown policy", { exact: true })).toHaveCount(0);
         await expect(page.locator("html")).toHaveClass(new RegExp(`(?:^|\\s)${theme}(?:\\s|$)`));
