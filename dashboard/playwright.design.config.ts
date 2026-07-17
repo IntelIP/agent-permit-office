@@ -12,8 +12,8 @@ export default defineConfig({
     trace: "off",
   },
   webServer: {
-    command: "VITE_AGENT_PERMIT_API_URL= bun run build && bun run preview -- --host 127.0.0.1 --port 5173",
-    reuseExistingServer: true,
+    command: "VITE_AGENT_PERMIT_API_URL=/api bun run build && bun run preview -- --host 127.0.0.1 --port 5173",
+    reuseExistingServer: false,
     url: "http://127.0.0.1:5173",
   },
 });

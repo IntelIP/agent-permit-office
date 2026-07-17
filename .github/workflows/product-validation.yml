@@ -2,6 +2,8 @@ name: product-validation
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -30,6 +32,8 @@ jobs:
           ref: 0bfa1160bc97726cab1847e2eccfa4d18cafbc7d
           path: .tabellio-runner
           persist-credentials: false
+      - name: Isolate validator from candidate scan
+        run: mv .tabellio-runner "$RUNNER_TEMP/tabellio-runner"
       - uses: actions/setup-python@v6
         with: {python-version: "3.12"}
       - uses: astral-sh/setup-uv@v6
@@ -39,9 +43,9 @@ jobs:
       - name: Validate exact candidate
         run: |
           set -o pipefail
-          install -m 755 .tabellio-runner/scripts/tabellio-validator.mjs "$RUNNER_TEMP/tabellio-validator"
-          ln -s "$GITHUB_WORKSPACE/.tabellio-runner/scripts/finalize-tabellio-visual-captures.mjs" "$RUNNER_TEMP/tabellio-design-captures"
-          PATH="$RUNNER_TEMP:$PATH" node .tabellio-runner/scripts/tabellio-validate.mjs gate \
+          install -m 755 "$RUNNER_TEMP/tabellio-runner/scripts/tabellio-validator.mjs" "$RUNNER_TEMP/tabellio-validator"
+          ln -s "$RUNNER_TEMP/tabellio-runner/scripts/finalize-tabellio-visual-captures.mjs" "$RUNNER_TEMP/tabellio-design-captures"
+          PATH="$RUNNER_TEMP:$PATH" node "$RUNNER_TEMP/tabellio-runner/scripts/tabellio-validate.mjs" gate \
             --repo . --repo-id IntelIP/agent-permit-office \
             --base origin/main --commit HEAD --manifest tabellio.validation.json | tee tabellio-validation-result.json
       - name: Upload validation result
@@ -53,4 +57,5 @@ jobs:
             tabellio-validation-result.json
             refs/tabellio/validations/
             .artifacts/tabellio/
+          include-hidden-files: true
           if-no-files-found: warn

@@ -92,9 +92,13 @@ test.describe("Tabellio visual capture matrix", () => {
       const id = `${surface.id}--${viewportId}--${theme}--${state}`;
 
       test(id, async ({ page }) => {
+        let fixtureRequests = 0;
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await page.emulateMedia({ colorScheme: theme as "light" | "dark", reducedMotion: "reduce" });
-        await page.route("**/api/snapshot", async (route) => route.fulfill({ body: apiSnapshot, contentType: "application/json", status: 200 }));
+        await page.route("**/api/snapshot", async (route) => {
+          fixtureRequests += 1;
+          await route.fulfill({ body: apiSnapshot, contentType: "application/json", status: 200 });
+        });
         await page.goto(surface.target, { waitUntil: "domcontentloaded" });
         await page.evaluate((selectedTheme) => {
           document.documentElement.classList.remove("light", "dark");
@@ -105,6 +109,7 @@ test.describe("Tabellio visual capture matrix", () => {
         await page.evaluate(() => document.fonts.ready);
 
         await expect(page.getByRole("heading", { name: "Repository findings" })).toBeVisible();
+        expect(fixtureRequests).toBeGreaterThan(0);
         await expect(page.getByText("unknown policy", { exact: true })).toHaveCount(0);
         await expect(page.locator("html")).toHaveClass(new RegExp(`(?:^|\\s)${theme}(?:\\s|$)`));
         expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("DM Sans");
