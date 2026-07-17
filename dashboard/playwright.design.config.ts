@@ -2,10 +2,12 @@ import { defineConfig } from "@playwright/test";
 
 import baseConfig from "./playwright.config";
 
-export default defineConfig(baseConfig, {
+export default defineConfig({
+  ...baseConfig,
   reporter: [["list"]],
   testMatch: /design-memory\.capture\.ts/,
   use: {
+    ...baseConfig.use,
     screenshot: "off",
     trace: "off",
   },
