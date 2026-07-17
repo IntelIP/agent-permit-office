@@ -29,7 +29,7 @@ jobs:
       - name: Validate exact candidate
         run: |
           set -o pipefail
-          npm exec --yes --package=github:IntelIP/Tabellio#c5076f33bd93f96561cf7d9eb106ec7c137a6fe8 -- \
+          npm exec --yes --package=github:IntelIP/Tabellio#49f3975c29cdd3dd725b8410e3e908fb6dfbcc1d -- \
             tabellio-validate gate --repo . --repo-id IntelIP/agent-permit-office \
             --base origin/main --commit HEAD --manifest tabellio.validation.json | tee tabellio-validation-result.json
       - name: Upload validation result
