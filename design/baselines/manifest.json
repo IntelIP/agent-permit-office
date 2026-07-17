@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "tabellio-visual-baselines/v0.1",
+  "status": "proposed",
+  "productId": "permitgraph/dashboard",
+  "profilePath": "design/product.design.json",
+  "profileDigest": "03ef2f28268a93862651ebd0a8ae8ac2fd24b350619e968cc9a43c56e5189e7a",
+  "sourceCommit": null,
+  "approvedAt": null,
+  "approvedBy": null,
+  "captures": []
+}

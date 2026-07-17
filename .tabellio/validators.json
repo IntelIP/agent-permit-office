@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "tabellio-adapter/v0.1",
+  "profiles": {
+    "static": {
+      "commands": [
+        ["uv", "sync", "--frozen", "--all-extras", "--dev"],
+        ["bun", "install", "--frozen-lockfile", "--cwd", "dashboard"],
+        ["bun", "run", "--cwd", "dashboard", "playwright", "install", "chromium"],
+        ["bun", "install", "--frozen-lockfile", "--cwd", "docs-site"],
+        ["python3", "tools/release_check.py"]
+      ],
+      "metrics": [],
+      "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
+      "summary": "Locked environment and release packaging checks"
+    },
+    "schema": {
+      "commands": [["uv", "run", "--frozen", "pytest", "-q", "tests/unit/test_artifacts.py", "tests/unit/test_models.py", "tests/unit/test_sarif.py", "tests/unit/test_rule_registry.py"]],
+      "metrics": [{"name": "scanner_artifact_contracts_pass", "unit": "boolean", "passValue": 1, "failValue": 0}],
+      "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
+      "summary": "Deterministic scanner artifact and SARIF schemas"
+    },
+    "semantic": {
+      "commands": [["uv", "run", "--frozen", "pytest", "-q", "tests/unit/test_baseline.py", "tests/unit/test_evals.py", "tests/unit/test_permit_engine.py", "tests/unit/test_policy.py"]],
+      "metrics": [{"name": "permit_policy_oracles_pass", "unit": "boolean", "passValue": 1, "failValue": 0}],
+      "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
+      "summary": "Permit decisions, policy boundaries, and evaluation oracles"
+    },
+    "workflow": {
+      "commands": [["uv", "run", "--frozen", "pytest", "-q", "tests/unit/test_cli.py", "tests/unit/test_cli_ci_mode.py", "tests/unit/test_demo.py", "tests/unit/test_fixtures.py", "tests/unit/test_github_action_packaging.py"]],
+      "metrics": [{"name": "cli_ci_proofpack_workflows_pass", "unit": "boolean", "passValue": 1, "failValue": 0}],
+      "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
+      "summary": "CLI, CI mode, fixtures, and packaged action workflows"
+    },
+    "visual": {
+      "commands": [["bun", "run", "--cwd", "dashboard", "build"], ["bun", "run", "--cwd", "dashboard", "design:capture"], ["node", "scripts/design/finalize-captures.mjs"]],
+      "metrics": [{"name": "visual_capture_count", "unit": "count", "pattern": "Visual capture count: ([0-9]+)"}],
+      "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
+      "summary": "Deterministic PermitGraph dashboard matrix with font and overflow checks"
+    },
+    "operational": {
+      "commands": [["uv", "run", "--frozen", "pytest", "-q", "tests/unit/test_model_provider.py", "tests/unit/test_db.py"]],
+      "metrics": [
+        {"name": "local_provider_and_storage_boundaries_pass", "unit": "boolean", "passValue": 1, "failValue": 0}
+      ],
+      "cost": {"telemetry": "available", "usd": 0, "modelCalls": 0, "toolCalls": 0},
+      "summary": "Local provider and storage paths with no live model calls"
+    },
+    "security": {
+      "commands": [["uv", "run", "--frozen", "pytest", "-q", "tests/unit/test_capability_graph.py", "tests/unit/test_ci_workflows.py", "tests/unit/test_credential_refs.py", "tests/unit/test_mcp_config.py", "tests/unit/test_path_finder.py", "tests/unit/test_prompt_instructions.py"]],
+      "metrics": [{"name": "agent_attack_path_controls_pass", "unit": "boolean", "passValue": 1, "failValue": 0}],
+      "cost": {"telemetry": "not_applicable", "usd": null, "modelCalls": null, "toolCalls": null},
+      "summary": "Credential, MCP, workflow, prompt, and attack-path controls"
+    }
+  }
+}

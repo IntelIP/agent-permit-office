@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "tabellio-validation/v0.2",
+  "id": "apo-product-validity",
+  "failFast": false,
+  "requireEntireCheckpoint": false,
+  "acceptance": {
+    "id": "APO-120",
+    "source": "plane",
+    "risk": "critical",
+    "outcomes": [
+      "PermitGraph produces valid, deterministic scanner and proof-pack artifacts.",
+      "Permit decisions follow policy and evaluation oracles.",
+      "CLI and GitHub Action workflows preserve CI fail-closed behavior.",
+      "PermitGraph dashboard captures cover declared viewport and theme states.",
+      "Credential, MCP, workflow, prompt, and attack-path controls detect unsafe expansion."
+    ],
+    "invariants": [
+      "Deterministic scanner artifacts remain the source of truth.",
+      "Validation never executes target code or calls a live model provider."
+    ],
+    "forbiddenOutcomes": [
+      "Model prose creates a finding without scanner evidence.",
+      "Validation executes a target repository tool, workflow, MCP server, or package script.",
+      "Unknown provider cost is treated as zero."
+    ],
+    "requiredValidatorTypes": ["schema", "semantic", "workflow", "visual", "operational", "security"]
+  },
+  "validators": [
+    {"id": "static-release", "type": "static", "argv": ["tabellio-validator", "--profile", "static"], "cwd": ".", "timeoutMs": 900000, "required": true, "evidence": null, "policy": {"metricThresholds": [], "maxCostUsd": null, "requireCostTelemetry": false}},
+    {"id": "schema-scanner-artifacts", "type": "schema", "argv": ["tabellio-validator", "--profile", "schema", "--validator-id", "schema-scanner-artifacts", "--out", ".artifacts/tabellio/schema.json"], "cwd": ".", "timeoutMs": 300000, "required": true, "evidence": {"path": ".artifacts/tabellio/schema.json"}, "policy": {"metricThresholds": [{"metric": "scanner_artifact_contracts_pass", "operator": "eq", "value": 1}], "maxCostUsd": null, "requireCostTelemetry": false}},
+    {"id": "semantic-permit-policy", "type": "semantic", "argv": ["tabellio-validator", "--profile", "semantic", "--validator-id", "semantic-permit-policy", "--out", ".artifacts/tabellio/semantic.json"], "cwd": ".", "timeoutMs": 300000, "required": true, "evidence": {"path": ".artifacts/tabellio/semantic.json"}, "policy": {"metricThresholds": [{"metric": "permit_policy_oracles_pass", "operator": "eq", "value": 1}], "maxCostUsd": null, "requireCostTelemetry": false}},
+    {"id": "workflow-cli-ci", "type": "workflow", "argv": ["tabellio-validator", "--profile", "workflow", "--validator-id", "workflow-cli-ci", "--out", ".artifacts/tabellio/workflow.json"], "cwd": ".", "timeoutMs": 300000, "required": true, "evidence": {"path": ".artifacts/tabellio/workflow.json"}, "policy": {"metricThresholds": [{"metric": "cli_ci_proofpack_workflows_pass", "operator": "eq", "value": 1}], "maxCostUsd": null, "requireCostTelemetry": false}},
+    {"id": "visual-dashboard", "type": "visual", "argv": ["tabellio-validator", "--profile", "visual", "--validator-id", "visual-dashboard", "--out", ".artifacts/tabellio/visual.json"], "cwd": ".", "timeoutMs": 600000, "required": true, "evidence": {"path": ".artifacts/tabellio/visual.json"}, "policy": {"metricThresholds": [{"metric": "visual_capture_count", "operator": "eq", "value": 4}], "maxCostUsd": null, "requireCostTelemetry": false}},
+    {"id": "operational-provider-boundary", "type": "operational", "argv": ["tabellio-validator", "--profile", "operational", "--validator-id", "operational-provider-boundary", "--out", ".artifacts/tabellio/operational.json"], "cwd": ".", "timeoutMs": 300000, "required": true, "evidence": {"path": ".artifacts/tabellio/operational.json"}, "policy": {"metricThresholds": [{"metric": "local_provider_and_storage_boundaries_pass", "operator": "eq", "value": 1}], "maxCostUsd": 0, "requireCostTelemetry": true}},
+    {"id": "security-agent-boundaries", "type": "security", "argv": ["tabellio-validator", "--profile", "security", "--validator-id", "security-agent-boundaries", "--out", ".artifacts/tabellio/security.json"], "cwd": ".", "timeoutMs": 300000, "required": true, "evidence": {"path": ".artifacts/tabellio/security.json"}, "policy": {"metricThresholds": [{"metric": "agent_attack_path_controls_pass", "operator": "eq", "value": 1}], "maxCostUsd": null, "requireCostTelemetry": false}}
+  ]
+}

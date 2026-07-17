@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",
+    "design:capture": "playwright test --config playwright.design.config.ts",
     "test:unit": "vitest run tests/unit"
   },
   "dependencies": {
