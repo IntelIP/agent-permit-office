@@ -5,6 +5,7 @@
       "commands": [
         ["uv", "sync", "--frozen", "--all-extras", "--dev"],
         ["bun", "install", "--frozen-lockfile", "--cwd", "dashboard"],
+        ["bun", "run", "--cwd", "dashboard", "playwright", "install", "chromium"],
         ["bun", "install", "--frozen-lockfile", "--cwd", "docs-site"],
         ["python3", "tools/release_check.py"]
       ],
